@@ -1,0 +1,55 @@
+#General
+@PYTHON           = /usr/bin/python
+@PERL             = /usr/bin/perl
+@BIN              = /project/umw_biocore/bin
+@TOOLSDIR         = @BIN/workflow/scripts/tools
+@GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
+@JOB              = "@PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR"
+@LDPATH           = "module load gcc/4.8.1"
+
+#For running fastQC and spliting the fastq file 
+#stepFASTQC
+@RUNFASTQC   = @TOOLSDIR/prep/runFastQC.bash
+
+#stepSplit Fastq
+@NUMBER      = 2000
+@SPLITFASTQ  = @PERL @TOOLSDIR/prep/splitFastq.pl
+@FASTQCWRAPPER       = @PERL @TOOLSDIR/CHIPSeq/fastqc_wrapper.pl
+
+#stepMapping
+#@MAPPINGTYPE   = bwa
+@MAPPINGTYPE   = bowtie
+@RUNMAPPING    = @TOOLSDIR/align/runMapping.bash
+#@MAPPINGPARAMS = "-n 2 /isilon_temp/garber/genome_data/@GENOME/@VERSION/@VERSION.fa"
+@GENINDEX      = @GENOMEDB/@VERSION
+@MAPPINGPARAMS = "-p 8 -v @BOWMISM -a --strata --best -m 1 --sam -q" 
+@INPUTFASTQDIR = @OUTDIR/files
+@MAPPINGOUTDIR = @OUTDIR/mappings
+@STEPMAPPARAM  = @MAPPINGTYPE @MAPPINGPARAMS @INPUTFASTQDIR @MAPPINGOUTDIR @GENINDEX
+
+#Step Merge Mapping
+@FILE_EXT         = sorted.bam
+@RUNMERGEMAPPING  = @TOOLSDIR/align/mergeMapping.bash
+@PERLMERGE        = @PERL @TOOLSDIR/CHIPSeq/merge_output.pl
+
+#StepIGVTDF
+@RUNIGVTDF        = @TOOLSDIR/convert/stepIGVTDF.pl
+@GENOMEFASTA      = @GENOMEDB/@VERSION.fa
+@SAMTOOLS         = @BIN/samtools
+@IGVWRAPPER       = @PERL @TOOLSDIR/CHIPSeq/igv_wrapper.pl
+
+#Step Convert BW
+@GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
+@RUNBAM2BW        = "@LDPATH;@TOOLSDIR/convert/bam2wig.bash"
+@RUNBAM2BWWRAPPER = @PERL @TOOLSDIR/CHIPSeq/bam2bw_wrapper.pl
+
+#Step MACS
+@RUNMACS = @PERL @TOOLSDIR/CHIPSeq/macs14.pl
+@MACSOUTDIR = @OUTDIR/macsout
+@MACSmodule = module load macs/1.4.2
+@MACSCMD = "@MACSmodule;macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
+
+#RunAggregation
+@RUNAGGREGATION  = @LDPATH;@PERL @TOOLSDIR/CHIPSeq/agg_plot.pl
+@REFACT          = @GENOMEDB/refACT.tab
+

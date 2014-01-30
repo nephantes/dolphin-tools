@@ -1,0 +1,41 @@
+#General parameters
+@PERL             = module load perl/5.18.1; perl
+@PYTHON           = module load python/2.7.5; python 
+@BIN              = /project/umw_biocore/bin
+@TOOLSDIR         = @BIN/workflow/scripts/tools
+@CPU              = 8 
+@GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
+@JOB              = "@PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR -p @CPU"
+
+#StepRibo
+@RUNRIBO          = @PERL @TOOLSDIR/RNASeqRSEM/stepRibo.pl
+@RIBOINDEX        = @GENOMEDB/ribosomal_RNA #Required
+@BOWTIE2CMD       = @BIN/bowtie2-2.1.0/bowtie2
+
+#StepRSEM
+@RUNRSEM          = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEM.pl
+@RSEMCMD          = "@PERL @BIN/RSEM/rsem-calculate-expression"
+@BOWTIEPATH       = @BIN/bowtie-0.12.9
+@RSEMREF          = @GENOMEDB/rsem_ref
+
+#StepRSEMCount
+@RUNRSEMCOUNT     = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEMcount.pl
+
+#StepIGVTDF
+@RUNIGVTDF        = @PERL @TOOLSDIR/RNASeqRSEM/stepIGVTDF.pl
+@GENOMEFASTA      = @GENOMEDB/@VERSION.fa #Required
+@SAMTOOLS         = @BIN/samtools 
+
+#Step Convert BW
+@GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
+@RUNBAM2BW        = @PERL @TOOLSDIR/RNASeqRSEM/stepBAM2BW.pl
+@RUNCOVERAGE      = "@BIN/bedtools/bin/genomeCoverageBed" 
+@WIGTOBIGWIG      = @BIN/wigToBigWig
+
+#StepPicard
+@RUNPICARD        = @TOOLSDIR/RNASeq/stepPicard.pl
+@PICARDCMD        = "@BIN/jre1.7.0_10/bin/java -Xmx1500m  -jar @BIN/tophap_cuffdiff/CollectRnaSeqMetrics.jar STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ASSUME_SORTED=false"
+@REFFLAT          = @GENOMEDB/ref_flat #Required
+
+
+
