@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepBAM2BW.pl
+#                                       stepIGVTDF.pl
 #########################################################################################
 # 
-#  Converts bam files for UCSC visualization.
+#  Converts bam files for IGV visualization.
 #
 #########################################################################################
 # AUTHORS:
@@ -24,13 +24,9 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $genomesize       = "";
- my $GCB              = "";
- my $W2BW             = "";
- my $username         = "";
+ my $genome           = "";
  my $outdir           = "";
- my $output           = "";
- my $build            = "";
+ my $samtools         = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -42,14 +38,10 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'coverage=s'     => \$GCB,
-	'wig2bigwig=s'   => \$W2BW,
-	'username=s'     => \$username,
-	'build=s'        => \$build,
-        'putout=s'       => \$output,
+        'samtools=s'     => \$samtools,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
-        'genomesize=s'   => \$genomesize,
+        'genome=s'       => \$genome,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -66,79 +58,57 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomesize eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($genome eq "") or ($outdir eq "") );	
 
  
 ################### MAIN PROGRAM ####################
 #   converts the mapped reads for IGV visualization
 
-my $indir   = "$outdir/rsem";
-#my $uoutpath="/isilon_temp/garber/genomeBrowser/$username";
-`cp $outdir/rsem/genes_expression_expected_count.csv $output`;
- 
-`mkdir -p $outdir/ucsc`;
+my $indir   = "$outdir/tophat";
+$outdir  = "$outdir/tdf";
 
-print "$indir/*/*.genes.sorted.bam\n";
-my @files = <$indir/*/*.genome.sorted.bam>;
-open(OUT, ">$outdir/ucsc/index.html");
+mkdir $outdir if (! -e $outdir);
+
+my @files = <$indir/*.sorted.bam>;
 
 foreach my $d (@files){ 
-  print $d."\n";
 
-  my $libname=basename($d, ".genome.sorted.bam");
+  my $libname=basename($d, ".sorted.bam");
   
-  my $outputbg="$outdir/ucsc/$libname.bg";
-  my $outputbw="$outdir/ucsc/$libname.bw";
-
- my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
- $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
-
- #$com.="mkdir -p $uoutpath/ucsc;\n";
-
- #$com.="cp $outputbw $uoutpath/ucsc/.\n";
- #$com.="cp $d $uoutpath/ucsc/$libname.bam;\n";
- #$com.="cp $d.bai $uoutpath/ucsc/$libname.bam.bai;\n";
- #$com.="cp $outputbg $uoutpath/ucsc/.;\n";
- #$com.="cp $outdir/tdf $uoutpath/. -R;\n";
- #$com.="cp $outdir/fastqc $uoutpath/. -R;\n";
-
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20bigWig%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bw\">";
- print OUT "$libname bigWig </a><br><br>";
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20bam%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bam\">";
- print OUT "$libname bam </a><br><br>";
+  my $com = "$samtools index $indir/$libname.sorted.bam $indir/$libname.sorted.bam.bai;\n";
+  $com.="cp $indir/$libname.sorted.bam $outdir/$libname.bam;\n";
+  $com.="cp $indir/$libname.sorted.bam.bai $outdir/$libname.bam.bai;\n";
+  $com.="cd $outdir; /scratch/shulhah/igvtools.sh count -w 5 $outdir/$libname.bam  $outdir/$libname.tdf $genome\n"; 
   
- if(@files>1 && $jobsubmit!~/^$/)
- { 
+  if(@files>1 && $jobsubmit!~/^$/)
+  { 
     my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
     print $job."\n";   
     `$job`;
- }
- else
- { 
+  }
+  else
+  { 
     `$com`;
- }
+  }
 }
-
-close(OUT);
-#`cp $outdir/ucsc/index.html $uoutpath/.`;
 
 __END__
 
 
 =head1 NAME
 
-stepBAM2BW.pl
+stepIGVTDF.pl
 
 =head1 SYNOPSIS  
 
-stepBAM2BW.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
-            -g genomesize <genome size file> 
-            -b build <genome build> 
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
-stepBAM2BW.pl -help
+stepIGVTDF.pl -help
 
-stepBAM2BW.pl -version
+stepIGVTDF.pl -version
 
 For help, run this script with -help option.
 
@@ -148,11 +118,11 @@ For help, run this script with -help option.
 
 the output files will be "$outdir/after_ribosome/tdf" 
 
-=head2  -g genomesize <genome size file> 
+=head2  -g genome <genome files> 
 
-Genome size file. (Full path)
+Genome fasta file. (Full path)
 
-=head2   -b build <genome build> 
+=head2   -t samtools <samtools fullpath> 
 
 Samtools full path
 
@@ -170,7 +140,7 @@ Display the version
 
 =head1 EXAMPLE
 
-stepBAM2BW.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
             -g genome <genome files> 
             -s samtools <samtools fullpath> 

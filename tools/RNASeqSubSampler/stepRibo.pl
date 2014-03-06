@@ -27,41 +27,37 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $input                      = "";
- my $outdir                     = "";
- my $jobsubmit                  = "";
- my $ribosomeInd                = "";
- my $bowtiecmd                  = "";
- my $subsample_size             = "";
- my $number_of_subsamples       = 3;
- my $servicename                = "";
- my $param                      = "";
- my $help                       = "";
- my $print_version              = "";
- my $version                    = "1.0.0";
+ my $input            = "";
+ my $outdir           = "";
+ my $jobsubmit        = "";
+ my $ribosomeInd      = "";
+ my $bowtiecmd        = ""; 
+ my $servicename      = "";
+ my $param            = "";
+ my $help             = "";
+ my $print_version    = "";
+ my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'input=s'                  => \$input,
-	'outdir=s'                 => \$outdir,
-        'bowtieCmd=s'              => \$bowtiecmd,
-        'ribosomeInd=s'            => \$ribosomeInd,
-	'subsample_size=s'         => \$subsample_size,
-        'number_of_subsamples=s'   => \$number_of_subsamples,
-        'servicename=s'            => \$servicename,
-        'jobsubmit=s'              => \$jobsubmit,
-        'param=s'                  => \$param,
-	'help'                     => \$help, 
-	'version'                  => \$print_version,
+	'input=s'        => \$input,
+	'outdir=s'       => \$outdir,
+        'bowtieCmd=s'    => \$bowtiecmd,
+        'ribosomeInd=s'  => \$ribosomeInd,
+        'servicename=s'  => \$servicename,
+        'jobsubmit=s'    => \$jobsubmit,
+        'param=s'        => \$param,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
     pod2usage( {
-	'-verbose'                => 2, 
-	'-exitval'                => 1,
-    } );
+		'-verbose' => 2, 
+		'-exitval' => 1,
+	} );
 }
 
 if($print_version){
@@ -75,50 +71,92 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
+$outdir   = "$outdir/after_ribosome";
 
-my @s_size=split(/:/,$subsample_size);
+mkdir $outdir if (! -e $outdir);
+
 my @prefiles=split(/:/,$input);
   
-for(my $i=0;$i<@prefiles;$i++) 
+for(my $i=0;$i<scalar(@prefiles);$i++) 
 {
-  my @files=split(/,/,$prefiles[$i]);
-  for (my $n=0; $n<$number_of_subsamples; $n++)
+   my @files=split(/[,\s\t]+/,$prefiles[$i]);
+  
+  if (scalar(@files)>=2) 
   {
-     foreach my $subsamplesize (@s_size)
+    my $libname=$files[0];
+    my $str_file="";
+    my $com="";
+    if (scalar(@files)==2) {
+       $str_file=$files[1];  
+       if ($str_file=~/\.gz$/)
+       {
+         $com="zcat $str_file > $outdir/$libname.fastq;";
+         $str_file= "$outdir/$libname.fastq";
+       }
+       $com.="$bowtiecmd --un $outdir/$libname.notR -x $ribosomeInd $str_file --al $outdir/$libname.yesR  >  /dev/null\n";
+    }
+    
+    if ((-s $files[1])==0 && $files[1]!~/\*/)
+    {
+        print "ERROR:Please check the file:".$files[1].", and try again!!!\n";
+        exit 1;
+   
+    }
+        
+    if ($files[1]=~/\*/) {
+	mapMultipleFiles(\@files, $jobsubmit, $servicename, $bowtiecmd, $ribosomeInd, $outdir);
+    }
+    else
+    {
+     if (scalar(@files)==3)
      {
-	my $libname=$files[1];
-
-	my $indir = "$outdir/input/$libname";
-	my $outd=$outdir."/after_ribosome/$libname";
-	`mkdir -p $outd`;
-	if (@files>=3)
-	{
-	  my $str_file="$indir/lib.$libname.$n.$subsamplesize.fastq";
-	  my $com="$bowtiecmd --un $outd/$libname.$n.$subsamplesize.notR -x $ribosomeInd $str_file --al $outd/$libname.$n.$subsamplesize.yesR  >  $outd/$libname.$n.$subsamplesize.mapped\n";
-	    
-	  if (@files==4)
-	  {
-	    
-	    $str_file="-1 $indir/lib.$libname.$n.$subsamplesize.R1.fastq -2 $indir/lib.$libname.$n.$subsamplesize.R2.fastq";
-	    $com="$bowtiecmd --un-conc $outd/$libname.$n.$subsamplesize.notR -x $ribosomeInd $str_file --al-conc $outd/$libname.$n.$subsamplesize.yesR  >  $outd/$libname.$n.$subsamplesize.mapped\n";
-	    
-	    if ((-s $files[2])==0)
-	    {
-	      print "ERROR:Please check the file:".$files[3].", and try again!!!\n";
-	      exit 1;
-	    }
-	  }
-	
-	   print "[".$com."]\n\n";
-	   print "[".@files.":".@prefiles.":".$jobsubmit."]\n";
       
-	   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-	       #print $job."\n";   
-	   `$job`;
-	   print "THERE\n";
-	  
-	}
+      $str_file="-1 ".$files[1]." -2 ".$files[2];
+
+      if ($str_file=~/\.gz$/)
+      {
+       $com="zcat ".$files[1]." > $outdir/$libname.1.fastq;";
+       $com.="zcat ".$files[2]." > $outdir/$libname.2.fastq;";
+       $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
+      }
+      $com.="$bowtiecmd --un-conc $outdir/$libname.notR -x $ribosomeInd $str_file --al-conc $outdir/$libname.yesR  >  /dev/null \n";
+      
+      if ((-s $files[1])==0)
+      {
+        print "ERROR:Please check the file:".$files[2].", and try again!!!\n";
+        exit 1;
+      }
      }
+     if ($ribosomeInd!~/^$/)
+     {
+       print "===[".$com."]\n\n";
+       if(((scalar(@files)-2)+scalar(@prefiles))>2 && $jobsubmit!~/^$/)
+       {
+         my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+         print $job."\n";   
+         `$job`;
+	 print "THERE\n";
+       }
+       else
+       {
+	 #print "HERE\n";
+         `$com`;
+       }
+     }
+     else
+     {
+        print "Without ribo";
+       if (scalar(@files)>2)
+       {
+        `cp $files[1] $outdir/$libname\.1.notR`;
+        `cp $files[2] $outdir/$libname\.2.notR`;  
+       }
+       else
+       {
+        `cp $files[1] $outdir/$libname.notR`;
+       }
+      }
+    }
   }
 }
 
@@ -135,19 +173,28 @@ sub mapMultipleFiles
     for (my $i=0; $i<@f1; $i++)
     {
 	my $str_file="";
+        my $com="";
 	if (defined $f1[$i])
         {
 	  $str_file=$f1[$i]; 
+          $com="zcat ".$f1[$i]." > $outdir/${libname}_".($i+1).".fastq;";
+          $str_file="$outdir/${libname}_".($i+1).".fastq";
 	  if (defined $f2[$i])
 	  {
 	    $str_file="-1 ".$f1[$i]." -2 ".$f2[$i];
+            if ($str_file=~/\.gz$/)
+            {
+              $com="zcat ".$f1[$i]." > $outdir/${libname}_".($i+1).".1.fastq;";
+              $com.="zcat ".$f2[$i]." > $outdir/${libname}_".($i+1).".2.fastq;";
+              $str_file= "-1  $outdir/${libname}_".($i+1).".1.fastq -2  $outdir/${libname}_".($i+1).".2.fastq";
+            }
 	  }
 	  if (!(-s "$outdir/${libname}_".($i+1).".notR"))
 	  {
-	    my $com="$bowtiecmd --un-conc $outdir/${libname}_".($i+1).".notR -x $ribosomeInd $str_file --al-conc $outdir/${libname}_".($i+1).".yesR  >  $outdir/${libname}_".($i+1).".mapped";
+	    my $com="$bowtiecmd --un-conc $outdir/${libname}_".($i+1).".notR -x $ribosomeInd $str_file --al-conc $outdir/${libname}_".($i+1).".yesR  > /dev/null";
 	    my $job=$jobsubmit." -n ".$servicename."_".$libname."_".($i+1)." -c \"$com\"";
             print $job."\n";   
-            `$job`;
+            #`$job`;
 	  }
 	}
     }

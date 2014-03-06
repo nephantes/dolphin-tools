@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       macs14.pl
+#                                       mergeMapping_wrapper.pl
 #########################################################################################
-#                    This program runs MACS software to call peaks for the mapped reads.
+#                    This program starts merging for mapped Bowtie output
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
@@ -13,45 +13,28 @@ use Getopt::Long;
 use File::Basename;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'macsoutdir=s'       => \$outdir,
-	'outdirbowtie=s'       => \$indir,
-	'acommand=s'       => \$command,
-	'input=s'       => \$input,
-	'jobsubmit=s'    => \$jobsubmit,
-	'servicename=s'  => \$servicename,
-) or die("Unrecognized optioins for MACS\n"); 
-################### MAIN PROGRAM ####################
-if (! -e "$outdir")
+	'command=s'       => \$command,
+	'mappedout=s'       => \$mappedout,
+ 	'filext=s'       => \$filext, 
+ 	'outdir=s'       => \$outdir,
+     	'input=s'       => \$input,
+	'toolssam=s'	=>\$toolssam,
+        'jobsubmit=s'    => \$jobsubmit,
+        'servicename=s'  => \$servicename,
+) or die("Fastq_split step got unrecognized options.\n");
+######################################### MAIN PROGRAM ##################################
+$input=~s/\,/\:/g;
+@v=split/\:/,$input;
+@v = grep { ! $seen{$_} ++ } @v;
+for($i=0;$i<@v;$i++) 
 {
- $res=`mkdir -p $outdir`;
+ ($filename, $directories, $suffix) = fileparse($v[$i]);
+ $com="$command -i $mappedout -f $filext -o $outdir -n $filename -p \'$toolssam\';\n";
+ $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
+ $res=`$job`;
  if($res != 0)
  {
-  print STDERR "Failed to create output folder for MACS output\n";
-  exit(1);
- }
-}
-@prefiles=split(/:/,$input);
-for($i=0;$i<@prefiles;$i++) 
-{
- @file=split(/,/,$prefiles[$i]);
- if (@file eq 2)
- {
-  ($filename1)  = fileparse($file[0]);
-  ($filename2)  = fileparse($file[1]);
-  $com="$command -t $indir/$filename1.sorted.sam -c $indir/$filename2.sorted.sam --name=$outdir/$filename1.vs.$filename2\n";
-  $a="$filename1.$filename2";
-  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
-  print $job."\n";
-  if($res != 0)
-  {
-   print STDERR "Failed to submit MACS for $filename1 vs $filename2\n";
-   exit(1);
-  } 
- }
- else
- {
-  print STDERR "Failed to parse your filenames for MACS, check that they are in pairs and nothing else is there";
+  print STDERR "Failed to submit file merging job for $filename\n";
   exit(1);
  }
 }
@@ -60,7 +43,7 @@ __END__
 
 =head1 NAME
 
-macs14.pl
+mergeMapping_wrapper.pl
 
 =head1 LICENSE AND COPYING
 

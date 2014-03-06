@@ -88,11 +88,11 @@ for(my $i=0;$i<@prefiles;$i++)
       my $com="";
       if (@files==3)
       {
-        $com="/share/bin/python $execdir/subSampler.py $str_file $outd/lib.$libname.$n.$subsamplesize.fastq $subsamplesize";
+        $com="module load python/2.7.5;python $execdir/subSampler.py $str_file $outd/lib.$libname.$n.$subsamplesize.fastq $subsamplesize";
       }
       elsif (@files==4)
       {
-	$com="/share/bin/python $execdir/subSampler.py $str_file $files[3] $outd/lib.$libname.$n.$subsamplesize.R1.fastq $outd/lib.$libname.$n.$subsamplesize.R2.fastq $subsamplesize";
+	$com="module load python/2.7.5;python $execdir/subSamplerPaired.py $str_file $files[3] $outd/lib.$libname.$n.$subsamplesize.R1.fastq $outd/lib.$libname.$n.$subsamplesize.R2.fastq $subsamplesize";
       }
       my $job=$jobsubmit." -n $servicename.$libname.$n.$subsamplesize -c \"$com\"";
       print $job."\n";   

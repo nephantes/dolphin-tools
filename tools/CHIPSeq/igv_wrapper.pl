@@ -1,112 +1,50 @@
 #!/usr/bin/env perl
-
 #########################################################################################
 #                                       igv_wrapper.pl
 #########################################################################################
-# 
-#  This program runs IGV converter for each output file.
-#
+#                    This program runs IGV converter for each output file
 #########################################################################################
 # AUTHORS:
-#
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
-# 
 #########################################################################################
-
-
-############## LIBRARIES AND PRAGMAS ################
-
- use List::Util qw[min max];
- use strict;
- use File::Basename;
- use Getopt::Long;
- use Pod::Usage; 
- 
-#################### VARIABLES ######################
- my $outdir           = "";
- my $input           = "";
- my $command           = "";
- my $samtools          = "";
- my $perlscript          = "";
- my $servicename      = "";
- my $fastagenome        = "";
-
- my $jobsubmit        = "";
- my $help             = "";
- my $print_version    = "";
- my $version          = "1.0.0";
-
-################### PARAMETER PARSING ####################
-
+####################################### LIBRARIES AND PRAGMAS ###########################
+use Getopt::Long;
+use File::Basename;
+####################################### PARAMETER PARSUING ##############################
 GetOptions( 
 	'outdir=s'            => \$outdir,
 	'input=s'             => \$input,
-	'command=s'           => \$command,
 	'samtools=s'          => \$samtools,
 	'perlscript=s'        => \$perlscript,
 	'nameservice=s'       => \$servicename,
 	'fastagenome=s'       => \$fastagenome,
-
+        'mtools=s'       => \$mtools,
         'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
-) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
-
-if($help){
-    pod2usage( {
-		'-verbose' => 2, 
-		'-exitval' => 1,
-	} );
-}
-
-if($print_version){
-  print "Version ".$version."\n";
-  exit;
-}
-
-#pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtie2Ind eq "") or ($outdir eq "") or ($tophatCmd eq "") );	
-
- 
-################### MAIN PROGRAM ####################
-#    
-
+) or die("Unrecognized optioins.\n");
+######################################### MAIN PROGRAM ##################################
 $input=~s/\,/\:/g;
-my @files=split(/:/,$input);
-my %seen=();
+@files=split(/:/,$input);
 @files = grep { ! $seen{$_} ++ } @files;  
-
-
-for(my $i=0;$i<@files;$i++) 
+for($i=0;$i<@files;$i++) 
 {
-   my($filename, $directories, $suffix) = fileparse($files[$i]);
-   my $com="$command $perlscript -i $outdir/$filename.sorted -o $outdir -f $fastagenome -s $samtools\n";
-   my $a="$filename";
-   my $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  `$job`;
+ ($filename, $directories, $suffix) = fileparse($files[$i]);
+ $com="$perlscript -i $outdir/$filename.sorted -o $outdir -f $fastagenome -s \'$samtools\' -m \'$mtools\'\n";
+ $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
+ $res=`$job`;
+ if($res != 0)
+ {
+  print STDERR "Failed to run IGV conversion for $filename\n";
+  exit(1);
+ } 
 }
-
 
 __END__
-
 
 =head1 NAME
 
 igv_wrapper.pl
 
-=head1 SYNOPSIS  
-
-igv_wrapper.pl 
-
-This script is intended to be called from workflow only.
-
-=head1 AUTHORS
-
- Hennady Shulha, PhD 
-
- Alper Kucukural, PhD
-
- 
 =head1 LICENSE AND COPYING
 
  This program is free software; you can redistribute it and / or modify
@@ -122,6 +60,3 @@ This script is intended to be called from workflow only.
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
-
-

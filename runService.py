@@ -8,6 +8,7 @@ from os import path, access, R_OK
 import re
 #import random 
 import string
+import subprocess
 
 def RemoveComments(text):
   return text.split("#", 1)[0]
@@ -73,13 +74,20 @@ def main():
     OUTDIR      = options.outdir
    
     edir        = "/project/umw_biocore/bin/workflow"
-    python      = "module load python/2.7.5; python ";
-   
+    python      = "python ";
+    
+    com="module list 2>&1 |grep python"
+    pythonload=str(os.popen(com).readline().rstrip())
+    if (len(pythonload)<5):
+       com      = "module load python/2.7.5";
+       pythonload=str(os.popen(com).readline().rstrip())
+
     if (DBHOSTNAME == None):
         DBHOSTNAME="galaxy.umassmed.edu"
     if (USERNAME==None):
         USERNAME=getpass.getuser()
 
+    OUTDIR = OUTDIR.replace("@USERNAME", USERNAME)
     os.system("mkdir -p " + OUTDIR + "/scripts")
    
     bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
@@ -137,8 +145,18 @@ def main():
     os.system("chmod +x " + bash_script_file)
    
     command = python+" " + edir  + "/scripts/submitJobs.py -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    print command 
+    ## PUT TRY CATCH HERE
+    child = os.popen(command)
     
-    os.system(command)
+    data = child.read()
+    err = child.close()
+    #print "\n\nDATA"+str(data)
+    #print "\n\nERR"+str(err)
 
+    if err:
+	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)
+    return data
+    
 if __name__ == "__main__":
     main()

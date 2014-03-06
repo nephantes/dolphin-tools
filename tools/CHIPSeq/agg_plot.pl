@@ -1,115 +1,68 @@
 #!/usr/bin/env perl
-
 #########################################################################################
 #                                       agg_plot.pl
 #########################################################################################
-# 
-#  This program perform ACT aggregation for the mapped tags
-#
+#                    This program perform ACT aggregation for the mapped tags
 #########################################################################################
 # AUTHORS:
-#
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
-# 
 #########################################################################################
-
-
-############## LIBRARIES AND PRAGMAS ################
-
- use List::Util qw[min max];
- use strict;
- use File::Basename;
- use Getopt::Long;
- use Pod::Usage; 
- 
-#################### VARIABLES ######################
- my $path             = "";
- my $genome           = "";
- my $reference        = "";
- my $outdir           = "";
- my $indir            = "";
- my $input            = "";
- my $jobsubmit        = "";
- my $servicename      = "";
- my $help             = "";
- my $print_version    = "";
- my $version          = "1.0.0";
-
-################### PARAMETER PARSING ####################
-
+####################################### LIBRARIES AND PRAGMAS ###########################
+use Getopt::Long;
+use File::Basename;
+####################################### PARAMETER PARSUING ##############################
 GetOptions(
-	'path=s'         => \$path,
+	'program=s'         => \$program,
 	'genome=s'       => \$genome, #(hg19.chromInfo)
- 	'reference=s'    => \$reference, #(refseq4col)
+	'reference=s'    => \$reference, #(refseq4col)
  	'outdir=s'       => \$indir,
-     	'input=s'        => \$input,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-	'help'           => \$help, 
-	'version'        => \$print_version,
-) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
-
-if($help){
-    pod2usage( {
-		'-verbose' => 2, 
-		'-exitval' => 1,
-	} );
-}
-
-if($print_version){
-  print "Version ".$version."\n";
-  exit;
-}
-
-#pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtie2Ind eq "") or ($outdir eq "") or ($tophatCmd eq "") );	
-
- 
+ 	'bedtoolsgencov=s'       => \$bedtoolsgencov,
+ 	'creation=s'       => \$creationpdf,
+	'input=s'        => \$input,
+	'jobsubmit=s'    => \$jobsubmit,
+	'servicename=s'  => \$servicename,
+) or die("Unrecognized optioins for ACT aggregator.\n");
 ################### MAIN PROGRAM ####################
-#    
 $outdir="$indir/aggregationout";
-mkdir $outdir if (! -e $outdir);
-
-my @prefiles=split(/:/,$input);
-  
-for(my $i=0;$i<@prefiles;$i++) 
+if (! -e "$outdir")
 {
-  my @file=split(/,/,$prefiles[$i]);
-  if (@file eq 2)
-  {
-   my($filename)  = fileparse($file[0]);
-   #my $com="$path/samtools sort $indir/$filename.bam $outdir/$filename.sorted;\n"; 
-   my $com="module load bedtools/2.17.0;genomeCoverageBed -bga -ibam $indir/$filename.sorted.bam -g $genome > $outdir/$filename.bed;\n";
-   $com.="awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$filename.bed > $outdir/$filename.sig;\n";
-   $com.="python $path/ACT/ACT.py --nbins=50 --mbins=50 --radius=5000 --region $reference $outdir/$filename.sig > $outdir/$filename.aggregation_plot.out;\n";
-   $com.="R --file=$path/ACT/intopdf.R --args $outdir/$filename.aggregation_plot.out;\n";
-   my $a="$filename.aggregation";
-   my $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-   `$job`;
-  }
+ $res=`mkdir -p $outdir`;
+ if($res != 0)
+ {
+  print STDERR "Failed to create output folder for aggregation plot output\n";
+  exit(1);
+ }
 }
-
+@prefiles=split(/:/,$input);
+for($i=0;$i<@prefiles;$i++) 
+{
+ @file=split(/,/,$prefiles[$i]);
+ if (@file eq 2)
+ {
+  ($filename)  = fileparse($file[0]);
+  $com="$bedtoolsgencov -bga -ibam $indir/$filename.sorted.bam -g $genome > $outdir/$filename.bed;\n";
+  $com.="awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$filename.bed > $outdir/$filename.sig;\n";
+  $com.="python $program --nbins=50 --mbins=50 --radius=5000 --region $reference $outdir/$filename.sig > $outdir/$filename.aggregation_plot.out;\n";
+  $com.="$creationpdf --args $outdir/$filename.aggregation_plot.out;\n";
+  $a="$filename.agg";
+  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
+  $res=`$job`;
+  print $job."\n";
+  if($res != 0)
+  {
+   print STDERR "Failed to submit aggregation plot program\n";
+   exit(1);
+  } 
+ }
+}
 
 __END__
-
 
 =head1 NAME
 
 agg_plot.pl
 
-=head1 SYNOPSIS  
-
-agg_plot.pl 
-
-Intended to run ONLY from workflows
-
-=head1 AUTHORS
-
- Hennady Shulha, PhD 
-
- Alper Kucukural, PhD
-
- 
 =head1 LICENSE AND COPYING
 
  This program is free software; you can redistribute it and / or modify
@@ -125,4 +78,3 @@ Intended to run ONLY from workflows
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-

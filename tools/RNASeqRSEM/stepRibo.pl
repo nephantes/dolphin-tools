@@ -77,81 +77,83 @@ mkdir $outdir if (! -e $outdir);
 
 my @prefiles=split(/:/,$input);
   
-for(my $i=0;$i<@prefiles;$i++) 
+for(my $i=0;$i<scalar(@prefiles);$i++) 
 {
-  my @files=split(/,/,$prefiles[$i]);
-  if (@files>=3)
+   my @files=split(/[,\s\t]+/,$prefiles[$i]);
+  
+  if (scalar(@files)>=2) 
   {
-    my $libname=$files[1];
-    my $str_file=$files[2];
+    my $libname=$files[0];
+    my $str_file="";
     my $com="";
-    if ($str_file=~/\.gz$/)
-    {
-       $com="zcat $str_file > $outdir/$libname.fastq;";
-       $str_file= "$outdir/$libname.fastq";
+    if (scalar(@files)==2) {
+       $str_file=$files[1];  
+       if ($str_file=~/\.gz$/)
+       {
+         $com="zcat $str_file > $outdir/$libname.fastq;";
+         $str_file= "$outdir/$libname.fastq";
+       }
+       $com.="$bowtiecmd --un $outdir/$libname.notR -x $ribosomeInd $str_file --al $outdir/$libname.yesR  >  /dev/null\n";
     }
-    $com.="$bowtiecmd --un $outdir/$libname.notR -x $ribosomeInd $str_file --al $outdir/$libname.yesR  >  /dev/null\n";
-      
     
-    if ((-s $files[2])==0 && $files[2]!~/\*/)
+    if ((-s $files[1])==0 && $files[1]!~/\*/)
     {
-        print "ERROR:Please check the file:".$files[2].", and try again!!!\n";
+        print "ERROR:Please check the file:".$files[1].", and try again!!!\n";
         exit 1;
    
     }
         
-    if ($files[2]=~/\*/) {
+    if ($files[1]=~/\*/) {
 	mapMultipleFiles(\@files, $jobsubmit, $servicename, $bowtiecmd, $ribosomeInd, $outdir);
     }
     else
     {
-     if (@files==4)
+     if (scalar(@files)==3)
      {
       
-      $str_file="-1 ".$files[2]." -2 ".$files[3];
-      my $com="";
+      $str_file="-1 ".$files[1]." -2 ".$files[2];
+
       if ($str_file=~/\.gz$/)
       {
-       $com="zcat ".$files[2]." > $outdir/$libname.1.fastq;";
-       $com.="zcat ".$files[3]." > $outdir/$libname.2.fastq;";
+       $com="zcat ".$files[1]." > $outdir/$libname.1.fastq;";
+       $com.="zcat ".$files[2]." > $outdir/$libname.2.fastq;";
        $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
       }
       $com.="$bowtiecmd --un-conc $outdir/$libname.notR -x $ribosomeInd $str_file --al-conc $outdir/$libname.yesR  >  /dev/null \n";
       
-      if ((-s $files[2])==0)
+      if ((-s $files[1])==0)
       {
-        print "ERROR:Please check the file:".$files[3].", and try again!!!\n";
+        print "ERROR:Please check the file:".$files[2].", and try again!!!\n";
         exit 1;
       }
      }
-  
      if ($ribosomeInd!~/^$/)
      {
-        print "[".$com."]\n\n";
-       print "[".@files.":".@prefiles.":".$jobsubmit."]\n";
-       if(((@files-2)+@prefiles)>2 && $jobsubmit!~/^$/)
+       print "===[".$com."]\n\n";
+       if(((scalar(@files)-2)+scalar(@prefiles))>2 && $jobsubmit!~/^$/)
        {
          my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-         #print $job."\n";   
+         print $job."\n";   
          `$job`;
 	 print "THERE\n";
        }
        else
        {
-	print "HERE\n";
+	 #print "HERE\n";
          `$com`;
        }
      }
      else
      {
-       if (@files>1)
+        print "Without ribo";
+       if (scalar(@files)>2)
        {
-        `cp $files[0] $outdir/$libname\_1.notR`;
-        `cp $files[1] $outdir/$libname\_2.notR`;  
+        `cp $files[1] $outdir/$libname\.1.notR`;
+        `cp $files[2] $outdir/$libname\.2.notR`;  
        }
        else
-       { 
-        `cp $files[0] $outdir/$libname.notR`;
+       {
+        `cp $files[1] $outdir/$libname.notR`;
        }
       }
     }
@@ -192,7 +194,7 @@ sub mapMultipleFiles
 	    my $com="$bowtiecmd --un-conc $outdir/${libname}_".($i+1).".notR -x $ribosomeInd $str_file --al-conc $outdir/${libname}_".($i+1).".yesR  > /dev/null";
 	    my $job=$jobsubmit." -n ".$servicename."_".$libname."_".($i+1)." -c \"$com\"";
             print $job."\n";   
-            `$job`;
+            #`$job`;
 	  }
 	}
     }

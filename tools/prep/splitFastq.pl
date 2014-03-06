@@ -1,4 +1,4 @@
-#!/share/bin/perl -w
+#!/usr/bin/env perl
 # dataprep.pl
 #    VERSION: Version 1 (31 August 2011)
 #    AUTHOR: Alper Kucukural
@@ -41,14 +41,6 @@ while(scalar @ARGV > 0){
     elsif($next_arg eq "-n"){ $num = shift(@ARGV); }
 }
 
- $inputfile=~s/\,/\:/g;
- my @v=split/\:/,$inputfile;
- my %seen=();
- @v = grep { ! $seen{$_} ++ } @v;
-`mkdir -p $outdir`;
-for (my $i1=0;$i1<=$#v;$i1++)
-{
- my $inputfile=$v[$i1];
  my @v1=split/\./,$inputfile;
  my $inputfile1=$inputfile;
  if($v1[$#v1] eq "z" || $v1[$#v1] eq "gz")
@@ -79,4 +71,3 @@ for (my $i1=0;$i1<=$#v;$i1++)
  }
  
  close IN;
-}

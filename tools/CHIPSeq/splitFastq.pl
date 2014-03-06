@@ -1,54 +1,67 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       fastqc_wrapper.pl
+#                                       splitFastq.pl
 #########################################################################################
-#                          This program runs FASQC for each fastq file.
+#                          This program doess fastq splitting for each fastq file.
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 #########################################################################################
-##################################### LIBRARIES AND PRAGMAS #############################
+####################################### LIBRARIES AND PRAGMAS ###########################
+use File::Basename;
 use Getopt::Long;
-######################################## PARAMETER PARSING ##############################
+################### PARAMETER PARSUING ####################
 GetOptions( 
 	'outdir=s'            => \$outdir,
-	'input=s'             => \$input,
-	'command=s'           => \$command,
-	'servicename=s'       => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-) or die("FastQC step got unrecognized options.\n");
+	'input=s'             => \$inputfile,
+	'numberlines=s'           => \$num,
+) or die("Fastq splitting step got unrecognized options.\n");
 ########################################## MAIN PROGRAM ##################################
-if (! -e "$outdir/fastqc")
+@v1=split/\./,$inputfile;
+$inputfile1=$inputfile;
+if($v1[$#v1] eq "z" || $v1[$#v1] eq "gz")
 {
- $res=`mkdir -p $outdir/fastqc`;
+ ($filename, $directories, $suffix) = fileparse($inputfile1);
+ $inputfile1="$outdir/$filename.unz";
+ $res=`gunzip -c -d $inputfile > $inputfile1`;
  if($res != 0)
  {
-  print STDERR "Failed to create output folder for FastQC\n";
+  print STDERR "Failed to unzip your initial file\n";
   exit(1);
  }
 }
-$input=~s/\,/\:/g;
-@files=split(/:/,$input);
-@files = grep { ! $seen{$_} ++ } @files;  
-for($i=0;$i<@files;$i++) 
-{
- $com="$command $files[$i] -o $outdir/fastqc\n";
- $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
- $res=`$job`;
- print $job."\n";
- if($res != 0)
+print $inputfile1."\n";
+open IN, "$inputfile1";
+$i=0;
+$j=1;
+while(<IN>)
+{ 
+ if (($i % $num)==0)
  {
-  print STDERR "Failed to submit FastQC job for $files[$i]\n";
-  exit(1);
+  if ($i>0)
+  {
+   close OUT;
+  }
+  ($filename, $directories, $suffix) = fileparse($inputfile);
+  $name="$outdir/$filename.$j";
+  open OUT, ">$name";
+  $j++;
  }
+ print OUT; 
+ $i++;
+}
+close IN;
+if($v1[$#v1] eq "z" || $v1[$#v1] eq "gz")
+{
+ `rm $inputfile1`;
 }
 
 __END__
 
 =head1 NAME
 
-fastqc_wrapper.pl
+splitFastq.pl
 
 =head1 LICENSE AND COPYING
 
@@ -65,3 +78,4 @@ fastqc_wrapper.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
+

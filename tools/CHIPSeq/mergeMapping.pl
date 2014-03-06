@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       macs14.pl
+#                                       mergeMapping.pl
 #########################################################################################
-#                    This program runs MACS software to call peaks for the mapped reads.
+#                    This program does merging and sorting output of Bowtie
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
@@ -10,57 +10,47 @@
 #########################################################################################
 ####################################### LIBRARIES AND PRAGMAS ###########################
 use Getopt::Long;
-use File::Basename;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'macsoutdir=s'       => \$outdir,
-	'outdirbowtie=s'       => \$indir,
-	'acommand=s'       => \$command,
-	'input=s'       => \$input,
-	'jobsubmit=s'    => \$jobsubmit,
-	'servicename=s'  => \$servicename,
-) or die("Unrecognized optioins for MACS\n"); 
-################### MAIN PROGRAM ####################
-if (! -e "$outdir")
+	'outdir=s'            => \$outdir,
+	'input=s'             => \$inputdir,
+	'program=s'           => \$program,
+	'fileext=s'           => \$file_ext,
+	'name=s'		=> \$name,
+) or die("Fastq_split step got unrecognized options.\n");
+######################################### MAIN PROGRAM ##################################
+$a=`ls $inputdir/$name.*.$file_ext|wc -l|awk '{print $1}'`;
+if($a == 1)
 {
- $res=`mkdir -p $outdir`;
+ `cp $inputdir/$name.*.$file_ext $outdir/$name.tmp.bam`;
+}
+else
+{
+ $res=`$program merge $outdir/$name.tmp.bam $inputdir/$name.*.$file_ext -f`;
  if($res != 0)
  {
-  print STDERR "Failed to create output folder for MACS output\n";
+  print STDERR "Failed to merge files related to $name\n";
   exit(1);
  }
 }
-@prefiles=split(/:/,$input);
-for($i=0;$i<@prefiles;$i++) 
+$res=`$program sort $outdir/$name.tmp.bam $outdir/$name.sorted`;
+if($res != 0)
 {
- @file=split(/,/,$prefiles[$i]);
- if (@file eq 2)
- {
-  ($filename1)  = fileparse($file[0]);
-  ($filename2)  = fileparse($file[1]);
-  $com="$command -t $indir/$filename1.sorted.sam -c $indir/$filename2.sorted.sam --name=$outdir/$filename1.vs.$filename2\n";
-  $a="$filename1.$filename2";
-  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
-  print $job."\n";
-  if($res != 0)
-  {
-   print STDERR "Failed to submit MACS for $filename1 vs $filename2\n";
-   exit(1);
-  } 
- }
- else
- {
-  print STDERR "Failed to parse your filenames for MACS, check that they are in pairs and nothing else is there";
-  exit(1);
- }
+ print STDERR "Failed to sort merged file related to $name\n";
+ exit(1);
+}
+$res=`$program view -h $outdir/$name.sorted.bam > $outdir/$name.sorted.sam`;
+if($res != 0)
+{
+ print STDERR "Failed to create sam from sorted bam for $name\n";
+ exit(1);
 }
 
 __END__
 
 =head1 NAME
 
-macs14.pl
+mergeMapping.pl
 
 =head1 LICENSE AND COPYING
 

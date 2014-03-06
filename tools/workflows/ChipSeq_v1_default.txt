@@ -1,55 +1,60 @@
 #General
-@PYTHON           = /usr/bin/python
-@PERL             = /usr/bin/perl
-@BIN              = /project/umw_biocore/bin
 @TOOLSDIR         = @BIN/workflow/scripts/tools
-@GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
-@JOB              = "@PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR"
-@LDPATH           = "module load gcc/4.8.1"
+@GENOMEDB         = @DATASETS/@GENOME/@VERSION
+@JOB              = "python @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR"
+@LDPATH           = module load gcc/4.8.1
 
-#For running fastQC and spliting the fastq file 
 #stepFASTQC
-@RUNFASTQC   = @TOOLSDIR/prep/runFastQC.bash
+@RUNFASTQC   = "module load fastqc/0.10.1;fastqc"
+@FASTQCWRAPPER   = perl @TOOLSDIR/CHIPSeq/fastqc_wrapper.pl
+@FASTQCUNITER = perl @TOOLSDIR/CHIPSeq/stepAfterFastQC.pl
 
 #stepSplit Fastq
-@NUMBER      = 2000
-@SPLITFASTQ  = @PERL @TOOLSDIR/prep/splitFastq.pl
-@FASTQCWRAPPER       = @PERL @TOOLSDIR/CHIPSeq/fastqc_wrapper.pl
+#@NUMBER          = 2000
+@SPLITFASTQ      = perl @TOOLSDIR/CHIPSeq/splitFastq_wrapper.pl
+@SPLITFASTQPROG  = "perl @TOOLSDIR/CHIPSeq/splitFastq.pl"
 
 #stepMapping
-#@MAPPINGTYPE   = bwa
 @MAPPINGTYPE   = bowtie
-@RUNMAPPING    = @TOOLSDIR/align/runMapping.bash
-#@MAPPINGPARAMS = "-n 2 /isilon_temp/garber/genome_data/@GENOME/@VERSION/@VERSION.fa"
+@MAPCOMMAND    = "module load bowtie/1.0.0;bowtie"
+@FORMATCOMMAND = "module load samtools/0.0.19;samtools"
+@RUNMAPPING    = perl @TOOLSDIR/CHIPSeq/mapping.pl
 @GENINDEX      = @GENOMEDB/@VERSION
 @MAPPINGPARAMS = "-p 8 -v @BOWMISM -a --strata --best -m 1 --sam -q" 
 @INPUTFASTQDIR = @OUTDIR/files
 @MAPPINGOUTDIR = @OUTDIR/mappings
-@STEPMAPPARAM  = @MAPPINGTYPE @MAPPINGPARAMS @INPUTFASTQDIR @MAPPINGOUTDIR @GENINDEX
+@STEPMAPPARAM  = -b @MAPPINGTYPE -p @MAPPINGPARAMS -i @INPUTFASTQDIR -o @MAPPINGOUTDIR -g @GENINDEX -m @MAPCOMMAND -f @FORMATCOMMAND
 
 #Step Merge Mapping
 @FILE_EXT         = sorted.bam
-@RUNMERGEMAPPING  = @TOOLSDIR/align/mergeMapping.bash
-@PERLMERGE        = @PERL @TOOLSDIR/CHIPSeq/merge_output.pl
+@RUNMERGEMAPPING  = "perl @TOOLSDIR/CHIPSeq/mergeMapping.pl"
+@PERLMERGE        = perl @TOOLSDIR/CHIPSeq/mergeMapping_wrapper.pl
 
 #StepIGVTDF
-@RUNIGVTDF        = @TOOLSDIR/convert/stepIGVTDF.pl
+@RUNIGVTDF        = "perl @TOOLSDIR/CHIPSeq/IGVTDF.pl"
 @GENOMEFASTA      = @GENOMEDB/@VERSION.fa
-@SAMTOOLS         = @BIN/samtools
-@IGVWRAPPER       = @PERL @TOOLSDIR/CHIPSeq/igv_wrapper.pl
+@IGVWRAPPER       = perl @TOOLSDIR/CHIPSeq/igv_wrapper.pl
+@IGVTOOLS         = "module load igvtools/2.3.25;@BIN/igvtools.sh"
 
 #Step Convert BW
 @GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
-@RUNBAM2BW        = "@LDPATH;@TOOLSDIR/convert/bam2wig.bash"
-@RUNBAM2BWWRAPPER = @PERL @TOOLSDIR/CHIPSeq/bam2bw_wrapper.pl
+@RUNBAM2BW        = "perl @TOOLSDIR/CHIPSeq/bam2wig.pl"
+@RUNBAM2BWWRAPPER = perl @TOOLSDIR/CHIPSeq/bam2bw_wrapper.pl
+@BTOOLSGENCOV    = "module load bedtools/2.17.0;genomeCoverageBed"
+@UCSCTOOLSWIG2BWIG    = "module load ucsc_cmdline_util/12_16_2013;wigToBigWig"
+@PUBLICFOLDER    = /home/@USERNAME/galaxy/pub
+@COREBROWSERUCSC = http://biocore.umassmed.edu/cgi-bin
+@HTTPPUBLICFOLDER = http://biocore.umassmed.edu/galaxy/@USERNAME/@NAME
 
 #Step MACS
-@RUNMACS = @PERL @TOOLSDIR/CHIPSeq/macs14.pl
+@RUNMACS = perl @TOOLSDIR/CHIPSeq/macs14.pl
 @MACSOUTDIR = @OUTDIR/macsout
 @MACSmodule = module load macs/1.4.2
 @MACSCMD = "@MACSmodule;macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
 
 #RunAggregation
-@RUNAGGREGATION  = @LDPATH;@PERL @TOOLSDIR/CHIPSeq/agg_plot.pl
+@RUNAGGREGATION  = @LDPATH;perl @TOOLSDIR/CHIPSeq/agg_plot.pl
 @REFACT          = @GENOMEDB/refACT.tab
+@INTOPDF         = "module load R/3.0.1;R --file=@BIN/ACT/intopdf.R"
+@ACT             = @BIN/ACT/ACT.py
 

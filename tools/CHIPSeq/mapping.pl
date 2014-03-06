@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       macs14.pl
+#                                       mapping.pl
 #########################################################################################
-#                    This program runs MACS software to call peaks for the mapped reads.
+#                    This program does Bowtie1 mapping, conversion into BAM
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
@@ -10,57 +10,54 @@
 #########################################################################################
 ####################################### LIBRARIES AND PRAGMAS ###########################
 use Getopt::Long;
-use File::Basename;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'macsoutdir=s'       => \$outdir,
-	'outdirbowtie=s'       => \$indir,
-	'acommand=s'       => \$command,
-	'input=s'       => \$input,
+	'outdir=s'            => \$outdir,
+	'input=s'             => \$inputdir,
+	'program=s'           => \$param,
+	'bowtie=s'           => \$bowtie,
+	'mapcommand=s'	=> \$mapper,
+	'formatcommand=s'	=> \$formatter,
+	'geneindex=s'           => \$geneindex,
+	'servicename=s'       => \$servicename,
 	'jobsubmit=s'    => \$jobsubmit,
-	'servicename=s'  => \$servicename,
-) or die("Unrecognized optioins for MACS\n"); 
-################### MAIN PROGRAM ####################
+) or die("Fastq_split step got unrecognized options.\n");
+######################################### MAIN PROGRAM ##################################
 if (! -e "$outdir")
 {
  $res=`mkdir -p $outdir`;
  if($res != 0)
  {
-  print STDERR "Failed to create output folder for MACS output\n";
+  print STDERR "Failed to create output folder for Bowtie mapped files\n";
   exit(1);
  }
 }
-@prefiles=split(/:/,$input);
-for($i=0;$i<@prefiles;$i++) 
+opendir $dir, "$inputdir" or die "Cannot open directory with files for mapping!";
+@files = readdir $dir;
+closedir $dir;
+foreach $e(@files)
 {
- @file=split(/,/,$prefiles[$i]);
- if (@file eq 2)
- {
-  ($filename1)  = fileparse($file[0]);
-  ($filename2)  = fileparse($file[1]);
-  $com="$command -t $indir/$filename1.sorted.sam -c $indir/$filename2.sorted.sam --name=$outdir/$filename1.vs.$filename2\n";
-  $a="$filename1.$filename2";
-  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
-  print $job."\n";
-  if($res != 0)
+  next if ($e =~ m/^\./);
+  $fastq="$inputdir/$e";
+  if($bowtie eq "bowtie")
   {
-   print STDERR "Failed to submit MACS for $filename1 vs $filename2\n";
-   exit(1);
-  } 
- }
- else
- {
-  print STDERR "Failed to parse your filenames for MACS, check that they are in pairs and nothing else is there";
-  exit(1);
- }
+   $com="$mapper $param $geneindex $fastq | awk \'\{if(\\\$4 != 0) print(\\\$0)\}\' > $outdir/$e.sam\; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam\; $formatter sort $outdir/$e.bam $outdir/$e.sorted";
+   $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
+   $res=`$job`;
+   print $job."\n";
+   if($res != 0)
+   {
+    print STDERR "Failed to submit mapping for $e\n";
+    exit(1);
+   }   
+  }
 }
 
 __END__
 
 =head1 NAME
 
-macs14.pl
+mapping.pl
 
 =head1 LICENSE AND COPYING
 

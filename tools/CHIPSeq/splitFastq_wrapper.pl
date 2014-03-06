@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       macs14.pl
+#                                       splitFastq_wrapper.pl
 #########################################################################################
-#                    This program runs MACS software to call peaks for the mapped reads.
+#                          This program runs fastq_splitter for each fastq file.
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
@@ -10,48 +10,38 @@
 #########################################################################################
 ####################################### LIBRARIES AND PRAGMAS ###########################
 use Getopt::Long;
-use File::Basename;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'macsoutdir=s'       => \$outdir,
-	'outdirbowtie=s'       => \$indir,
-	'acommand=s'       => \$command,
-	'input=s'       => \$input,
+	'outdir=s'            => \$outdir,
+	'input=s'             => \$inputfile,
+	'program=s'           => \$prog,
+	'numberlines=s'           => \$num,
+	'servicename=s'       => \$servicename,
 	'jobsubmit=s'    => \$jobsubmit,
-	'servicename=s'  => \$servicename,
-) or die("Unrecognized optioins for MACS\n"); 
-################### MAIN PROGRAM ####################
+) or die("Fastq_split step got unrecognized options.\n");
+######################################### MAIN PROGRAM ##################################
+$inputfile=~s/\,/\:/g;
+@v=split/\:/,$inputfile;
+@v = grep { ! $seen{$_} ++ } @v;
 if (! -e "$outdir")
 {
  $res=`mkdir -p $outdir`;
  if($res != 0)
  {
-  print STDERR "Failed to create output folder for MACS output\n";
+  print STDERR "Failed to create output folder for splitted fastq files\n";
   exit(1);
  }
 }
-@prefiles=split(/:/,$input);
-for($i=0;$i<@prefiles;$i++) 
+for ($i1=0;$i1<=$#v;$i1++)
 {
- @file=split(/,/,$prefiles[$i]);
- if (@file eq 2)
+ $inputfile=$v[$i1];
+ $com="$prog -i $inputfile -o $outdir -n $num";
+ $job=$jobsubmit." -n ".$servicename."_".($i1+1)." -c \"$com\"";
+ $res=`$job`;
+ print $job."\n";
+ if($res != 0)
  {
-  ($filename1)  = fileparse($file[0]);
-  ($filename2)  = fileparse($file[1]);
-  $com="$command -t $indir/$filename1.sorted.sam -c $indir/$filename2.sorted.sam --name=$outdir/$filename1.vs.$filename2\n";
-  $a="$filename1.$filename2";
-  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
-  print $job."\n";
-  if($res != 0)
-  {
-   print STDERR "Failed to submit MACS for $filename1 vs $filename2\n";
-   exit(1);
-  } 
- }
- else
- {
-  print STDERR "Failed to parse your filenames for MACS, check that they are in pairs and nothing else is there";
+  print STDERR "Failed to submit Fastq split job for $inputfile\n";
   exit(1);
  }
 }
@@ -60,7 +50,7 @@ __END__
 
 =head1 NAME
 
-macs14.pl
+splitFastq_wrapper.pl
 
 =head1 LICENSE AND COPYING
 

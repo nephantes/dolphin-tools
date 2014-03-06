@@ -1,13 +1,12 @@
 #General parameters
-@PERL             = /share/bin/perl
-@PYTHON           = /share/bin/python
-@BIN              = /isilon_temp/garber/bin
+@PERL             = module load perl/5.18.1; perl
+@PYTHON           = module load python/2.7.5; python 
+@BIN              = /project/umw_biocore/bin
 @TOOLSDIR         = @BIN/workflow/scripts/tools
 @CPU              = 8 
-@GENOMEDB         = /isilon_temp/garber/genome_data/@GENOME/@VERSION
+@GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @JOB              = "@PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR -p @CPU"
-@PATH             = export PATH=\$PATH:/isilon_temp/garber/bin/bowtie2-2.1.0/:/isilon_temp/garber/bin
-@LDPATH           = export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/share/bin/gcc/lib64 
+
 @EXECDIR          = @TOOLSDIR/RNASeqSubSampler
 
 #StepSubSampler
@@ -19,15 +18,12 @@
 @BOWTIE2CMD       = @BIN/bowtie2-2.1.0/bowtie2
 
 #StepRSEM
-@RUNRSEM          = @LDPATH;@PERL @EXECDIR/stepRSEM.pl
-@RSEMCMD          = "@LDPATH;@PERL @BIN/RSEM/rsem-calculate-expression"
+@RUNRSEM          = @PERL @EXECDIR/stepRSEM.pl
+@RSEMCMD          = "@PERL @BIN/RSEM/rsem-calculate-expression"
 @BOWTIEPATH       = @BIN/bowtie-0.12.9
 @RSEMREF          = @GENOMEDB/rsem_ref
 
 #StepRSEMCount
 @RUNRSEMCOUNT     = @PERL @EXECDIR/stepRSEMcount.pl
-
-
-
 
 

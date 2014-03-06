@@ -1,54 +1,39 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       fastqc_wrapper.pl
+#                                       stepIGVTDF.pl
 #########################################################################################
-#                          This program runs FASQC for each fastq file.
+#                    This program converts bam files for IGV visualization.
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 #########################################################################################
-##################################### LIBRARIES AND PRAGMAS #############################
+####################################### LIBRARIES AND PRAGMAS ###########################
 use Getopt::Long;
-######################################## PARAMETER PARSING ##############################
+####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'outdir=s'            => \$outdir,
-	'input=s'             => \$input,
-	'command=s'           => \$command,
-	'servicename=s'       => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-) or die("FastQC step got unrecognized options.\n");
-########################################## MAIN PROGRAM ##################################
-if (! -e "$outdir/fastqc")
+	'input=s'        => \$input,
+	'outdir=s'       => \$outdir,
+        'samtools=s'     => \$samtools,
+        'fastagenome=s'  => \$genome,
+        'mtools=s'       => \$mtools,
+) or die("Unrecognized optioins.\n");
+######################################### MAIN PROGRAM ##################################
+$com = "$samtools index $input.bam $input.bam.bai;\n";
+$com.="cd $outdir; $mtools count -w 5 $input.bam $input.tdf $genome\n"; 
+print $com;
+$res=`$com`; 
+if($res != 0)
 {
- $res=`mkdir -p $outdir/fastqc`;
- if($res != 0)
- {
-  print STDERR "Failed to create output folder for FastQC\n";
-  exit(1);
- }
-}
-$input=~s/\,/\:/g;
-@files=split(/:/,$input);
-@files = grep { ! $seen{$_} ++ } @files;  
-for($i=0;$i<@files;$i++) 
-{
- $com="$command $files[$i] -o $outdir/fastqc\n";
- $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
- $res=`$job`;
- print $job."\n";
- if($res != 0)
- {
-  print STDERR "Failed to submit FastQC job for $files[$i]\n";
-  exit(1);
- }
+ print STDERR "Failed to submit IGV conversion for $input\n";
+ exit(1);
 }
 
 __END__
 
 =head1 NAME
 
-fastqc_wrapper.pl
+stepIGVTDF.pl
 
 =head1 LICENSE AND COPYING
 
