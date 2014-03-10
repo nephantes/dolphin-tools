@@ -30,6 +30,7 @@
  my $username         = "";
  my $outdir           = "";
  my $output           = "";
+ my $outputhtml       = "";
  my $build            = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -47,6 +48,7 @@ GetOptions(
 	'username=s'     => \$username,
 	'build=s'        => \$build,
         'putout=s'       => \$output,
+        'indexhtml=s'    => \$outputhtml,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genomesize=s'   => \$genomesize,
@@ -73,10 +75,12 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 #   converts the mapped reads for IGV visualization
 
 my $indir   = "$outdir/rsem";
-#my $uoutpath="/isilon_temp/garber/genomeBrowser/$username";
+my $name=basename($outdir);
+my $uoutpath="~/galaxy/pub/$name";
 `cp $outdir/rsem/genes_expression_expected_count.csv $output`;
  
 `mkdir -p $outdir/ucsc`;
+`mkdir -p $uoutpath/ucsc`;
 
 print "$indir/*/*.genes.sorted.bam\n";
 my @files = <$indir/*/*.genome.sorted.bam>;
@@ -93,18 +97,21 @@ foreach my $d (@files){
  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
  $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
 
- #$com.="mkdir -p $uoutpath/ucsc;\n";
+ if (-e "~/galaxy/pub")
+ {
+   $com.="mkdir -p $uoutpath/ucsc;\n";
 
- #$com.="cp $outputbw $uoutpath/ucsc/.\n";
- #$com.="cp $d $uoutpath/ucsc/$libname.bam;\n";
- #$com.="cp $d.bai $uoutpath/ucsc/$libname.bam.bai;\n";
- #$com.="cp $outputbg $uoutpath/ucsc/.;\n";
- #$com.="cp $outdir/tdf $uoutpath/. -R;\n";
- #$com.="cp $outdir/fastqc $uoutpath/. -R;\n";
+   $com.="cp $outputbw $uoutpath/ucsc/.\n";
+   $com.="cp $d $uoutpath/ucsc/$libname.bam;\n";
+   $com.="cp $d.bai $uoutpath/ucsc/$libname.bam.bai;\n";
+   $com.="cp $outputbg $uoutpath/ucsc/.;\n";
+   $com.="cp $outdir/tdf $uoutpath/. -R;\n";
+   $com.="cp $outdir/fastqc $uoutpath/. -R;\n";
+ }
 
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20bigWig%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bw\">";
+ print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20bigWig%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bw\">";
  print OUT "$libname bigWig </a><br><br>";
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20bam%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bam\">";
+ print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20bam%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bam\">";
  print OUT "$libname bam </a><br><br>";
   
  if(@files>1 && $jobsubmit!~/^$/)
@@ -120,6 +127,8 @@ foreach my $d (@files){
 }
 
 close(OUT);
+`cp $outdir/ucsc/index.html $uoutpath/.`;
+`cp $outdir/ucsc/index.html $outputhtml`;
 #`cp $outdir/ucsc/index.html $uoutpath/.`;
 
 __END__

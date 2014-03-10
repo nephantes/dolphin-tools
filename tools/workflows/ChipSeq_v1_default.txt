@@ -37,7 +37,7 @@
 @IGVTOOLS         = "module load igvtools/2.3.25;@BIN/igvtools.sh"
 
 #Step Convert BW
-@GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
+@GENOMESIZE       = @GENOMEDB/@VERSION.fa.fai
 @RUNBAM2BW        = "perl @TOOLSDIR/CHIPSeq/bam2wig.pl"
 @RUNBAM2BWWRAPPER = perl @TOOLSDIR/CHIPSeq/bam2bw_wrapper.pl
 @BTOOLSGENCOV    = "module load bedtools/2.17.0;genomeCoverageBed"

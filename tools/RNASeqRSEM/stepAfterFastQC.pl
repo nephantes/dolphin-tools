@@ -1,10 +1,11 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       macs14.pl
+#                                       stepAfterFastQC.pl
 #########################################################################################
 # 
-#  This program runs MACS software to call peaks for the mapped reads.
+#  This program runs FastQC analysis, combines FastQC output.
+#
 #
 #########################################################################################
 # AUTHORS:
@@ -24,25 +25,16 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $outdir           = "";
- my $indir           = "";
- my $input           = "";
- my $command           = "";
- my $jobsubmit        = "";
- my $servicename      = "";
+ my $outd             = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
+ ################### PARAMETER PARSING ####################
 
-################### PARAMETER PARSING ####################
+my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'macsoutdir=s'       => \$outdir,
-	'outdirbowtie=s'       => \$indir,
-	'acommand=s'       => \$command,
-	'input=s'       => \$input,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
+	'outdir=s'       => \$outd,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -59,43 +51,52 @@ if($print_version){
   exit;
 }
 
-#pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtie2Ind eq "") or ($outdir eq "") or ($tophatCmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outd eq "") );	
 
- 
 ################### MAIN PROGRAM ####################
-#    
+#    combines FastQC output
 
-mkdir $outdir if (! -e $outdir);
 
-my @prefiles=split(/:/,$input);
-  
-for(my $i=0;$i<@prefiles;$i++) 
+my $outdir   = "$outd/fastqc";
+my $uniteddir = "$outdir/UNITED";
+my $filesdir="$outdir/UNITED/files";
+
+`mkdir -p $uniteddir`;
+`mkdir -p $filesdir`;
+
+open outPBQ, ">$uniteddir/per_base_quality.html";
+print outPBQ "\<body\>\n";
+open outPSQ, ">$uniteddir/per_sequence_quality.html";
+print outPSQ "\<body\>\n";
+open outPBSC, ">$uniteddir/per_base_sequence_content.html";
+print outPBSC "\<body\>\n";
+opendir(my $dir, $outdir);
+my @files = readdir($dir);
+
+my @dirs = grep {/\_fastqc$/} @files;
+foreach my $e(@files)
 {
-  my @file=split(/,/,$prefiles[$i]);
-  if (@file eq 2)
-  {
-   my($filename1)  = fileparse($file[0]);
-   my($filename2)  = fileparse($file[1]);
-   my $com="$command -t $indir/$filename1.bam -c $indir/$filename2.bam --name=$outdir/$filename1.vs.$filename2\n";
-   my $a="$filename1.$filename2";
-   my $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  `$job`;
-  }
+ if(!(($e eq ".")||($e eq "..")||($e eq "UNITED")) )
+ {
+  `cp $outdir/$e/*/Images/per_base_quality.png $filesdir/pbq_$e.png`;
+  `cp $outdir/$e/*/Images/per_sequence_quality.png $filesdir/psq_$e.png`;
+  `cp $outdir/$e/*/Images/per_base_sequence_content.png $filesdir/pbsc_$e.png`;
+  print outPBQ "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/pbq_$e.png\"\>\<\/p\>\n\<\/div\>";
+  print outPSQ "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/psq_$e.png\"\>\<\/p\>\n\<\/div\>";
+  print outPBSC "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/pbsc_$e.png\"\>\<\/p\>\n\<\/div\>";
+ }
 }
 
+print outPBQ "\</body\>\n";
+print outPSQ "\</body\>\n";
+print outPBSC "\</body\>\n";
 
 __END__
 
 
 =head1 NAME
 
-macs14.pl
-
-=head1 SYNOPSIS  
-
-macs14.pl 
-
-This script is intended to be called from workflow only.
+stepAfterFastQC.pl
 
 =head1 AUTHORS
 
@@ -103,7 +104,6 @@ This script is intended to be called from workflow only.
 
  Alper Kucukural, PhD
 
- 
 =head1 LICENSE AND COPYING
 
  This program is free software; you can redistribute it and / or modify
@@ -119,6 +119,8 @@ This script is intended to be called from workflow only.
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
+
+
 
 
 

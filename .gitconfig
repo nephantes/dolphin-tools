@@ -1,0 +1,2 @@
+export http_proxy=http://dcproxy.umassmed.edu:3128
+export https_proxy=http://dcproxy.umassmed.edu:3128

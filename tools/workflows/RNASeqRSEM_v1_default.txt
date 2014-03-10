@@ -7,6 +7,10 @@
 @GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @JOB              = "@PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR -p @CPU"
 
+#StepFastQC
+@RUNFASTQC        = module load fastqc/0.10.1;@TOOLSDIR/RNASeqRSEM/stepFastQC.pl
+@RUNFASTQCMERGE   = @TOOLSDIR/RNASeqRSEM/stepAfterFastQC.pl
+
 #StepRibo
 @RUNRIBO          = @PERL @TOOLSDIR/RNASeqRSEM/stepRibo.pl
 @RIBOINDEX        = @GENOMEDB/ribosomal_RNA #Required
@@ -25,6 +29,7 @@
 @RUNIGVTDF        = @PERL @TOOLSDIR/RNASeqRSEM/stepIGVTDF.pl
 @GENOMEFASTA      = @GENOMEDB/@VERSION.fa #Required
 @SAMTOOLS         = @BIN/samtools 
+@IGVTOOLS         = @BIN/igvtools.sh
 
 #Step Convert BW
 @GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes

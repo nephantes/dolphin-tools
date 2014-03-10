@@ -74,16 +74,16 @@ $outdir  = "$outdir/tophat";
 mkdir $outdir if (! -e $outdir);
 
 opendir D, $indir or die "Could not open $indir\n";
-my @files = grep /1.notR$/, readdir(D);
+my @files = grep /\.1\.notR$/, readdir(D);
 closedir D;
 if (@files>0)
 {
   foreach my $e(@files){
     my $sec=$e;
-    $sec=~s/1\./2\./;
+    $sec=~s/\.1\.notR/\.2\.notR/;
     my $str_files ="$indir/$e $indir/$sec";
     #print "$str_files\n";
-    $e =~ s/_1.notR//;
+    $e =~ s/\.1\.notR//;
     
     my $ucsc=$gtf;
     $ucsc=~s/\.gtf/\.fa/;

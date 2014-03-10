@@ -143,7 +143,7 @@ def main():
      #f.write("NODE:"+ str(nodename) + " part[0]:" + part[0] + "\n")
      #CHANGE this submition script according to the system.
      #PUT TRY CATCH HERE 
-     command="bsub -m blades -c 6 -W 1000 -R \"rusage[mem=32024]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
+     command="bsub -m blades -c 4 -W 1000 -R \"rusage[mem=32024]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
      #print command
      #f.write("SUBMIT SCRIPT[" + command +"]\n\n")
      #while True:

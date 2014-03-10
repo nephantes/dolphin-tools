@@ -45,6 +45,34 @@ if($res != 0)
  print STDERR "Failed to create sam from sorted bam for $name\n";
  exit(1);
 }
+if(! -e "$outdir/mapstat")
+{
+ open out, ">$outdir/mapstat" or die ("Failed to create a file for mapping statistics\n");
+ print out "Filename\tTotal\tAligned\tFailed\tMultimappers\n";
+ close out;
+}
+opendir $dir, "$inputdir" or die "Cannot open directory with mapped files!";
+@files = readdir $dir;
+closedir $dir;
+foreach $e(@files)
+{
+  if (($e =~ /^$name/)&&($e =~ /mapstat$/))
+  {
+   open in, $e or die ("Failed to read mapping statistics $e\n");
+   @v=split/\s/,<in>;
+   $tot+=$v[3];
+   @v=split/\s/,<in>;
+   $mapped+=$v[8];
+   @v=split/\s/,<in>;
+   $failed+=$v[6];
+   @v=split/\s/,<in>;
+   $multiple+=$v[8];
+   close in;
+  } 
+}
+open out, ">>$outdir/mapstat" or die ("Failed to write into a file for mapping statistics\n");
+print out "$name\t$tot\t$mapped\t$failed\t$multiple\n";
+close out;
 
 __END__
 

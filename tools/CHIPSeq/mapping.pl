@@ -41,7 +41,7 @@ foreach $e(@files)
   $fastq="$inputdir/$e";
   if($bowtie eq "bowtie")
   {
-   $com="$mapper $param $geneindex $fastq | awk \'\{if(\\\$4 != 0) print(\\\$0)\}\' > $outdir/$e.sam\; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam\; $formatter sort $outdir/$e.bam $outdir/$e.sorted";
+   $com="$mapper $param $geneindex $fastq 2>$outdir/$e.mapstat | awk \'\{if(\\\$4 != 0) print(\\\$0)\}\' > $outdir/$e.sam\; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam\; $formatter sort $outdir/$e.bam $outdir/$e.sorted";
    $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
    $res=`$job`;
    print $job."\n";
