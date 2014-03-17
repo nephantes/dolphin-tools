@@ -26,21 +26,21 @@ if($a == 1)
 }
 else
 {
- $res=`$program merge $outdir/$name.tmp.bam $inputdir/$name.*.$file_ext -f`;
- if($res != 0)
+ `$program merge $outdir/$name.tmp.bam $inputdir/$name.*.$file_ext -f`;
+ if($? != 0)
  {
   print STDERR "Failed to merge files related to $name\n";
   exit(1);
  }
 }
-$res=`$program sort $outdir/$name.tmp.bam $outdir/$name.sorted`;
-if($res != 0)
+`$program sort $outdir/$name.tmp.bam $outdir/$name.sorted`;
+if($? != 0)
 {
  print STDERR "Failed to sort merged file related to $name\n";
  exit(1);
 }
-$res=`$program view -h $outdir/$name.sorted.bam > $outdir/$name.sorted.sam`;
-if($res != 0)
+`$program view -h $outdir/$name.sorted.bam > $outdir/$name.sorted.sam`;
+if($? != 0)
 {
  print STDERR "Failed to create sam from sorted bam for $name\n";
  exit(1);
@@ -58,7 +58,7 @@ foreach $e(@files)
 {
   if (($e =~ /^$name/)&&($e =~ /mapstat$/))
   {
-   open in, $e or die ("Failed to read mapping statistics $e\n");
+   open in, "$inputdir/$e" or die ("Failed to read mapping statistics $e\n");
    @v=split/\s/,<in>;
    $tot+=$v[3];
    @v=split/\s/,<in>;

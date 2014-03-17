@@ -22,8 +22,8 @@ GetOptions(
 $com = "$samtools index $input.bam $input.bam.bai;\n";
 $com.="cd $outdir; $mtools count -w 5 $input.bam $input.tdf $genome\n"; 
 print $com;
-$res=`$com`; 
-if($res != 0)
+`$com`; 
+if($? != 0)
 {
  print STDERR "Failed to submit IGV conversion for $input\n";
  exit(1);

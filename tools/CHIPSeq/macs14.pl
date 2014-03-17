@@ -23,8 +23,8 @@ GetOptions(
 ################### MAIN PROGRAM ####################
 if (! -e "$outdir")
 {
- $res=`mkdir -p $outdir`;
- if($res != 0)
+ `mkdir -p $outdir`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for MACS output\n";
   exit(1);
@@ -41,13 +41,13 @@ for($i=0;$i<@prefiles;$i++)
   $com="$command -t $indir/$filename1.sorted.sam -c $indir/$filename2.sorted.sam --name=$outdir/$filename1.vs.$filename2\n";
   $a="$filename1.$filename2";
   $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
-  print $job."\n";
-  if($res != 0)
+  `$job`;
+  if($? != 0)
   {
    print STDERR "Failed to submit MACS for $filename1 vs $filename2\n";
    exit(1);
   } 
+  print $job."\n";
  }
  else
  {

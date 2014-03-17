@@ -21,8 +21,8 @@ GetOptions(
 ########################################## MAIN PROGRAM ##################################
 if (! -e "$outdir/fastqc")
 {
- $res=`mkdir -p $outdir/fastqc`;
- if($res != 0)
+ `mkdir -p $outdir/fastqc`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for FastQC\n";
   exit(1);
@@ -35,13 +35,13 @@ for($i=0;$i<@files;$i++)
 {
  $com="$command $files[$i] -o $outdir/fastqc\n";
  $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
- $res=`$job`;
- print $job."\n";
- if($res != 0)
+ `$job`;
+ if($? != 0)
  {
   print STDERR "Failed to submit FastQC job for $files[$i]\n";
   exit(1);
  }
+ print $job."\n";
 }
 
 __END__

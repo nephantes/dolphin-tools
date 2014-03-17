@@ -90,30 +90,25 @@ foreach my $d (@files){
   print $d."\n";
 
   my $libname=basename($d, ".genome.sorted.bam");
-  
   my $outputbg="$outdir/ucsc/$libname.bg";
   my $outputbw="$outdir/ucsc/$libname.bw";
 
  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
  $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
 
- if (-e "~/galaxy/pub")
- {
-   $com.="mkdir -p $uoutpath/ucsc;\n";
+ #if (-e "~/galaxy/pub")
+ #{
+   $com.="cp -rf $outputbw $uoutpath/ucsc/.;\n";
+   $com.="rm -rf $outputbg;\n";
+ #}
 
-   $com.="cp $outputbw $uoutpath/ucsc/.\n";
-   $com.="cp $d $uoutpath/ucsc/$libname.bam;\n";
-   $com.="cp $d.bai $uoutpath/ucsc/$libname.bam.bai;\n";
-   $com.="cp $outputbg $uoutpath/ucsc/.;\n";
-   $com.="cp $outdir/tdf $uoutpath/. -R;\n";
-   $com.="cp $outdir/fastqc $uoutpath/. -R;\n";
- }
-
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20bigWig%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bw\">";
- print OUT "$libname bigWig </a><br><br>";
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20bam%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bam\">";
- print OUT "$libname bam </a><br><br>";
-  
+ my $content="<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20$libname%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bw\">";
+ $content.="$libname bigWig </a><br><br>\n";
+ $libname=~s/rsem\.out\.//gi; 
+ $content.= "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20$libname%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/tdf/$libname.bam\">";
+ $content.="$libname bam </a><br><br>\n";
+ print OUT $content; 
+ print $content; 
  if(@files>1 && $jobsubmit!~/^$/)
  { 
     my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
@@ -127,8 +122,10 @@ foreach my $d (@files){
 }
 
 close(OUT);
-`cp $outdir/ucsc/index.html $uoutpath/.`;
-`cp $outdir/ucsc/index.html $outputhtml`;
+`cp -rf $outdir/ucsc/index.html $uoutpath/.`;
+`cp -rf $outdir/ucsc/index.html $outputhtml`;
+`cp -rf $outdir/tdf $uoutpath/.`;
+`cp -rf $outdir/fastqc $uoutpath/.`;
 #`cp $outdir/ucsc/index.html $uoutpath/.`;
 
 __END__

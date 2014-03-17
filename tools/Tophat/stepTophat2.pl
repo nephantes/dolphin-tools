@@ -28,6 +28,7 @@
  my $outdir           = "";
  my $bowtie2Ind       = "";
  my $tophatCmd        = "";
+ my $params           = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -41,6 +42,7 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'outdir=s'       => \$outdir,
         'tophatCmd=s'    => \$tophatCmd,
+        'params=s'       => \$params,
         'bowtie2Ind=s'   => \$bowtie2Ind,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
@@ -98,7 +100,8 @@ if (@files>0)
        #my $outdir1=$outdir."_2";
        #`mkdir -p $outdir1`;
        #print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
-       my $com="$tophatCmd -p 8 -g 15 -r 300 -N 2 --no-coverage-search --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n"; 
+       if($params eq "NONE"){$params="";}else{$params="-g 15 -r 300 -N 2 --no-coverage-search"}
+       my $com="$tophatCmd -p 8 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n"; 
        if(@files>1)
        {
          my $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";

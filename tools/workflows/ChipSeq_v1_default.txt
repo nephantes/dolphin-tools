@@ -5,6 +5,9 @@
 @LDPATH           = module load gcc/4.8.1
 
 #stepFASTQC
+@RERUNPL   = perl @TOOLSDIR/CHIPSeq/rerun.pl
+
+#stepFASTQC
 @RUNFASTQC   = "module load fastqc/0.10.1;fastqc"
 @FASTQCWRAPPER   = perl @TOOLSDIR/CHIPSeq/fastqc_wrapper.pl
 @FASTQCUNITER = perl @TOOLSDIR/CHIPSeq/stepAfterFastQC.pl
@@ -20,7 +23,7 @@
 @FORMATCOMMAND = "module load samtools/0.0.19;samtools"
 @RUNMAPPING    = perl @TOOLSDIR/CHIPSeq/mapping.pl
 @GENINDEX      = @GENOMEDB/@VERSION
-@MAPPINGPARAMS = "-p 8 -v @BOWMISM -a --strata --best -m 1 --sam -q" 
+@MAPPINGPARAMS = "-p 8 -v @BOWMISM -a --strata --best -m @MULTIMAP --sam -q" 
 @INPUTFASTQDIR = @OUTDIR/files
 @MAPPINGOUTDIR = @OUTDIR/mappings
 @STEPMAPPARAM  = -b @MAPPINGTYPE -p @MAPPINGPARAMS -i @INPUTFASTQDIR -o @MAPPINGOUTDIR -g @GENINDEX -m @MAPCOMMAND -f @FORMATCOMMAND
@@ -58,3 +61,5 @@
 @INTOPDF         = "module load R/3.0.1;R --file=@BIN/ACT/intopdf.R"
 @ACT             = @BIN/ACT/ACT.py
 
+#RunCleaningUp
+@RUNDELETER      = perl @TOOLSDIR/CHIPSeq/rundeleter.pl

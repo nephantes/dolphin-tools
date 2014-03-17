@@ -22,8 +22,8 @@ $uniteddir = "$outdir/UNITED";
 $filesdir="$outdir/UNITED/files";
 if (! -e "$filesdir")
 {
- $res=`mkdir -p $filesdir`;
- if($res != 0)
+ `mkdir -p $filesdir`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for united FastQC output\n";
   exit(1);
@@ -40,9 +40,12 @@ opendir($dir, $outdir);
 @dirs = grep {/\_fastqc$/} @files;
 foreach $e(@dirs)
 {
- $res+=`cp $outdir/$e/Images/per_base_quality.png $filesdir/pbq_$e.png`;
- $res+=`cp $outdir/$e/Images/per_sequence_quality.png $filesdir/psq_$e.png`;
- $res+=`cp $outdir/$e/Images/per_base_sequence_content.png $filesdir/pbsc_$e.png`;
+ `cp $outdir/$e/Images/per_base_quality.png $filesdir/pbq_$e.png`;
+ $res+=$?;
+ `cp $outdir/$e/Images/per_sequence_quality.png $filesdir/psq_$e.png`;
+ $res+=$?;
+ `cp $outdir/$e/Images/per_base_sequence_content.png $filesdir/pbsc_$e.png`;
+ $res+=$?;
  if($res != 0)
  {
   print STDERR "Failed to copy FastQC file into unionized location\n";

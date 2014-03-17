@@ -28,14 +28,14 @@ GetOptions(
 $inputbam="$outdir/$file.sorted.bam";
 $outputbg="$outdir/$file.bg";
 $outputbw="$outdir/$file.bw";
-$res=`$bedtoolsGenCovBed -split -bg -ibam $inputbam -g $genomesize > $outputbg`;
-if($res != 0)
+`$bedtoolsGenCovBed -split -bg -ibam $inputbam -g $genomesize > $outputbg`;
+if($? != 0)
 {
  print STDERR "Failed to create bedgraph for $file\n";
  exit(1);
 }
-$res=`$toolsucscWigToBigwig -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw`;
-if($res != 0)
+`$toolsucscWigToBigwig -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw`;
+if($? != 0)
 {
  print STDERR "Failed to create BigWig for $file\n";
  exit(1);
@@ -46,18 +46,24 @@ if (-e "$publicfolder")
 {
  if (! -e "$publicfolder/$libname")
  {
-  $res=`mkdir -p $publicfolder/$libname`;
+  `mkdir -p $publicfolder/$libname`;
+  if($? != 0)
+  {
+   print STDERR "Failed to create a folder inside of your public folder\n";
+   exit(1);
+  }
+  `cp $outdir/mapstat $publicfolder/$libname/.`;
  }
- if($res != 0)
- {
-  print STDERR "Failed to create a folder inside of your public folder\n";
-  exit(1);
- }
- $res+=`cp $outputbw $publicfolder/$libname/.`;
- $res+=`cp $inputbam $publicfolder/$libname/.`;
- $res+=`cp $inputbam.bai $publicfolder/$libname/.`;
- $res+=`cp $outdir/$file.sorted.tdf $publicfolder/$libname/.`;
- $res+=`cp $outdir/fastqc/UNITED $publicfolder/$libname/. -R`;
+ `cp $outputbw $publicfolder/$libname/.`;
+ $res+=$?;
+ `cp $inputbam $publicfolder/$libname/.`;
+ $res+=$?;
+ `cp $inputbam.bai $publicfolder/$libname/.`;
+ $res+=$?;
+ `cp $outdir/$file.sorted.tdf $publicfolder/$libname/.`;
+ $res+=$?;
+ `cp $outdir/fastqc/UNITED $publicfolder/$libname/. -R`;
+ $res+=$?;
  if($res != 0)
  {
   print STDERR "Failed to copy stuff into public folder for visualization on UCSC browser\n";

@@ -130,7 +130,7 @@ for(my $i=0;$i<scalar(@prefiles);$i++)
      if ($ribosomeInd!~/^$/)
      {
        print "===[".$com."]\n\n";
-       if(((scalar(@files)-2)+scalar(@prefiles))>2 && $jobsubmit!~/^$/)
+       if(((scalar(@files)-2)+scalar(@prefiles))>=2 && $jobsubmit!~/^$/)
        {
          my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
          print $job."\n";   

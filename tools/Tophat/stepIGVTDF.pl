@@ -27,6 +27,7 @@
  my $genome           = "";
  my $outdir           = "";
  my $samtools         = "";
+ my $igvtools         = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -39,6 +40,7 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'outdir=s'       => \$outdir,
         'samtools=s'     => \$samtools,
+        'igvtools=s'     => \$igvtools,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genome=s'       => \$genome,
@@ -78,7 +80,7 @@ foreach my $d (@files){
   my $com = "$samtools index $indir/$libname.sorted.bam $indir/$libname.sorted.bam.bai;\n";
   $com.="cp $indir/$libname.sorted.bam $outdir/$libname.bam;\n";
   $com.="cp $indir/$libname.sorted.bam.bai $outdir/$libname.bam.bai;\n";
-  $com.="cd $outdir; /scratch/shulhah/igvtools.sh count -w 5 $outdir/$libname.bam  $outdir/$libname.tdf $genome\n"; 
+  $com.="cd $outdir; $igvtools count -w 5 $outdir/$libname.bam  $outdir/$libname.tdf $genome\n"; 
   
   if(@files>1 && $jobsubmit!~/^$/)
   { 

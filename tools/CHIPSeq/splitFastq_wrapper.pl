@@ -25,8 +25,8 @@ $inputfile=~s/\,/\:/g;
 @v = grep { ! $seen{$_} ++ } @v;
 if (! -e "$outdir")
 {
- $res=`mkdir -p $outdir`;
- if($res != 0)
+ `mkdir -p $outdir`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for splitted fastq files\n";
   exit(1);
@@ -37,13 +37,13 @@ for ($i1=0;$i1<=$#v;$i1++)
  $inputfile=$v[$i1];
  $com="$prog -i $inputfile -o $outdir -n $num";
  $job=$jobsubmit." -n ".$servicename."_".($i1+1)." -c \"$com\"";
- $res=`$job`;
- print $job."\n";
- if($res != 0)
+ `$job`;
+ if($? != 0)
  {
   print STDERR "Failed to submit Fastq split job for $inputfile\n";
   exit(1);
  }
+ print $job."\n";
 }
 
 __END__

@@ -31,8 +31,8 @@ for($i=0;$i<@v;$i++)
  ($filename, $directories, $suffix) = fileparse($v[$i]);
  $com="$command -i $mappedout -f $filext -o $outdir -n $filename -p \'$toolssam\';\n";
  $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
- $res=`$job`;
- if($res != 0)
+ `$job`;
+ if($? != 0)
  {
   print STDERR "Failed to submit file merging job for $filename\n";
   exit(1);

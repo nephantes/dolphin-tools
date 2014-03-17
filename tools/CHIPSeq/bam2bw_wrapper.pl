@@ -36,13 +36,13 @@ for($i=0;$i<@files;$i++)
  @fullp=split/\//,$files[$i];
  $com="$command -o $outdir -f $fullp[$#fullp] -g $genomesize -u $username -v $wersion -l $libname -p $publicfolder -b \'$bedtoolsGenCovBed\' -t \'$toolsucscWigToBigwig\' -h \'$httppublicfolder\' -c \'$acorebrowserucsc\'\n";
  $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
- $res=`$job`;
- print $job."\n";
+ `$job`;
  if($res != 0)
  {
   print STDERR "Failed to submit BigWig creation wrapper for $fullp[$#fullp]\n";
   exit(1);
  } 
+ print $job."\n";
 }
 
 __END__

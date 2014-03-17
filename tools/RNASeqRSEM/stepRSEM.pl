@@ -124,7 +124,7 @@ else
 	#my $outdir1=$outdir."_1";
         #`mkdir -p $outdir1`;
 	#print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
-        my $com="mkdir -p $outdir/pipe.rsem.$e/;$rsemCmd --bowtie-path $bowtiepath -p 8 $params_rsem --output-genome-bam --calc-ci $str_files $rsemref $outdir/pipe.rsem.$e/rsem.out.$e\n"; 
+        my $com="mkdir -p $outdir/pipe.rsem.$e/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $str_files $rsemref $outdir/pipe.rsem.$e/rsem.out.$e\n"; 
         print "$com\n";
 	if(@files>1 && $jobsubmit!~/^$/)
         {

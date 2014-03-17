@@ -76,26 +76,26 @@ my @prefiles=split(/:/,$input);
 for(my $i=0;$i<@prefiles;$i++) 
 {
   my @files=split(/,/,$prefiles[$i]);
-  if (@files>=3)
+  if (@files>=2)
   {
-    my $libname=$files[1];
-    my $str_file=$files[2];
+    my $libname=$files[0];
+    my $str_file=$files[1];
     
     
-    if ((-s $files[2])==0 && $files[2]!~/\*/)
+    if ((-s $files[1])==0 && $files[1]!~/\*/)
     {
         print "ERROR:Please check the file:".$files[2].", and try again!!!\n";
         exit 1;
    
     }
         
-    if ($files[2]=~/\*/) {
+    if ($files[1]=~/\*/) {
 	mergeMultipleFiles(\@files, $jobsubmit, $servicename, $samtools, $outdir);
     }
     else
     {
 
-	my $fstr="$outdir/*\.".$libname.".*/accepted_hits.bam";
+	my $fstr="$outdir/pipe.tophat.$libname/accepted_hits.bam";
 
 	my $com="cp $fstr $outdir/$libname.sorted.bam";
 	my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
@@ -108,8 +108,8 @@ for(my $i=0;$i<@prefiles;$i++)
 sub mergeMultipleFiles
 {
     my ($files, $jobsubmit, $servicename, $samtools, $outdir) = @_;
-    my $libname=@{$files}[1];
-    my @f1=<${$files}[2]>;
+    my $libname=@{$files}[0];
+    my @f1=<${$files}[1]>;
     my $str_file ="";
     for (my $i=0; $i<@f1; $i++)
     {

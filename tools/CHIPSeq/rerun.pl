@@ -1,67 +1,40 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       splitFastq.pl
+#                                       rerun.pl
 #########################################################################################
-#                          This program doess fastq splitting for each fastq file.
+#        This program removes step-files to indicate from what step to rerun
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 #########################################################################################
-####################################### LIBRARIES AND PRAGMAS ###########################
-use File::Basename;
+##################################### LIBRARIES AND PRAGMAS #############################
 use Getopt::Long;
-################### PARAMETER PARSUING ####################
+######################################## PARAMETER PARSING ##############################
 GetOptions( 
 	'outdir=s'            => \$outdir,
-	'input=s'             => \$inputfile,
-	'numberlines=s'           => \$num,
-) or die("Fastq splitting step got unrecognized options.\n");
+	'rerun=s'           => \$rerun,
+	'servicename=s'       => \$servicename,
+	'jobsubmit=s'    => \$jobsubmit,
+) or die("Deleter step got unrecognized options.\n");
 ########################################## MAIN PROGRAM ##################################
-@v1=split/\./,$inputfile;
-$inputfile1=$inputfile;
-if($v1[$#v1] eq "z" || $v1[$#v1] eq "gz")
+if($rerun eq "0"){}
+elsif($rerun eq "1"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/igvConverter*;rm $outdir/tmp/track/StepMapping*;rm $outdir/tmp/track/stepMerge*;rm $outdir/tmp/track/stepSplitFastQ*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "2"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/igvConverter*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "3"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "4"){`rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "5"){`rm $outdir/tmp/track/submitAgg*;`}
+else
 {
- ($filename, $directories, $suffix) = fileparse($inputfile1);
- $inputfile1="$outdir/$filename.unz";
- `gunzip -c -d $inputfile > $inputfile1`;
- if($? != 0)
- {
-  print STDERR "Failed to unzip your initial file\n";
-  exit(1);
- }
-}
-print $inputfile1."\n";
-open IN, "$inputfile1";
-$i=0;
-$j=1;
-while(<IN>)
-{ 
- if (($i % $num)==0)
- {
-  if ($i>0)
-  {
-   close OUT;
-  }
-  ($filename, $directories, $suffix) = fileparse($inputfile);
-  $name="$outdir/$filename.$j";
-  open OUT, ">$name";
-  $j++;
- }
- print OUT; 
- $i++;
-}
-close IN;
-if($v1[$#v1] eq "z" || $v1[$#v1] eq "gz")
-{
- `rm $inputfile1`;
+ print STDERR "Weired input in Rerun field\n";
+ exit(1);
 }
 
 __END__
 
 =head1 NAME
 
-splitFastq.pl
+rerun.pl
 
 =head1 LICENSE AND COPYING
 
@@ -78,4 +51,3 @@ splitFastq.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-

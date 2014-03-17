@@ -25,8 +25,8 @@ GetOptions(
 ######################################### MAIN PROGRAM ##################################
 if (! -e "$outdir")
 {
- $res=`mkdir -p $outdir`;
- if($res != 0)
+ `mkdir -p $outdir`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for Bowtie mapped files\n";
   exit(1);
@@ -43,13 +43,13 @@ foreach $e(@files)
   {
    $com="$mapper $param $geneindex $fastq 2>$outdir/$e.mapstat | awk \'\{if(\\\$4 != 0) print(\\\$0)\}\' > $outdir/$e.sam\; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam\; $formatter sort $outdir/$e.bam $outdir/$e.sorted";
    $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
-   $res=`$job`;
-   print $job."\n";
-   if($res != 0)
+   `$job`;
+   if($? != 0)
    {
     print STDERR "Failed to submit mapping for $e\n";
     exit(1);
    }   
+   print $job."\n";
   }
 }
 

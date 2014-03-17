@@ -27,8 +27,8 @@ GetOptions(
 $outdir="$indir/aggregationout";
 if (! -e "$outdir")
 {
- $res=`mkdir -p $outdir`;
- if($res != 0)
+ `mkdir -p $outdir`;
+ if($? != 0)
  {
   print STDERR "Failed to create output folder for aggregation plot output\n";
   exit(1);
@@ -47,9 +47,9 @@ for($i=0;$i<@prefiles;$i++)
   $com.="$creationpdf --args $outdir/$filename.aggregation_plot.out;\n";
   $a="$filename.agg";
   $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  $res=`$job`;
+  `$job`;
   print $job."\n";
-  if($res != 0)
+  if($? != 0)
   {
    print STDERR "Failed to submit aggregation plot program\n";
    exit(1);

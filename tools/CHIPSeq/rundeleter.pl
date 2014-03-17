@@ -1,49 +1,41 @@
 #!/usr/bin/env perl
 #########################################################################################
-#                                       igv_wrapper.pl
+#                                       rundeleter.pl
 #########################################################################################
-#                    This program runs IGV converter for each output file
+#                          This program removes all large temporary files.
 #########################################################################################
 # AUTHORS:
 # Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 #########################################################################################
-####################################### LIBRARIES AND PRAGMAS ###########################
+##################################### LIBRARIES AND PRAGMAS #############################
 use Getopt::Long;
-use File::Basename;
-####################################### PARAMETER PARSUING ##############################
+######################################## PARAMETER PARSING ##############################
 GetOptions( 
 	'outdir=s'            => \$outdir,
-	'input=s'             => \$input,
-	'samtools=s'          => \$samtools,
-	'perlscript=s'        => \$perlscript,
-	'nameservice=s'       => \$servicename,
-	'fastagenome=s'       => \$fastagenome,
-        'mtools=s'       => \$mtools,
-        'jobsubmit=s'    => \$jobsubmit,
-) or die("Unrecognized optioins.\n");
-######################################### MAIN PROGRAM ##################################
-$input=~s/\,/\:/g;
-@files=split(/:/,$input);
-@files = grep { ! $seen{$_} ++ } @files;  
-for($i=0;$i<@files;$i++) 
+	'delete=s'           => \$delete,
+	'servicename=s'       => \$servicename,
+	'jobsubmit=s'    => \$jobsubmit,
+) or die("Deleter step got unrecognized options.\n");
+########################################## MAIN PROGRAM ##################################
+if($delete eq "1")
 {
- ($filename, $directories, $suffix) = fileparse($files[$i]);
- $com="$perlscript -i $outdir/$filename.sorted -o $outdir -f $fastagenome -s \'$samtools\' -m \'$mtools\'\n";
- $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
+ $com="rm $outdir/aggregationout/*bed; rm $outdir/aggregationout/*sig;rm -r $outdir/files; rm -r $outdir/mappings; \n";
+ $job=$jobsubmit." -n ".$servicename." -c \"$com\"";
  `$job`;
  if($? != 0)
  {
-  print STDERR "Failed to run IGV conversion for $filename\n";
+  print STDERR "Failed to submit deleting job\n";
   exit(1);
- } 
+ }
+ print $job."\n";
 }
 
 __END__
 
 =head1 NAME
 
-igv_wrapper.pl
+rundeleter.pl
 
 =head1 LICENSE AND COPYING
 
