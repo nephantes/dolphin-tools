@@ -19,14 +19,19 @@ GetOptions(
 ) or die("Deleter step got unrecognized options.\n");
 ########################################## MAIN PROGRAM ##################################
 if($rerun eq "0"){}
-elsif($rerun eq "1"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/igvConverter*;rm $outdir/tmp/track/StepMapping*;rm $outdir/tmp/track/stepMerge*;rm $outdir/tmp/track/stepSplitFastQ*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
-elsif($rerun eq "2"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/igvConverter*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
-elsif($rerun eq "3"){`rm $outdir/tmp/track/Bam2BW*;rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
-elsif($rerun eq "4"){`rm $outdir/tmp/track/submitAgg*;rm $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "1"){`rm $outdir/tmp/track/Bam2BW* $outdir/tmp/track/igvConverter* $outdir/tmp/track/StepMapping* $outdir/tmp/track/stepMerge* $outdir/tmp/track/stepSplitFastQ* $outdir/tmp/track/submitAgg* $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "2"){`rm $outdir/tmp/track/Bam2BW* $outdir/tmp/track/igvConverter* $outdir/tmp/track/submitAgg* $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "3"){`rm $outdir/tmp/track/Bam2BW* $outdir/tmp/track/submitAgg* $outdir/tmp/track/submitMacs*;`}
+elsif($rerun eq "4"){`rm $outdir/tmp/track/submitAgg* $outdir/tmp/track/submitMacs*;`}
 elsif($rerun eq "5"){`rm $outdir/tmp/track/submitAgg*;`}
 else
 {
  print STDERR "Weired input in Rerun field\n";
+ exit(1);
+}
+if($? != 0)
+{
+ print STDERR "Failed to initiate rerun. Check that the output folder still exists as well as double check that input is the same as before.\n";
  exit(1);
 }
 

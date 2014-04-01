@@ -21,7 +21,8 @@
 @MAPPINGTYPE   = bowtie
 @MAPCOMMAND    = "module load bowtie/1.0.0;bowtie"
 @FORMATCOMMAND = "module load samtools/0.0.19;samtools"
-@RUNMAPPING    = perl @TOOLSDIR/CHIPSeq/mapping.pl
+@RUNMAPPING    = perl @TOOLSDIR/CHIPSeq/mapping_wrapper.pl
+@MAPPINGPERL    = "perl @TOOLSDIR/CHIPSeq/mapping.pl"
 @GENINDEX      = @GENOMEDB/@VERSION
 @MAPPINGPARAMS = "-p 8 -v @BOWMISM -a --strata --best -m @MULTIMAP --sam -q" 
 @INPUTFASTQDIR = @OUTDIR/files
@@ -56,10 +57,11 @@
 @MACSCMD = "@MACSmodule;macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
 
 #RunAggregation
-@RUNAGGREGATION  = @LDPATH;perl @TOOLSDIR/CHIPSeq/agg_plot.pl
+@RUNAGGREGATION  = @LDPATH;perl @TOOLSDIR/CHIPSeq/agg_plot_wrapper.pl
 @REFACT          = @GENOMEDB/refACT.tab
 @INTOPDF         = "module load R/3.0.1;R --file=@BIN/ACT/intopdf.R"
 @ACT             = @BIN/ACT/ACT.py
+@AGGPLOTPL	     = "perl @TOOLSDIR/CHIPSeq/agg_plot.pl"
 
 #RunCleaningUp
 @RUNDELETER      = perl @TOOLSDIR/CHIPSeq/rundeleter.pl

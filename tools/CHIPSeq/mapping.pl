@@ -12,45 +12,38 @@
 use Getopt::Long;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions( 
-	'outdir=s'            => \$outdir,
-	'input=s'             => \$inputdir,
-	'program=s'           => \$param,
-	'bowtie=s'           => \$bowtie,
 	'mapcommand=s'	=> \$mapper,
-	'formatcommand=s'	=> \$formatter,
+	'program=s'           => \$param,
 	'geneindex=s'           => \$geneindex,
-	'servicename=s'       => \$servicename,
-	'jobsubmit=s'    => \$jobsubmit,
-) or die("Fastq_split step got unrecognized options.\n");
+	'fastq=s'            => \$fastq,
+	'e=s'            => \$e,
+	'outdir=s'            => \$outdir,
+	'rmatcommand=s'	=> \$formatter,
+) or die("Mapping step got unrecognized options.\n");
 ######################################### MAIN PROGRAM ##################################
-if (! -e "$outdir")
+`$mapper $param $geneindex $fastq $outdir/$e.temp 2>$outdir/$e.mapstat`;
+if($? != 0)
 {
- `mkdir -p $outdir`;
- if($? != 0)
- {
-  print STDERR "Failed to create output folder for Bowtie mapped files\n";
-  exit(1);
- }
+ print STDERR "Failed to do Bowtie mapping for $fastq\n";
+ exit(1);
 }
-opendir $dir, "$inputdir" or die "Cannot open directory with files for mapping!";
-@files = readdir $dir;
-closedir $dir;
-foreach $e(@files)
+`cat $outdir/$e.temp | awk \'\{if(\$4 != 0) print(\$0)\}\' > $outdir/$e.sam`;
+if($? != 0)
 {
-  next if ($e =~ m/^\./);
-  $fastq="$inputdir/$e";
-  if($bowtie eq "bowtie")
-  {
-   $com="$mapper $param $geneindex $fastq 2>$outdir/$e.mapstat | awk \'\{if(\\\$4 != 0) print(\\\$0)\}\' > $outdir/$e.sam\; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam\; $formatter sort $outdir/$e.bam $outdir/$e.sorted";
-   $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
-   `$job`;
-   if($? != 0)
-   {
-    print STDERR "Failed to submit mapping for $e\n";
-    exit(1);
-   }   
-   print $job."\n";
-  }
+ print STDERR "Failed to clean Bowtie mapped file for $fastq\n";
+ exit(1);
+}
+`rm $outdir/$e.temp; $formatter view -b -S $outdir/$e.sam > $outdir/$e.bam`; 
+if($? != 0)
+{
+ print STDERR "Failed to convert sam to bam for $e\n";
+ exit(1);
+}
+`$formatter sort $outdir/$e.bam $outdir/$e.sorted`;
+if($? != 0)
+{
+ print STDERR "Failed to sort bam for $e\n";
+ exit(1);
 }
 
 __END__

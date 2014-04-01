@@ -13,48 +13,39 @@ use Getopt::Long;
 use File::Basename;
 ####################################### PARAMETER PARSUING ##############################
 GetOptions(
-	'program=s'         => \$program,
-	'genome=s'       => \$genome, #(hg19.chromInfo)
-	'reference=s'    => \$reference, #(refseq4col)
- 	'outdir=s'       => \$indir,
  	'bedtoolsgencov=s'       => \$bedtoolsgencov,
- 	'creation=s'       => \$creationpdf,
-	'input=s'        => \$input,
-	'jobsubmit=s'    => \$jobsubmit,
-	'servicename=s'  => \$servicename,
+ 	'indir=s'       => \$indir,
+ 	'filename=s'       => \$filename,
+	'genome=s'       => \$genome, #(hg19.chromInfo)
+ 	'outdir=s'       => \$outdir,
+	'program=s'         => \$program,
+	'reference=s'    => \$reference, #(refseq4col)
+ 	'creationpdf=s'       => \$creationpdf,
 ) or die("Unrecognized optioins for ACT aggregator.\n");
 ################### MAIN PROGRAM ####################
-$outdir="$indir/aggregationout";
-if (! -e "$outdir")
+`$bedtoolsgencov -bga -ibam $indir/$filename.sorted.bam -g $genome > $outdir/$filename.bed`;
+if($? != 0)
 {
- `mkdir -p $outdir`;
- if($? != 0)
- {
-  print STDERR "Failed to create output folder for aggregation plot output\n";
-  exit(1);
- }
+ print STDERR "Failed to create a bedfile for ACT for $filename\n";
+ exit(1);
 }
-@prefiles=split(/:/,$input);
-for($i=0;$i<@prefiles;$i++) 
+`awk '{print \$1\"\\t\"\$2\"\\t\"\$4}' $outdir/$filename.bed > $outdir/$filename.sig`;
+if($? != 0)
 {
- @file=split(/,/,$prefiles[$i]);
- if (@file eq 2)
- {
-  ($filename)  = fileparse($file[0]);
-  $com="$bedtoolsgencov -bga -ibam $indir/$filename.sorted.bam -g $genome > $outdir/$filename.bed;\n";
-  $com.="awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$filename.bed > $outdir/$filename.sig;\n";
-  $com.="python $program --nbins=50 --mbins=50 --radius=5000 --region $reference $outdir/$filename.sig > $outdir/$filename.aggregation_plot.out;\n";
-  $com.="$creationpdf --args $outdir/$filename.aggregation_plot.out;\n";
-  $a="$filename.agg";
-  $job=$jobsubmit." -n ".$servicename."_".$a." -c \"$com\"";
-  `$job`;
-  print $job."\n";
-  if($? != 0)
-  {
-   print STDERR "Failed to submit aggregation plot program\n";
-   exit(1);
-  } 
- }
+ print STDERR "Failed to reformat a bedfile for ACT for $filename\n";
+ exit(1);
+}
+`python $program --nbins=50 --mbins=50 --radius=5000 --region $reference $outdir/$filename.sig > $outdir/$filename.aggregation_plot.out`;
+if($? != 0)
+{
+ print STDERR "Failed to run ACT for $filename\n";
+ exit(1);
+}
+`$creationpdf --args $outdir/$filename.aggregation_plot.out`;
+if($? != 0)
+{
+ print STDERR "Failed to create PDF after running ACT for $filename\n";
+ exit(1);
 }
 
 __END__

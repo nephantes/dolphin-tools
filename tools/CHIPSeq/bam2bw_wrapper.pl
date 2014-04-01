@@ -24,6 +24,7 @@ GetOptions(
 	'toolsucscwtbw=s'           => \$toolsucscWigToBigwig,
 	'httppublicfolder=s'           => \$httppublicfolder,
 	'acorebrowserucsc=s'           => \$acorebrowserucsc,
+	'visualweb=s'             => \$visualweb,
 	'servicename=s'       => \$servicename,
 	'jobsubmit=s'    => \$jobsubmit,
 ) or die("Bam2bw wrapper got unrecognized options.\n");
@@ -34,7 +35,7 @@ $input=~s/\,/\:/g;
 for($i=0;$i<@files;$i++) 
 {
  @fullp=split/\//,$files[$i];
- $com="$command -o $outdir -f $fullp[$#fullp] -g $genomesize -u $username -v $wersion -l $libname -p $publicfolder -b \'$bedtoolsGenCovBed\' -t \'$toolsucscWigToBigwig\' -h \'$httppublicfolder\' -c \'$acorebrowserucsc\'\n";
+ $com="$command -o $outdir -f $fullp[$#fullp] -g $genomesize -u $username -v $wersion -w $visualweb -l $libname -p $publicfolder -b \'$bedtoolsGenCovBed\' -t \'$toolsucscWigToBigwig\' -h \'$httppublicfolder\' -c \'$acorebrowserucsc\'\n";
  $job=$jobsubmit." -n ".$servicename."_".$i." -c \"$com\"";
  `$job`;
  if($res != 0)

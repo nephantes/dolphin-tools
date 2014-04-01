@@ -112,7 +112,7 @@ def main():
      f.write("fi\n")
 
      f.write("cd " + exec_dir + "\n")
-     f.write("echo \""+str(COM)+"\"\n")
+     f.write("echo '"+str(COM)+"'\n")
      f.write("python " + sdir + "/jobStatus.py -d " + str(DBHOSTNAME) + " -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")

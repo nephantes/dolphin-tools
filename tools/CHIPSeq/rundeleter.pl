@@ -20,7 +20,7 @@ GetOptions(
 ########################################## MAIN PROGRAM ##################################
 if($delete eq "1")
 {
- $com="rm $outdir/aggregationout/*bed; rm $outdir/aggregationout/*sig;rm -r $outdir/files; rm -r $outdir/mappings; \n";
+ $com="rm $outdir/aggregationout/*bed; rm $outdir/aggregationout/*sig;rm -r $outdir/files; rm -r $outdir/mappings; rm $outdir/*bg; rm $outdir/*sam; rm $outdir/*tmp.bam\n";
  $job=$jobsubmit." -n ".$servicename." -c \"$com\"";
  `$job`;
  if($? != 0)

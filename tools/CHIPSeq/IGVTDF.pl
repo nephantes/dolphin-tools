@@ -19,10 +19,13 @@ GetOptions(
         'mtools=s'       => \$mtools,
 ) or die("Unrecognized optioins.\n");
 ######################################### MAIN PROGRAM ##################################
-$com = "$samtools index $input.bam $input.bam.bai;\n";
-$com.="cd $outdir; $mtools count -w 5 $input.bam $input.tdf $genome\n"; 
-print $com;
-`$com`; 
+`$samtools index $input.bam $input.bam.bai`;
+if($? != 0)
+{
+ print STDERR "Failed to index bam file for submitting IGV conversion for $input\n";
+ exit(1);
+}
+`cd $outdir; $mtools count -w 5 $input.bam $input.tdf $genome`; 
 if($? != 0)
 {
  print STDERR "Failed to submit IGV conversion for $input\n";

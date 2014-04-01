@@ -23,6 +23,8 @@ GetOptions(
 	'toolsucscwtbw=s'           => \$toolsucscWigToBigwig,
 	'httppublicfolder=s'           => \$httppublicfolder,
 	'corebrowserucsc=s'           => \$corebrowserucsc,
+	'wisualweb=s'             => \$visualweb,
+@VISUALWEB
 ) or die("bam2bw step got unrecognized options.\n");
 ######################################### MAIN PROGRAM ##################################
 $inputbam="$outdir/$file.sorted.bam";
@@ -42,16 +44,16 @@ if($? != 0)
 }
 
 ##############Public folder is conditioned on its existence###########################
-if (-e "$publicfolder")
+if ((-e "$publicfolder")&&($visualweb eq "1"))
 {
  if (! -e "$publicfolder/$libname")
  {
   `mkdir -p $publicfolder/$libname`;
-  if($? != 0)
-  {
-   print STDERR "Failed to create a folder inside of your public folder\n";
-   exit(1);
-  }
+#Manuel asked to do nonstop#  if($? != 0)
+#  {
+#   print STDERR "Failed to create a folder inside of your public folder\n";
+#   exit(1);
+#  }
   `cp $outdir/mapstat $publicfolder/$libname/.`;
  }
  `cp $outputbw $publicfolder/$libname/.`;
@@ -64,18 +66,15 @@ if (-e "$publicfolder")
  $res+=$?;
  `cp $outdir/fastqc/UNITED $publicfolder/$libname/. -R`;
  $res+=$?;
- if($res != 0)
- {
-  print STDERR "Failed to copy stuff into public folder for visualization on UCSC browser\n";
-  exit(1);
- }
+ #if($res != 0)
+ #{
+ # print STDERR "Failed to copy stuff into public folder for visualization on UCSC browser\n";
+ # exit(1);
+ #}
  open out, ">>$outdir/results.html" or die ("Failed to create file with links for UCSC browser\n");
  print out "<a href=\"$corebrowserucsc\/hgTracks?db=$versiongenome&hgct_customText=track%20type=bigWig%20name=$file%20description=%22a%20bigBed%20track%22%20visibility=full%20bigDataUrl=$httppublicfolder\/$file.bw\">$file bigWig on UCSC</a><br><br>";
  print out "<a href=\"$corebrowserucsc\/hgTracks?db=$versiongenome&hgct_customText=track%20type=bam%20name=$file%20description=%22a%20bigBed%20track%22%20visibility=dense%20bigDataUrl=$httppublicfolder\/$file.sorted.bam\">$file bam on UCSC</a><br><br>";
  print out "<a href=\"$httppublicfolder\/$file.sorted.tdf\">A link with location of TDF file for IGV for $file</a><br><br>";
- #print out "<a href=\"$httppublicfolder\/UNITED/per_base_quality.html\">FastQC stat per_base_quality for $file</a><br><br>";
- #print out "<a href=\"$httppublicfolder\/UNITED/per_base_sequence_content.html\">FastQC stat per_base_sequence_content for $file</a><br><br>";
- #print out "<a href=\"$httppublicfolder\/UNITED/per_sequence_quality.html\">FastQC stat per_sequence_quality for $file</a><br><br>";
  close out;
 }
 __END__
