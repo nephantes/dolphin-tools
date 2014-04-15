@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 #########################################################################################
 #                                       stepBAM2BW.pl
@@ -29,6 +29,8 @@
  my $W2BW             = "";
  my $username         = "";
  my $outdir           = "";
+ my $output           = "";
+ my $outputhtml       = "";
  my $build            = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -45,6 +47,8 @@ GetOptions(
 	'wig2bigwig=s'   => \$W2BW,
 	'username=s'     => \$username,
 	'build=s'        => \$build,
+        'putout=s'       => \$output,
+        'indexhtml=s'    => \$outputhtml,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genomesize=s'   => \$genomesize,
@@ -71,37 +75,39 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 #   converts the mapped reads for IGV visualization
 
 my $indir   = "$outdir/tophat";
-my $uoutpath="/isilon_temp/garber/genomeBrowser/$username";
+my $name=basename($outdir);
+my $uoutpath="~/galaxy/pub/$name";
  
 `mkdir -p $outdir/ucsc`;
+`mkdir -p $uoutpath/ucsc`;
 
+print "$indir/*.sorted.bam\n";
 my @files = <$indir/*.sorted.bam>;
 open(OUT, ">$outdir/ucsc/index.html");
 
 foreach my $d (@files){ 
+  print $d."\n";
 
-  my $libname=basename($d, ".sorted.bam");
-  
+  my $libname=basename($d, ".genome.sorted.bam");
   my $outputbg="$outdir/ucsc/$libname.bg";
   my $outputbw="$outdir/ucsc/$libname.bw";
 
  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
  $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
 
- $com.="mkdir -p $uoutpath/ucsc;\n";
+ #if (-e "~/galaxy/pub")
+ #{
+   $com.="cp -rf $outputbw $uoutpath/ucsc/.;\n";
+   $com.="rm -rf $outputbg;\n";
+ #}
 
- $com.="cp $outputbw $uoutpath/ucsc/.\n";
- $com.="cp $d $uoutpath/ucsc/$libname.bam;\n";
- $com.="cp $d.bai $uoutpath/ucsc/$libname.bam.bai;\n";
- $com.="cp $outputbg $uoutpath/ucsc/.;\n";
- $com.="cp $outdir/tdf $uoutpath/. -R;\n";
- $com.="cp $outdir/fastqc $uoutpath/. -R;\n";
-
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20bigWig%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bw\">";
- print OUT "$libname bigWig </a><br><br>";
- print OUT "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20bam%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/genome/$username/ucsc/$libname.bam\">";
- print OUT "$libname bam </a><br><br>";
-  
+ my $content="<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bigWig%20name=myBWTrack_$libname%20description=%22a%20$libname%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/ucsc/$libname.bw\">";
+ $content.="$libname bigWig </a><br><br>\n";
+ $libname=~s/rsem\.out\.//gi; 
+ $content.= "<a href=\"http://biocore.umassmed.edu/cgi-bin/hgTracks?db=$build&hgct_customText=track%20type=bam%20name=myBAMTrack_$libname%20description=%22a%20$libname%20track%22%20visibility=full%20bigDataUrl=http://biocore.umassmed.edu/galaxy/$username/$name/tdf/$libname.bam\">";
+ $content.="$libname bam </a><br><br>\n";
+ print OUT $content; 
+ #print $content; 
  if(@files>1 && $jobsubmit!~/^$/)
  { 
     my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
@@ -115,7 +121,11 @@ foreach my $d (@files){
 }
 
 close(OUT);
-`cp $outdir/ucsc/index.html $uoutpath/.`;
+`cp -rf $outdir/ucsc/index.html $uoutpath/.`;
+`cp -rf $outdir/ucsc/index.html $outputhtml`;
+`cp -rf $outdir/tdf $uoutpath/.`;
+`cp -rf $outdir/fastqc $uoutpath/.`;
+#`cp $outdir/ucsc/index.html $uoutpath/.`;
 
 __END__
 

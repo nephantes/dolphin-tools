@@ -1,4 +1,4 @@
-# !/bin/env python
+#!/bin/env python
         
 from optparse import OptionParser
 import sys
@@ -32,6 +32,8 @@ def main():
         parser.add_option('-c', '--command', help='command that is goinf to be run', dest='com')
         parser.add_option('-n', '--name', help='name of the run', dest='name')
         parser.add_option('-p', '--cpu', help='the # of cpu', dest='cpu')
+        parser.add_option('-t', '--time', help='time', dest='time')
+        parser.add_option('-m', '--memory', help='memory', dest='memory')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
  	(options, args) = parser.parse_args()
    except:
@@ -45,6 +47,8 @@ def main():
    COM         = options.com
    NAME        = options.name
    CPU         = options.cpu
+   TIME        = options.time
+   MEMORY      = options.memory
 
    python      = "python"
 
@@ -56,31 +60,40 @@ def main():
        python      = "module load python/2.7.5;" + python;
        #python      = "module load python/2.7.5;" + python;
 
-   com="module list 2>&1 |grep openssl/1.0.1e"
+   com="module list 2>&1 |grep openssl/1.0.1g"
    sslload=str(os.popen(com).readline().rstrip())
    if (len(sslload)<5):
-       com = "module load openssl/1.0.1e;"
+       com = "module load openssl/1.0.1g;"
        sslload=str(os.popen(com).readline().rstrip())
-       #python      = "module load openssl/1.0.1e;" + python;
+       #python      = "module load openssl/1.0.1g;" + python;
    
    #if (WKEY==None):
    #     WKEY=getKey(30);
    if (USERNAME==None):
         USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
    
-   #print "USER:"+str(USERNAME)+"\n";
+   print "USER:"+str(USERNAME)+"\n";
 
    if (NAME == None):
         NAME="job";
    if (OUTDIR == None):
         OUTDIR="~/out";
+   	
+   if (CPU == None):
+        CPU="1";
+   queue=""
+   if (TIME == None):
+        TIME="10";
+        queue="-q short";
+   if (MEMORY == None):
+        MEMORY="1024";
   
    if (DBHOSTNAME == None):
         DBHOSTNAME="galaxy.umassmed.edu"
         
-   #print "COMMAND: [" + com + "]\n"
-   #print "NAME: [" + name + "]\n"
-   #print "cpu: [" + cpu + "]\n"
+   print "COMMAND: [" + COM + "]\n"
+   print "NAME: [" + NAME + "]\n"
+   print "cpu: [" + CPU + "]\n"
 
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
@@ -94,7 +107,7 @@ def main():
    os.system("mkdir -p "+src)
    os.system("mkdir -p "+lsf)
    success_file = track+"/"+str(NAME)+".success";
-   if not os.path.exists(success_file) :
+   if not os.path.exists(success_file):
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
@@ -106,13 +119,13 @@ def main():
      f.write("  module load python/2.7.5\n")
      f.write("fi\n")
 
-     f.write("if [[ $a != *openssl/1.0.1e* ]];\n")
+     f.write("if [[ $a != *openssl/1.0.1g* ]];\n")
      f.write("then\n")
-     f.write("  module load openssl/1.0.1e\n")
+     f.write("  module load openssl/1.0.1g\n")
      f.write("fi\n")
 
      f.write("cd " + exec_dir + "\n")
-     f.write("echo '"+str(COM)+"'\n")
+     #f.write("echo '"+str(COM)+"'\n")
      f.write("python " + sdir + "/jobStatus.py -d " + str(DBHOSTNAME) + " -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
@@ -143,8 +156,8 @@ def main():
      #f.write("NODE:"+ str(nodename) + " part[0]:" + part[0] + "\n")
      #CHANGE this submition script according to the system.
      #PUT TRY CATCH HERE 
-     command="bsub -m blades -P dolphin -R \"span[hosts=1]\" -n 4 -W 1000 -R \"rusage[mem=8006]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
-     #print command
+     command="bsub "+queue+" -m blades -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
+     print command
      #f.write("SUBMIT SCRIPT[" + command +"]\n\n")
      #while True:
      output = runcmd(command)

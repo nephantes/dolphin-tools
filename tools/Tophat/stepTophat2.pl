@@ -78,30 +78,31 @@ mkdir $outdir if (! -e $outdir);
 opendir D, $indir or die "Could not open $indir\n";
 my @files = grep /\.1\.notR$/, readdir(D);
 closedir D;
+my $ucsc=$gtf;
+$ucsc=~s/\.gtf/\.fa/;
+my $ti="";
+if (-s $ucsc) {
+  $ucsc=~s/\.fa//;
+  $ti=" --transcriptome-index=$ucsc";
+}
+
 if (@files>0)
 {
   foreach my $e(@files){
     my $sec=$e;
     $sec=~s/\.1\.notR/\.2\.notR/;
     my $str_files ="$indir/$e $indir/$sec";
-    #print "$str_files\n";
+    print "$str_files\n";
     $e =~ s/\.1\.notR//;
     
-    my $ucsc=$gtf;
-    $ucsc=~s/\.gtf/\.fa/;
-    my $ti="";
-    if (-s $ucsc) {
-	$ucsc=~s/\.fa//;
-	$ti=" --transcriptome-index=$ucsc";
-    }
     
     if (!(-s "$outdir/pipe.tophat.$e/accepted_hits.bam"))
     {
        #my $outdir1=$outdir."_2";
        #`mkdir -p $outdir1`;
        #print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
-       if($params eq "NONE"){$params="";}else{$params="-g 15 -r 300 -N 2 --no-coverage-search"}
-       my $com="$tophatCmd -p 8 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n"; 
+       if($params eq "NONE"){$params="";}else{$params="--no-coverage-search"}
+       my $com="$tophatCmd -p 4 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n"; 
        if(@files>1)
        {
          my $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
@@ -110,7 +111,7 @@ if (@files>0)
        }
        else
        { 
-        `$com`;
+         `$com`;
        }
     }
   }
@@ -130,7 +131,8 @@ else
 	#my $outdir1=$outdir."_1";
         #`mkdir -p $outdir1`;
 	#print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
-        my $com="$tophatCmd  -p 8 -g 15 -r 300 -N 2 --no-coverage-search -G $gtf -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n";
+        if($params eq "NONE"){$params="";}else{$params="--no-coverage-search"}
+        my $com="$tophatCmd  -p 4 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n";
         if(@files>1 && $jobsubmit!~/^$/)
         {
           my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$e." -c \"$com\"";

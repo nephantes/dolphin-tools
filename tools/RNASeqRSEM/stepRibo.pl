@@ -117,7 +117,14 @@ foreach my $libname (keys %prefiles1)
        }
        else
        {
-         $com="cat $str_file > $outdir/$libname.fastq;";
+         if ($cat)
+         {
+           $com="cat $str_file > $outdir/$libname.fastq;";
+         }
+         else
+         {
+           $com="ln -s $str_file $outdir/$libname.fastq;";
+         }
          $str_file= "$outdir/$libname.fastq";
        }
        $com.="$bowtiecmd --un $outdir/$libname.notR -x $ribosomeInd $str_file --al $outdir/$libname.yesR  >  /dev/null\n";
@@ -135,18 +142,26 @@ foreach my $libname (keys %prefiles1)
       }
       else
       {
-       $com="cat ".$file1." > $outdir/$libname.1.fastq;";
-       $com.="cat ".$file2." > $outdir/$libname.2.fastq;";
+         if ($cat)
+         {
+           $com="cat ".$file1." > $outdir/$libname.1.fastq;";
+           $com.="cat ".$file2." > $outdir/$libname.2.fastq;";
+         }
+         else
+         {
+           $com="ln -s $file1 $outdir/$libname.1.fastq;";
+           $com.="ln -s $file2 $outdir/$libname.2.fastq;";
+         }
        $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
       }      
       $com.="$bowtiecmd --un-conc $outdir/$libname.notR -x $ribosomeInd $str_file --al-conc $outdir/$libname.yesR  >  /dev/null \n";
  
      }
-     print "[".$com."]\n\n";
-     `$com`;
+     #print "[".$com."]\n\n";
+     #`$com`;
      my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-     #print $job."\n";   
-     #`$job`;
+     print $job."\n";   
+     `$job`;
 }
 
 sub checkFile

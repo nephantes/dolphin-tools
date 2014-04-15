@@ -99,15 +99,8 @@ for(my $i=0;$i<scalar(@prefiles);$i++)
        my $com="$prog $casava".$files[$j]." -o $dir";
 
        print $com."\n";
-       if(((@files-2)+@prefiles)>1 && $jobsubmit!~/^$/)
-       {
-         my $job=$jobsubmit." -n ".$servicename."_".$libname."_R".($j-1)." -c \"$com\"";
-         `$job`;
-       }
-       else
-       {
-         `$com`;
-       }
+       my $job=$jobsubmit." -n ".$servicename."_".$libname."_R".($j-1)." -c \"$com\"";
+       `$job`;
      }
      else
      { 
