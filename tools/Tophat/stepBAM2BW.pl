@@ -55,7 +55,6 @@ GetOptions(
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
-
 if($help){
     pod2usage( {
 		'-verbose' => 2, 
@@ -69,11 +68,9 @@ if($print_version){
 }
 
 pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomesize eq "") or ($outdir eq "") );	
-
  
 ################### MAIN PROGRAM ####################
 #   converts the mapped reads for IGV visualization
-
 my $indir   = "$outdir/tophat";
 my $name=basename($outdir);
 my $uoutpath="~/galaxy/pub/$name";
@@ -92,12 +89,15 @@ foreach my $d (@files){
   my $outputbg="$outdir/ucsc/$libname.bg";
   my $outputbw="$outdir/ucsc/$libname.bw";
 
- my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
- $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
-
+  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
+  $com .= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
+  print $com."\n";
+  `$com`;
+ if (1>2)
+ {
  #if (-e "~/galaxy/pub")
  #{
-   $com.="cp -rf $outputbw $uoutpath/ucsc/.;\n";
+   my $com.="cp -rf $outputbw $uoutpath/ucsc/.;\n";
    $com.="rm -rf $outputbg;\n";
  #}
 
@@ -118,13 +118,14 @@ foreach my $d (@files){
  { 
     `$com`;
  }
+ }
 }
 
 close(OUT);
-`cp -rf $outdir/ucsc/index.html $uoutpath/.`;
-`cp -rf $outdir/ucsc/index.html $outputhtml`;
-`cp -rf $outdir/tdf $uoutpath/.`;
-`cp -rf $outdir/fastqc $uoutpath/.`;
+#`cp -rf $outdir/ucsc/index.html $uoutpath/.`;
+#`cp -rf $outdir/ucsc/index.html $outputhtml`;
+#`cp -rf $outdir/tdf $uoutpath/.`;
+#`cp -rf $outdir/fastqc $uoutpath/.`;
 #`cp $outdir/ucsc/index.html $uoutpath/.`;
 
 __END__

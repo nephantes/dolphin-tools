@@ -21,7 +21,9 @@ GetOptions(
 	'rmatcommand=s'	=> \$formatter,
 ) or die("Mapping step got unrecognized options.\n");
 ######################################### MAIN PROGRAM ##################################
-`$mapper $param $geneindex $fastq $outdir/$e.temp 2>$outdir/$e.mapstat`;
+my $com="$mapper $param $geneindex $fastq $outdir/$e.temp 2>$outdir/$e.mapstat";
+print $com."\n";
+`$com`;
 if($? != 0)
 {
  print STDERR "Failed to do Bowtie mapping for $fastq\n";

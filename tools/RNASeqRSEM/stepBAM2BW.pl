@@ -77,7 +77,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 my $indir   = "$outdir/rsem";
 my $name=basename($outdir);
 my $uoutpath="~/galaxy/pub/$name";
-`cp $outdir/rsem/genes_expression_expected_count.csv $output`;
+`cp $outdir/rsem/genes_expression_expected_count.tsv $output`;
  
 `mkdir -p $outdir/ucsc`;
 `mkdir -p $uoutpath/ucsc`;

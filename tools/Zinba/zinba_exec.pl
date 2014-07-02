@@ -33,50 +33,55 @@ $OUTFILE=$ARGV[20];
 $STEPNAME =$ARGV[21];
 $JOBID =$ARGV[22];
 ######################################### MAIN PROGRAM ##################################
+
+$JOBID=~s/,/ /g;
+
+print "OUTDIR".$OUTDIR."\n";
+
 open out, ">$OUTDIR/zinba.R" or die "Failed to open a file for Zinba R script writing";
 
 print out "library(zinba)\n";
-print out "generateAlignability(\n";
-print out "  mapdir=\"$DATASETS/$GENOME/$GENOMEVERSION/\",\n"; 	#mappability directory from unpacked mappability files
-print out "  outdir=$OUTDIR,\n"; 	#directory for processed files, used later in analysis
-print out "  athresh=$ATHRESH,\n"; 	#number of hits per read allowed during mapping process
-print out "  extension=$EXTENSION,\n"; 	#average fragment library length
-print out "  twoBitFile=\"$DATASETS/$GENOME/$GENOMEVERSION/$GENOMEVERSION.2bit\"\n"; 	#path to downloaded genome build file in .2bit format
-print out ")\n";
+#print out "generateAlignability(\n";
+#print out "  mapdir=\"$DATASETS/$GENOME/$GENOMEVERSION/\",\n"; 	#mappability directory from unpacked mappability files
+#print out "  outdir=$OUTDIR,\n"; 	#directory for processed files, used later in analysis
+#print out "  athresh=$ATHRESH,\n"; 	#number of hits per read allowed during mapping process
+#print out "  extension=$EXTENSION,\n"; 	#average fragment library length
+#print out "  twoBitFile=\"$DATASETS/$GENOME/$GENOMEVERSION/$GENOMEVERSION.2bit\"\n"; 	#path to downloaded genome build file in .2bit format
+#print out ")\n";
 
 print out "basealigncount(\n";
-print out "  inputfile=$FOLDER,\n"; 	#mapped sample reads
-print out "  outputfile=$OUTDIR,\n"; 	# output path
+print out "  inputfile=\"$FOLDER\",\n"; 	#mapped sample reads
+print out "  outputfile=\"$OUTDIR/basecount.file\",\n"; 	# output path
 print out "  extension=$EXTENSION,\n"; 	#average fragment library length
-print out "  filetype=$FILETYPE,\n"; 	#either "bed", "bowtie", or "tagAlign"
+print out "  filetype=\"$FILETYPE\",\n"; 	#either "bed", "bowtie", or "tagAlign"
 print out "  twoBitFile=\"$DATASETS/$GENOME/$GENOMEVERSION/$GENOMEVERSION.2bit\"\n"; 	#path to downloaded genome build file in .2bit format
 print out ")\n";
 
 print out "zinba(\n";
 print out "  refinepeaks=$REFINEPEAKS,\n"; 	#refine peaks? 1 for yes, 0 for no
-print out "  seq=$FOLDER,\n"; 	#path to mapped experimental reads
-print out "  input=$FOLDERI,\n"; 	#path to mapped input reads if available (default is "none")
-print out "  filetype=$FILETYPE,\n"; 	#either 'bed', 'bowtie', or 'tagAlign'
+print out "  seq=\"$FOLDER\",\n"; 	#path to mapped experimental reads
+print out "  input=\"$FOLDERI\",\n"; 	#path to mapped input reads if available (default is "none")
+print out "  filetype=\"$FILETYPE\",\n"; 	#either 'bed', 'bowtie', or 'tagAlign'
+print out "  numProc=4,\n"; 	#Number of processors
 print out "  threshold=$THRESHOLD,\n"; 	#FDR threshold, default is 0.05
-print out "  align=$FOLDERPA,\n"; 	#path to alignability directory
-print out "  numProc=4,\n"; 	#number of CPUs to use, must be less than max available   (default 1)
+print out "  align=\"$FOLDERPA\",\n"; 	#path to alignability directory
 print out "  twoBit=\"$DATASETS/$GENOME/$GENOMEVERSION/$GENOMEVERSION.2bit\",\n"; 	#path to genome build in .2bit format
-print out "  outfile=$OUTFILE,\n"; 	#prefix for outputted files
+print out "  outfile=\"$OUTDIR/$OUTFILE\",\n"; 	#prefix for outputted files
 print out "  extension=$EXTENSION,\n"; 	#average fragment library length (size selected)
-print out "  basecountfile=$FOLDERP,\n"; 	#path to basecount file if refinepeaks is 1
-print out "  broad=$BROAD,\n"; 	#broad setting, TRUE or FALSE (default)
-print out "  printFullOut=$PRINTFULLOUT,\n"; 	#print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
-print out "  interaction=$INTERACTION,\n"; 	#whether or not to considering interaction during model selection, TRUE (default) or FALSE
-print out "  mode=$MODE,\n"; 	#either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
-print out "  FDR=$FDR\n"; 	#either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
+print out "  basecountfile=\"$OUTDIR/basecount.file\",\n"; 	#path to basecount file if refinepeaks is 1
+print out "  broad=".uc(substr($BROAD,0,1)).",\n"; 	#broad setting, TRUE or FALSE (default)
+print out "  printFullOut=".(uc(substr($PRINTFULLOUT,0,1))).",\n"; 	#print original data with enrichment estimates, 1 for yes (more space required), 0 for no (default)
+print out "  interaction=".uc(substr($INTERACTION,0,1)).",\n"; 	#whether or not to considering interaction during model selection, TRUE (default) or FALSE
+print out "  mode=\"$MODE\",\n"; 	#either "peaks" for peak calling (default) or "CNV" for calling likely amplified CNV regions for reads in "seq" (input reads are best)
+print out "  FDR=".uc(substr($FDR,0,1))."\n"; 	#either TRUE (default) or FALSE. If false, then uses posterior probability to threshold peaks using 1-threshold
 print out ")\n";
 close out;
 
-  $com="module load R/3.0.1;R --file=$OUTDIR/zinba.R";
+  $com="module load R/3.0.2;R --no-save < $OUTDIR/zinba.R";
   $job=$JOBID." -n ".$STEPNAME." -c \"$com\"";
   $q=" ";
   $job=~s/\,/$q/g;
-#  `$job`;
+  `$job`;
   print $job."\n";
   if($? != 0)
   {
@@ -105,48 +110,3 @@ zinba_exec.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

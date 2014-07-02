@@ -35,6 +35,7 @@ def main():
         parser.add_option('-t', '--time', help='time', dest='time')
         parser.add_option('-m', '--memory', help='memory', dest='memory')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
+        parser.add_option('-q', '--queue', help='queue', dest='queue')
  	(options, args) = parser.parse_args()
    except:
         print "OptionParser Error:for help use --help"
@@ -49,7 +50,7 @@ def main():
    CPU         = options.cpu
    TIME        = options.time
    MEMORY      = options.memory
-
+   QUEUE       = options.queue
    python      = "python"
 
    com="module list 2>&1 |grep python/2.7.5"
@@ -81,10 +82,15 @@ def main():
    	
    if (CPU == None):
         CPU="1";
-   queue=""
+
    if (TIME == None):
         TIME="10";
-        queue="-q short";
+
+   if (QUEUE == None):
+        queue="-q short"
+   else: 
+        queue="-q "+str(QUEUE)
+
    if (MEMORY == None):
         MEMORY="1024";
   

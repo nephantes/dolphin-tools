@@ -104,7 +104,7 @@ foreach my $d (@alndirs){
  close IN;
 }
 
-open OUT, ">${indir}/".$gene_iso."_expression_".$tpm_fpkm.".csv";
+open OUT, ">${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
 
 print OUT "gene\ttranscript";
 

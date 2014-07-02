@@ -100,6 +100,7 @@ def main():
 
     if (PARAMFILE != None and path.isfile(PARAMFILE) and access(PARAMFILE, R_OK)):
        params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR)
+
    
     if (len(params)>0):
      for param in params:
