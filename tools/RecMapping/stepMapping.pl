@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRibo.pl
+#                                       stepMapping.pl
 #########################################################################################
 # 
 #  This program maps the reads to Ribosomal RNAs, if there is no Ribosomal RNA for this
@@ -28,10 +28,14 @@
 #################### VARIABLES ######################
  my $input            = "";
  my $outdir           = "";
+ my $cmd              = "";
+ my $spaired          = "";
  my $jobsubmit        = "";
  my $bowtiePar        = "";
  my $bowtiecmd        = ""; 
+ my $samtoolscmd      = "";
  my $servicename      = "";
+ my $awkdir           = "";
  my $param            = "";
  my $help             = "";
  my $print_version    = "";
@@ -43,7 +47,10 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'input=s'        => \$input,
 	'outdir=s'       => \$outdir,
+        'awkdir=s'       => \$awkdir,
         'cmd=s'          => \$bowtiecmd,
+        'msamtoolscmd=s' => \$samtoolscmd,
+        'dspaired=s'     => \$spaired,
         'bowtiePar=s'    => \$bowtiePar,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
@@ -68,101 +75,71 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
  print "[$servicename]\n";
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
+#    maps the reads to the index files and put the files under $outdir/recmapping/$indexname directory
 
-$outdir   = "$outdir/recmapping";
-
-mkdir $outdir if (! -e $outdir);
-
-my ($indexfile, $indexname, $indexpar, $description, $filterout, $indexnum)=split(/,/, $bowtiePar);
-
-my @pfiles=split(/:/,$input);
-
-my %prefiles1=();
-my %prefiles2=();
-my $cat=0;
-my $pair=0;
-for(my $i=0;$i<scalar(@pfiles);$i++) 
+my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
+my $inputdir="";
+print "$previous\n";
+if ($previous=~/NONE/)
 {
-   my @files=split(/[,\s\t]+/,$pfiles[$i]);
-   print $files[1]."\n";
-   exit 64 if (!checkFile($files[1]));
-   if (exists $prefiles1{$files[0]})
-   {
-     $cat=1;
-     $prefiles1{$files[0]}.=$files[1]." ";
-   }
-   else
-   {
-     $prefiles1{$files[0]}=$files[1]." ";
-   }
-   if (scalar(@files)==3) 
-   {
-     $pair=1;
-     exit 64 if (!checkFile($files[2]));
-     $prefiles2{$files[0]}.=$files[2]." ";  
-   }
+  $inputdir = "$outdir/input";
 }
-  
-foreach my $libname (keys %prefiles1) 
+else
 {
-    my $str_file="";
-    my $com="";
-    if (!$pair) {
-       $str_file=$prefiles1{$libname};  
- 
-       if ($str_file=~/\.gz/)
-       {
-         $com="zcat $str_file > $outdir/$libname.fastq;";
-         $str_file= "$outdir/$libname.fastq";
-       }
-       else
-       {
-         if ($cat)
-         {
-           $com="cat $str_file > $outdir/$libname.fastq;";
-         }
-         else
-         {
-           $com="ln -s $str_file $outdir/$libname.fastq;";
-         }
-         $str_file= "$outdir/$libname.fastq";
-       }
-       $com.="$bowtiecmd $indexpar --un $outdir/$libname.$indexname.not.$indexnum -x $indexfile $str_file --al $outdir/$libname.$indexname.yes.$indexnum  >  $outdir/$libname.$indexname.bow.$indexnum\n";
-    }
-    else
-    {
-      my $file1=$prefiles1{$libname};  
-      my $file2=$prefiles2{$libname};  
-      
-      if ($file1=~/\.gz/)
-      {
-       $com="zcat ".$file1." > $outdir/$libname.1.fastq;";
-       $com.="zcat ".$file2." > $outdir/$libname.2.fastq;";
-       $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
-      }
-      else
-      {
-         if ($cat)
-         {
-           $com="cat ".$file1." > $outdir/$libname.1.fastq;";
-           $com.="cat ".$file2." > $outdir/$libname.2.fastq;";
-         }
-         else
-         {
-           $com="ln -s $file1 $outdir/$libname.1.fastq;";
-           $com.="ln -s $file2 $outdir/$libname.2.fastq;";
-         }
-       $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
-      }      
-      $com.="$bowtiecmd $indexpar --un-conc $outdir/$libname.$indexname.not.$indexnum -x $indexfile $str_file --al-conc $outdir/$libname.$indexname.yes.$indexnum  >  $outdir/$libname.$indexname.bow.$indexnum\n";
- 
-     }
-     print "[".$com."]\n\n";
-     #`$com`;
-     my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-     print $job."\n";   
-     #`$job`;
+  $inputdir = "$outdir/recmapping/".lc($previous);
+}
+$outdir   = "$outdir/recmapping/".lc($indexname);
+print "I:$inputdir\n";
+print "O:$outdir\n";
+
+`mkdir -p $outdir`;
+my $com="";
+
+if ($spaired eq "single")
+{
+ $com=`ls $inputdir/*.fastq`;
+}
+else
+{
+ $com=`ls $inputdir/*.1.fastq`;
+}
+
+print $com;
+my @files = split(/[\n\r\s\t,]+/, $com);
+$com="";
+foreach my $file (@files)
+{
+  $file=~/.*\/(.*).fastq/;
+  my $bname=$1;
+  if ($spaired eq "single")
+  {
+       die "Error 64: please check the file:".$file unless (checkFile($file)); 
+
+       $com="$bowtiecmd $indexpar --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam>$outdir/$bname.bow 2> $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow>$outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted; samtools index $outdir/$bname.sorted.bam;";
+
+  }
+  else
+  {
+       $file=~/(.*\/(.*)).1.fastq/;
+       my $bname=$2;
+       my $str_file= "-1 $inputdir/$bname.1.fastq -2 $inputdir/$bname.2.fastq";
+       die "Error 64: please check the file:$inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
+       die "Error 64: please check the file:$inputdir/$bname.2.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
+
+       $com="$bowtiecmd $indexpar --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S  $outdir/$bname.sam>$outdir/$bname.bow 2> $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow>$outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted; samtools index $outdir/$bname.sorted.bam;";
+
+  }
+  print "[".$com."]\n\n";
+  `$com`;
+  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+  #print $job."\n";   
+  #`$job`;
 }
 
 sub checkFile
@@ -177,19 +154,19 @@ __END__
 
 =head1 NAME
 
-stepRibo.pl
+stepMapping.pl
 
 =head1 SYNOPSIS  
 
-stepRibo.pl -i input <fastq> 
+stepMapping.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepRibo.pl -help
+stepMapping.pl -help
 
-stepRibo.pl -version
+stepMapping.pl -version
 
 For help, run this script with -help option.
 
@@ -240,15 +217,13 @@ Display the version
 =head1 EXAMPLE
 
 
-stepRibo.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepMapping.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
             -r ~/bowtie_ind/rRNA
 
 =head1 AUTHORS
-
- Hennady Shulha, PhD 
 
  Alper Kucukural, PhD
 

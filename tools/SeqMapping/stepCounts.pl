@@ -1,20 +1,17 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRibo.pl
+#                                       stepCounts.pl
 #########################################################################################
 # 
-#  This program maps the reads to Ribosomal RNAs, if there is no Ribosomal RNA for this
-#  genome the program copy the input file into the necessary location for downstream 
-#  analysis.
+#  This program trims the reads in the files. 
 #
 #
 #########################################################################################
 # AUTHORS:
 #
-# Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
-# 
+# Jul 4, 2014
 #########################################################################################
 
 
@@ -25,15 +22,15 @@
  use File::Basename;
  use Getopt::Long;
  use Pod::Usage; 
- 
+
 #################### VARIABLES ######################
- my $input            = "";
+ my $mapnames         = "";
  my $outdir           = "";
  my $jobsubmit        = "";
- my $ribosomeInd      = "";
- my $bowtiecmd        = ""; 
+ my $bedmake          = "";
+ my $gcommondb         = "";
+ my $cmd              = ""; 
  my $servicename      = "";
- my $param            = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -42,13 +39,13 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'input=s'        => \$input,
+        'mapnames=s'     => \$mapnames,
 	'outdir=s'       => \$outdir,
-        'bowtieCmd=s'    => \$bowtiecmd,
-        'ribosomeInd=s'  => \$ribosomeInd,
+        'cmd=s'          => \$cmd,
+        'bedmake=s'      => \$bedmake,
+        'gcommondb=s'     => \$gcommondb,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
-        'param=s'        => \$param,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -65,112 +62,64 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir eq "") or ($bowtiecmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($mapnames eq "") or ($outdir eq "") );	
 
- print "[$servicename]\n";
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-$outdir   = "$outdir/after_ribosome";
+my $outd   = "$outdir/counts";
+`mkdir -p $outd`;
+my ($inputdir, $com)=();
 
-mkdir $outdir if (! -e $outdir);
+my @mapnames_arr=split(/[,\t\s]+/, $mapnames);
+foreach my $mapname (@mapnames_arr)
+{ 
+  my ($name, $bedfile)=();
+  my @arr = split(/:/, $mapname);
 
-my @pfiles=split(/:/,$input);
-
-my %prefiles1=();
-my %prefiles2=();
-my $cat=0;
-my $pair=0;
-#TODO: Support paired end and single end from the same form.
-
-for(my $i=0;$i<scalar(@pfiles);$i++) 
-{
-   my @files=split(/[,\s\t]+/,$pfiles[$i]);
-   #print $files[1]."\n";
-   exit 64 if (!checkFile($files[1]));
-   if (exists $prefiles1{$files[0]})
-   {
-     $cat=1;
-     $prefiles1{$files[0]}.=$files[1]." ";
-   }
-   else
-   {
-     $prefiles1{$files[0]}=$files[1]." ";
-   }
-   if (scalar(@files)==3) 
-   {
-     $pair=1;
-     exit 64 if (!checkFile($files[2]));
-     $prefiles2{$files[0]}.=$files[2]." ";  
-   }
-}
-  
-foreach my $libname (keys %prefiles1) 
-{
-    my $str_file="";
-    my $com="";
-    if (!$pair) {
-       $str_file=$prefiles1{$libname};  
- 
-       if ($str_file=~/\.gz/)
-       {
-         $com="zcat $str_file > $outdir/$libname.fastq;";
-         $str_file= "$outdir/$libname.fastq";
-       }
-       else
-       {
-         if ($cat)
-         {
-           $com="cat $str_file > $outdir/$libname.fastq;";
-         }
-         else
-         {
-           $com="ln -s $str_file $outdir/$libname.fastq;";
-         }
-         $str_file= "$outdir/$libname.fastq";
-       }
-       $com.="$bowtiecmd --un $outdir/$libname.notR -x $ribosomeInd $str_file --al $outdir/$libname.yesR  >  /dev/null\n";
-    }
-    else
-    {
-      my $file1=$prefiles1{$libname};  
-      my $file2=$prefiles2{$libname};  
-      
-      if ($file1=~/\.gz/)
-      {
-       $com="zcat ".$file1." > $outdir/$libname.1.fastq;";
-       $com.="zcat ".$file2." > $outdir/$libname.2.fastq;";
-       $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
-      }
-      else
-      {
-         if ($cat)
-         {
-           $com="cat ".$file1." > $outdir/$libname.1.fastq;";
-           $com.="cat ".$file2." > $outdir/$libname.2.fastq;";
-         }
-         else
-         {
-           $com="ln -s $file1 $outdir/$libname.1.fastq;";
-           $com.="ln -s $file2 $outdir/$libname.2.fastq;";
-         }
-       $str_file= "-1  $outdir/$libname.1.fastq -2  $outdir/$libname.2.fastq";
-      }      
-      $com.="$bowtiecmd --un-conc $outdir/$libname.notR -x $ribosomeInd $str_file --al-conc $outdir/$libname.yesR  >  /dev/null \n";
- 
+  if (scalar(@arr)==2)
+  {
+  # Custom index, it requires the fasta file in the same directory with index file
+     $name=$arr[0];
+     my $ind=$arr[1];
+     if ($ind!~/fasta/)
+     {
+        $ind.=".fasta";
      }
-     #print "[".$com."]\n\n";
-     #`$com`;
-     my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-     print $job."\n";   
-     `$job`;
-}
+     $bedfile="$outd/tmp/$name.bed";
+     $com="mkdir -p $outd/tmp;";
+     $com.="$bedmake $ind $name>$bedfile";
+     `$com`;
+  }
+  else
+  {
+    # Common index, it requires the fasta file in the same directory with index file
+      $name=$mapname;
+      $bedfile="$gcommondb/$mapname/$mapname.bed";
+  }
 
-sub checkFile
-{
- my $file=$_[0];
- return 1 if (-e $file);
- return 0;
+  $inputdir = "$outdir/seqmapping/".lc($mapname);
+  $com=`ls $inputdir/*.sorted.bam`;
+
+  my @files = split(/[\n\r\s\t,]+/, $com);
+  my $filestr="";
+  
+  my $header="id\tlen";
+  foreach my $file (@files)
+  {
+    $filestr.=$file." ";
+    $file=~/.*\/(.*)\.sorted.bam/;
+    $header.="\t$1";
+  }
+  $com="mkdir -p $outd/tmp;\n"; 
+  $com.="echo \"$header\">$outd/tmp/$name.header.tsv;\n"; 
+  $com.= "$cmd -bams $filestr -bed $bedfile -F -p>$outd/tmp/$name.counts.tmp;\n";
+  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$1\"\\t\"\$3\"\\t\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv;\n";
+  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.counts.tsv>$outd/$name.counts.tsv;\n";
+  $com.= "echo \"File\tReads\tPaired reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header;\n";
+  $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv;\n";
+  print $com."\n"; 
+  `$com`;
 }
 
 __END__
@@ -178,19 +127,19 @@ __END__
 
 =head1 NAME
 
-stepRibo.pl
+stepCounts.pl
 
 =head1 SYNOPSIS  
 
-stepRibo.pl -i input <fastq> 
+stepCounts.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepRibo.pl -help
+stepCounts.pl -help
 
-stepRibo.pl -version
+stepCounts.pl -version
 
 For help, run this script with -help option.
 
@@ -241,15 +190,13 @@ Display the version
 =head1 EXAMPLE
 
 
-stepRibo.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepCounts.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
             -r ~/bowtie_ind/rRNA
 
 =head1 AUTHORS
-
- Hennady Shulha, PhD 
 
  Alper Kucukural, PhD
 
