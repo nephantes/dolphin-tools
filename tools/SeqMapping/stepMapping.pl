@@ -86,9 +86,9 @@ if ($previous=~/NONE/)
 }
 else
 {
-  $inputdir = "$outdir/recmapping/".lc($previous);
+  $inputdir = "$outdir/seqmapping/".lc($previous);
 }
-$outdir   = "$outdir/recmapping/".lc($indexname);
+$outdir   = "$outdir/seqmapping/".lc($indexname);
 print "I:$inputdir\n";
 print "O:$outdir\n";
 
