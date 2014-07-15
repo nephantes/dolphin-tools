@@ -1,19 +1,17 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMapping.pl
+#                                       stepMakeReport.pl
 #########################################################################################
 # 
-#  This program maps the reads to Ribosomal RNAs, if there is no Ribosomal RNA for this
-#  genome the program copy the input file into the necessary location for downstream 
-#  analysis.
+#  This program removes adapter sequence. 
 #
 #
 #########################################################################################
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# 
+# Jul 4, 2014
 #########################################################################################
 
 
@@ -24,19 +22,12 @@
  use File::Basename;
  use Getopt::Long;
  use Pod::Usage; 
- 
+
 #################### VARIABLES ######################
- my $input            = "";
+ my $outfile          = "";
  my $outdir           = "";
- my $cmd              = "";
- my $spaired          = "";
  my $jobsubmit        = "";
- my $awkdir           = "";
- my $bowtiePar        = "";
- my $bowtiecmd        = ""; 
- my $samtoolscmd      = "";
  my $servicename      = "";
- my $param            = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -45,16 +36,10 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'input=s'        => \$input,
+	'foutfile=s'      => \$outfile,
 	'outdir=s'       => \$outdir,
-        'cmd=s'          => \$bowtiecmd,
-        'msamtoolscmd=s' => \$samtoolscmd,
-        'awkdir=s'       => \$awkdir,
-        'dspaired=s'     => \$spaired,
-        'bowtiePar=s'    => \$bowtiePar,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
-        'param=s'        => \$param,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -71,103 +56,105 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir eq "") or ($bowtiecmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ( $outfile eq "") or ($outdir eq "") );	
 
- print "[$servicename]\n";
 ################### MAIN PROGRAM ####################
-#    maps the reads to the index files and put the files under $outdir/recmapping/$indexname directory
+#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/)
-{
-  $inputdir = "$outdir/input";
-}
-else
-{
-  $inputdir = "$outdir/seqmapping/".lc($previous);
-}
-$outdir   = "$outdir/seqmapping/".lc($indexname);
-print "I:$inputdir\n";
-print "O:$outdir\n";
 
+$inputdir = "$outdir/counts";
+$outdir   = "$outdir/counts";
 `mkdir -p $outdir`;
-my $com="";
+open(OUT, ">$outdir/index.html");
 
-if ($spaired eq "single")
-{
- $com=`ls $inputdir/*.fastq`;
-}
-else
-{
- $com=`ls $inputdir/*.1.fastq`;
-}
+my $com=`ls $inputdir/*.summary.tsv`;
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
-$com="";
+
+print OUT "<html>\n";
+print OUT "<link href=\"http://bioinfo.umassmed.edu/dist/css/bootstrap.css\" rel=\"stylesheet\">\n";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/lib/jquery-1.7.2.min.js\" type=\"text/javascript\"></script>\n";
+print OUT "<style type=\"text/css\">
+table.gridtable {
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
+}
+table.gridtable th {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
+}
+table.gridtable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
+}
+</style>";
+   
+print OUT "<body>\n";
+print OUT "<br><h4>Count files:</h4><br>\n";
+print OUT "All the count files are in the following directory: $outdir</h4><br>\n";
+print OUT "<div class=\"container\">";
 foreach my $file (@files)
 {
-  $file=~/.*\/(.*).fastq/;
-  my $bname=$1;
-  if ($spaired eq "single")
-  {
-       die "Error 64: please check the file:".$file unless (checkFile($file)); 
-
-       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam >$outdir/$bname.bow 2>&1;";
-       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow>$outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="samtools index $outdir/$bname.sorted.bam;";
-  }
-  else
-  {
-       $file=~/.*\/(.*).1.fastq/;
-       $bname=$1;
-       my $str_file="-1 $inputdir/$bname.1.fastq -2 $inputdir/$bname.2.fastq";
-       die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
-       die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
-
-       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow>$outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="samtools index $outdir/$bname.sorted.bam;";
-  }
- print $com."\n\n";
- #`$com`;
- 
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
+   open(IN, $file);
+   $file=~/.*\/(.*).summary.tsv/;
+   my $name=$1;
+   my $j=0;
+   print OUT "<br><h4>$name </h4><br>\n";
+   print OUT "<table class=\"table.colored\">\n";
+   while (my $line=<IN>)
+   {
+      print OUT "<tr>\n";
+      my @arr=split(/\t/, $line);
+      my $i=0;
+      foreach my $val (@arr)
+      {
+         print OUT "<th>$val</th>" if ($j==0 || $i ==0);
+         print OUT "<td>$val</td>" if ($j>0 && $i>0);
+         $i++;
+      }
+      $j++;
+      print OUT "</tr>\n";
+   }
+   print OUT "</table>\n";
 }
 
-sub checkFile
-{
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
-}
+print OUT "</div>";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/js/bootstrap.min.js\"></script>\n";
+
+close(OUT);
+
+`cp $outdir/index.html $outfile`;
 
 __END__
 
 
 =head1 NAME
 
-stepMapping.pl
+stepMakeReport.pl
 
 =head1 SYNOPSIS  
 
-stepMapping.pl -i input <fastq> 
+stepMakeReport.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepMapping.pl -help
+stepMakeReport.pl -help
 
-stepMapping.pl -version
+stepMakeReport.pl -version
 
 For help, run this script with -help option.
 
@@ -218,7 +205,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepMapping.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepMakeReport.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
@@ -245,4 +232,4 @@ stepMapping.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
 
- 
+

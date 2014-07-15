@@ -90,12 +90,14 @@ my $cmdPE=$cmds[1];
 
 foreach my $line (@files)
 {
+ my $bname="";
  if ($spaired eq "single")
  {
     die "Error 64: please check the file:".$line unless (checkFile($line));
     print $line."\n\n";
     $line=~/.*\/(.*)\./;
     my $nm=$1;
+    $bname=$nm;
     my $mvcom="";
     foreach my $name (@names)
     {
@@ -118,6 +120,7 @@ foreach my $line (@files)
       print "$file1:$file2\n\n";
       $file1=~/.*\/(.*)\./;
       my $nm1=$1;
+      $bname=$nm1;
       $file2=~/.*\/(.*)\./;
       my $nm2=$1;
       my $mvcom="";
@@ -131,11 +134,11 @@ foreach my $line (@files)
     }
  }
  print $com."\n\n";
- `$com`;
+ #`$com`;
  
-    my $job=$jobsubmit." -n ".$servicename." -c \"$com\"";
-    #print $job."\n";   
-    #    #`$job`;
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";   
+ `$job`;
 }
 
 sub checkFile

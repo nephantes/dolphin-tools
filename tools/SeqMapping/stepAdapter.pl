@@ -119,11 +119,11 @@ foreach my $file (@files)
     $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:2:40:15";  
  }
  print $com."\n\n";
- `$com`;
+ #`$com`;
  
-    my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-    #print $job."\n";   
-    #    #`$job`;
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";   
+ `$job`;
 }
 
 sub checkFile

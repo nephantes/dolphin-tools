@@ -24,7 +24,7 @@
 @RSEMCMD          = "@PERL @BIN/RSEM/rsem-calculate-expression"
 @BOWTIEPATH       = @BIN/bowtie-0.12.9
 @RSEMREF          = @GENOMEDB/rsem_ref
-@JRSEM          = "@JOB -p 2 -m 8096 -t 600 -q short"
+@JRSEM            = "@JOB -p 4 -m 4096 -t 600 -q short"
 
 #StepRSEMCount
 @RUNRSEMCOUNT     = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEMcount.pl

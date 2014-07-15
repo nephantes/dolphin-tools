@@ -100,7 +100,8 @@ foreach my $file (@files)
  {
     $file=~/.*\/(.*).fastq/;
     my $bname=$1;
-    trimFiles($file, $trim, $bname);
+    my $format=getFormat($file);
+    trimFiles($file, $trim, $bname, $format);
  }
  else
  {
@@ -112,14 +113,15 @@ foreach my $file (@files)
     $trim=~/([\d]*,[\d]*),([\d]*,[\d]*)/;
     my $trim1=$1;
     my $trim2=$2;
-    trimFiles($file, $trim1, $bname.".1");
-    trimFiles($file2, $trim2, $bname.".2");
+    my $format=getFormat($file);
+    trimFiles($file, $trim1, $bname.".1", $format);
+    trimFiles($file2, $trim2, $bname.".2", $format);
  }
 }
 
 sub trimFiles
 {
-  my ($file, $trim, $bname)=@_;
+  my ($file, $trim, $bname, $format)=@_;
     my @nts=split(/[,\s\t]+/,$trim);
     print "\n$bname\n\n";
     my $inpfile="";
@@ -127,6 +129,11 @@ sub trimFiles
     my $i=1;
     my $outfile="";
     my $param="-f";
+    my $quality="";
+    if ($format eq "sanger")
+    {   
+      $quality="-Q33";
+    }
     foreach my $nt (@nts)
     {
       if ($nt!~/^$/ && $nt>0)
@@ -139,7 +146,7 @@ sub trimFiles
         }
 
         $outfile="$outdir/$bname.fastq.$i.tmp";
-        $com.="$cmd -v $param $nt -o $outfile -i $file;";
+        $com.="$cmd $quality -v $param $nt -o $outfile -i $file;";
         $file=$outfile;
       }
       $i++;
@@ -151,6 +158,63 @@ sub trimFiles
     #print $job."\n";   
     #`$job`;
 }
+
+# automatic format detection
+sub getFormat
+{
+   my ($filename)=@_;
+
+   # set function variables
+   open (IN, $filename);
+   my $j=1;
+   my $qualities="";
+   while(my $line=<IN> && $j<10 )
+   {
+     if ($j%4==0)
+     {
+        $qualities.=$line;
+     }
+     $j++;
+   }
+   close(IN);
+  
+   my $format = "";
+
+   # set regular expressions
+   my $sanger_regexp = qr/[!"#$%&'()*+,-.\/0123456789:]/;
+   my $solexa_regexp = qr/[\;<=>\?]/;
+   my $solill_regexp = qr/[JKLMNOPQRSTUVWXYZ\[\]\^\_\`abcdefgh]/;
+   my $all_regexp = qr/[\@ABCDEFGHI]/;
+
+   # set counters
+   my $sanger_counter = 0;
+   my $solexa_counter = 0;
+   my $solill_counter = 0;
+
+   # check qualities
+   if( $qualities =~ m/$sanger_regexp/ ){
+          $sanger_counter = 1;
+   }
+   if( $qualities =~ m/$solexa_regexp/ ){
+          $solexa_counter = 1;
+   }
+   if( $qualities =~ m/$solill_regexp/ ){
+           $solill_counter = 1;
+   }
+
+   # determine format
+   if( $sanger_counter ){
+        $format = "sanger";
+    }elsif( !$sanger_counter && $solexa_counter ){
+        $format = "solexa";
+    }elsif( !$sanger_counter && !$solexa_counter && $solill_counter ){
+        $format = "illumina";
+    }
+
+    # return file format
+    return( $format );
+}
+
 
 
 sub checkFile

@@ -84,7 +84,7 @@ def main():
         CPU="1";
 
    if (TIME == None):
-        TIME="10";
+        TIME="600";
 
    if (QUEUE == None):
         queue="-q short"
@@ -92,7 +92,7 @@ def main():
         queue="-q "+str(QUEUE)
 
    if (MEMORY == None):
-        MEMORY="1024";
+        MEMORY="4096";
   
    if (DBHOSTNAME == None):
         DBHOSTNAME="galaxy.umassmed.edu"
@@ -155,20 +155,19 @@ def main():
 
      os.system("chmod 755 "+src+"/"+NAME+".submit.bash")
 
-     #f=open(pbs+"/"+NAME+".submit.tmp", 'w')
+     f=open(src+"/"+NAME+".submit.log", 'w')
      #f.write("#!/bin/bash\n")
-
      
      #f.write("NODE:"+ str(nodename) + " part[0]:" + part[0] + "\n")
      #CHANGE this submition script according to the system.
      #PUT TRY CATCH HERE 
      command="bsub "+queue+" -m blades -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
      print command
-     #f.write("SUBMIT SCRIPT[" + command +"]\n\n")
+     f.write("SUBMIT SCRIPT[" + command +"]\n\n")
      #while True:
      output = runcmd(command)
      #print str(output)+"\n"
-        #f.write("SUBMIT OUT:[" + str(output) + "]\n")
+     f.write("SUBMIT OUT:[" + str(output) + "]\n")
      words = re.split('[\<\>]+', str(output))
      num = words[1]
      #     if num>0:
@@ -177,12 +176,12 @@ def main():
      
      command = python+" " + sdir + "/jobStatus.py -d " + str(DBHOSTNAME) + " -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -n "+ str(num) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
      #print command
-     #f.write("RUN COMMAND:\n" + str(command) + "\n")
+     f.write("RUN COMMAND:\n" + str(command) + "\n")
      #f.write("NUM:[" + str(num) + "]\n")
      #PUT TRY CATCH HERE 
      if num>0:
         return runcmd(command)
-   #f.close()
+     f.close()
  
 if __name__ == "__main__":
     main()
