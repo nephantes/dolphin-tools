@@ -1,19 +1,18 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMirza.pl
+#                                       stepRSEMCount.pl
 #########################################################################################
 # 
-# This program runs mirza for all the files in $outdir/files directory
-# Inputs of the program is  
+#  This program runs the Cuffdiff after cufflinks
 #
 #########################################################################################
 # AUTHORS:
 #
+# Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 # 
 #########################################################################################
-
 
 ############## LIBRARIES AND PRAGMAS ################
 
@@ -24,31 +23,26 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $outdir           = ""; 
- my $exp              = "";
- my $miRNAseq         = "";
+ my $gene_iso         = "genes";
+ my $tpm_fpkm         = "tpm";
+ my $outdir           = "";
  my $jobsubmit        = "";
  my $servicename      = "";
- my $dir              = "";
- my $type             = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
-
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
-GetOptions( 
-	'outdir=s'       => \$outdir,
-        'exp=s'          => \$exp,
-        'mirnaseq=s'     => \$miRNAseq,
-        'jobsubmit=s'    => \$jobsubmit,
-	'type=s'         => \$type,
-        'servicename=s'  => \$servicename,
-	'dir=s'          => \$dir,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+GetOptions(
+	'outdir=s'        => \$outdir,
+	'gene_iso=s'      => \$gene_iso,
+	'tpm_fpkm=s'      => \$tpm_fpkm,
+        'jobsubmit=s'     => \$jobsubmit,
+        'servicename=s'   => \$servicename,
+	'help'            => \$help, 
+	'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -63,60 +57,100 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($exp eq "") or ($outdir eq "") or ($miRNAseq eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") );	
 
- 
-################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
-
-
-my $indir   = "$outdir/files";
-my $odir  = "$outdir/mirza";
-
-`mkdir -p $odir`;
-
-opendir D, $indir or die "Could not open $indir\n";
-my @files = grep /.fa/, readdir(D);
-closedir D;
-
-if (@files>0)
+if (!($tpm_fpkm  eq "tpm" || $tpm_fpkm eq "fpkm" || $tpm_fpkm eq "expected_count"))
 {
-  foreach my $file(@files){
-    my $ofdir="$odir/$file";
-    `mkdir -p $ofdir`;
-    my $com="cd  $ofdir;nohup $dir/launch_MIRZA $exp $miRNAseq $indir/$file $type $dir > /dev/null 2>&1\n"; 
-    if(@files>1)
-    {
-      my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$file." -c \"$com\"";
-      `$job`;
-    }
-    else
-    { 
-      `$com`;
-    }
-  }
+    $tpm_fpkm="tpm";
 }
 
+my %tf = (
+        expected_count => 4,
+        tpm => 5,
+        fpkm => 6,
+    );
+ 
+################### MAIN PROGRAM ####################++
+#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
 
+my $indir   = "$outdir/rsem";
+$outdir  = "$outdir/rsem";
+
+opendir D, $indir or die "Could not open $indir\n";
+my @alndirs = sort { $a cmp $b } grep /^pipe/, readdir(D);
+
+closedir D;
+
+my @a=();
+my %b=();
+my %c=();
+my $i=0;
+foreach my $d (@alndirs){ 
+ my $dir = "${indir}/$d";
+ print $d."\n";
+ my $libname=$d;
+ $libname=~s/pipe\.rsem\.//;
+
+ $i++;
+ $a[$i]=$libname;
+ open IN,"${dir}/rsem.out.$libname.$gene_iso.results";
+ $_=<IN>;
+ while(<IN>)
+ {
+  my @v=split; 
+  $b{$v[0]}{$i}=$v[$tf{$tpm_fpkm}];
+  $c{$v[0]}=$v[1];
+ }
+ close IN;
+}
+
+open OUT, ">${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
+
+print OUT "gene\ttranscript";
+
+
+for(my $j=1;$j<=$i;$j++)
+{
+ print OUT "\t$a[$j]";
+}
+print OUT "\n";
+
+foreach my $key (keys %b)
+{
+ if ($gene_iso ne "isoforms") {
+   print OUT "$key\t$c{$key}";
+ }
+ else
+ {
+    print OUT "$c{$key}\t$key";
+ }
+ for(my $j=1;$j<=$i;$j++)
+ {
+  print OUT "\t$b{$key}{$j}";
+ }
+ print OUT "\n";
+}
+
+close OUT;
 
 __END__
 
 
 =head1 NAME
 
-stepMirza.pl
+stepRSEMCount.pl
 
 =head1 SYNOPSIS  
 
-stepMirza.pl 
+stepRSEMCount.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -t tpm_fpkm <tpm or fpkm>
+	    -g gene_iso <gene or isoform>
 
-stepMirza.pl -help
 
-stepMirza.pl -version
+stepRSEMCount.pl -help
+
+stepRSEMCount.pl -version
 
 For help, run this script with -help option.
 
@@ -124,19 +158,11 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
+the output files will be stored "$outdir/rsem" 
 
-=head2 -b tophatCmd <bowtie dir and file> 
+=head2 -c conversion <ucsc conversion> 
 
-Fullpath of tophat executable file. Ex: ~/tophat_dir/tophat
-
-=head2  -g gtf <ucsc gtf files> 
-
-Transcript annotation file
-
-=head2  -r bowtie2Ind <ribosome Index file>
-
-Bowtie2 index files. Ex: ~/bowtie_ind/hg18
+Tab delimited ucsc id gene name conversion file
 
 =head2 -help
 
@@ -148,15 +174,13 @@ Display the version
 
 =head1 DESCRIPTION
 
- This program maps the reads using tophat2
+This program runs the Cuffdiff after cufflinks
 
 =head1 EXAMPLE
 
-stepMirza.pl 
+stepRSEMCount.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -c conversion <ucsc conversion file> 
 
 =head1 AUTHORS
 
@@ -180,6 +204,4 @@ stepMirza.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
-
 

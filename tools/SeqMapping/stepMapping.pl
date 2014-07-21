@@ -78,8 +78,14 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 #    maps the reads to the index files and put the files under $outdir/recmapping/$indexname directory
 
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
+
+$indexpar=~s/_/ /g;
+
+print "indexpar=$indexpar\n\n";
+
 my $inputdir="";
 print "$previous\n";
+
 if ($previous=~/NONE/)
 {
   $inputdir = "$outdir/input";
@@ -136,11 +142,11 @@ foreach my $file (@files)
        $com.="samtools index $outdir/$bname.sorted.bam;";
   }
  print $com."\n\n";
- #`$com`;
+ `$com`;
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
+ #print $job."\n";   
+ #`$job`;
 }
 
 sub checkFile

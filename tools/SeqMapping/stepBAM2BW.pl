@@ -1,15 +1,15 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMirza.pl
+#                                       stepBAM2BW.pl
 #########################################################################################
 # 
-# This program runs mirza for all the files in $outdir/files directory
-# Inputs of the program is  
+#  Converts bam files for UCSC visualization.
 #
 #########################################################################################
 # AUTHORS:
 #
+# Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 # 
 #########################################################################################
@@ -24,29 +24,36 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $outdir           = ""; 
- my $exp              = "";
- my $miRNAseq         = "";
+ my $genomesize       = "";
+ my $type             = "";
+ my $GCB              = "";
+ my $W2BW             = "";
+ my $username         = "";
+ my $outdir           = "";
+ my $output           = "";
+ my $outputhtml       = "";
+ my $build            = "";
  my $jobsubmit        = "";
  my $servicename      = "";
- my $dir              = "";
- my $type             = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
-
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'exp=s'          => \$exp,
-        'mirnaseq=s'     => \$miRNAseq,
+        'type=s'         => \$type,
+        'coverage=s'     => \$GCB,
+	'wig2bigwig=s'   => \$W2BW,
+	'username=s'     => \$username,
+	'build=s'        => \$build,
+        'putout=s'       => \$output,
+        'indexhtml=s'    => \$outputhtml,
         'jobsubmit=s'    => \$jobsubmit,
-	'type=s'         => \$type,
         'servicename=s'  => \$servicename,
-	'dir=s'          => \$dir,
+        'genomesize=s'   => \$genomesize,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -63,60 +70,70 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($exp eq "") or ($outdir eq "") or ($miRNAseq eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomesize eq "") or ($outdir eq "") );	
 
  
 ################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
+#   converts the mapped reads for IGV visualization
 
+my $name=basename($outdir);
+`cp $outdir/rsem/*.tsv $output`;
+ 
+`mkdir -p $outdir/ucsc_$type`;
+my @files=();
+my $indir="";
 
-my $indir   = "$outdir/files";
-my $odir  = "$outdir/mirza";
-
-`mkdir -p $odir`;
-
-opendir D, $indir or die "Could not open $indir\n";
-my @files = grep /.fa/, readdir(D);
-closedir D;
-
-if (@files>0)
+if ($type eq "RSEM")
 {
-  foreach my $file(@files){
-    my $ofdir="$odir/$file";
-    `mkdir -p $ofdir`;
-    my $com="cd  $ofdir;nohup $dir/launch_MIRZA $exp $miRNAseq $indir/$file $type $dir > /dev/null 2>&1\n"; 
-    if(@files>1)
-    {
-      my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$file." -c \"$com\"";
-      `$job`;
-    }
-    else
-    { 
-      `$com`;
-    }
-  }
+   $indir   = "$outdir/rsem";
+   @files = <$indir/*/*.genome.sorted.bam>;
+}
+else
+{
+   $indir   = "$outdir/tophat";
+   @files = <$indir/*/*.sorted.bam>;
 }
 
+foreach my $d (@files){ 
+  my $libname="";
+  if ($type eq "RSEM")
+  {
+     $libname=basename($d, ".genome.sorted.bam");
+  }
+  else
+  {
+     $libname=basename($d, ".sorted.bam");
+  }
+  my $outputbg="$outdir/ucsc/$libname.bg";
+  my $outputbw="$outdir/ucsc/$libname.bw";
 
+  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
+  $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
+
+  $com.="rm -rf $outputbg;\n";
+
+  my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  print $job."\n";   
+  `$job`;
+}
 
 __END__
 
 
 =head1 NAME
 
-stepMirza.pl
+stepBAM2BW.pl
 
 =head1 SYNOPSIS  
 
-stepMirza.pl 
+stepBAM2BW.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -g genomesize <genome size file> 
+            -b build <genome build> 
 
-stepMirza.pl -help
+stepBAM2BW.pl -help
 
-stepMirza.pl -version
+stepBAM2BW.pl -version
 
 For help, run this script with -help option.
 
@@ -124,19 +141,15 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
+the output files will be "$outdir/after_ribosome/tdf" 
 
-=head2 -b tophatCmd <bowtie dir and file> 
+=head2  -g genomesize <genome size file> 
 
-Fullpath of tophat executable file. Ex: ~/tophat_dir/tophat
+Genome size file. (Full path)
 
-=head2  -g gtf <ucsc gtf files> 
+=head2   -b build <genome build> 
 
-Transcript annotation file
-
-=head2  -r bowtie2Ind <ribosome Index file>
-
-Bowtie2 index files. Ex: ~/bowtie_ind/hg18
+Samtools full path
 
 =head2 -help
 
@@ -152,11 +165,10 @@ Display the version
 
 =head1 EXAMPLE
 
-stepMirza.pl 
+stepBAM2BW.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
 =head1 AUTHORS
 

@@ -28,7 +28,7 @@
 
 #StepRSEMCount
 @RUNRSEMCOUNT     = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEMcount.pl
-@JRSEMCOUNT     = "@JOB"
+@JRSEMCOUNT       = "@JOB"
 
 #StepIGVTDF
 @RUNIGVTDF        = @PERL @TOOLSDIR/RNASeqRSEM/stepIGVTDF.pl
@@ -42,7 +42,7 @@
 @RUNBAM2BW        = @PERL @TOOLSDIR/RNASeqRSEM/stepBAM2BW.pl
 @RUNCOVERAGE      = "@BIN/bedtools/bin/genomeCoverageBed" 
 @WIGTOBIGWIG      = @BIN/wigToBigWig
-@JBAM2BW        = "@JOB -p 1 -m 4096 -t 60 -q short"
+@JBAM2BW          = "@JOB -p 1 -m 4096 -t 60 -q short"
 
 
 

@@ -62,6 +62,7 @@ while(scalar @ARGV > 0){
        close OUT;
      }
      my($filename, $directories, $suffix) = fileparse($inputfile);
+     `mkdir $outdir`;
      my $name="$outdir/$filename.$j";
      open OUT, ">$name";
      $j++;

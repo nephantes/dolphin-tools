@@ -27,7 +27,9 @@
  my $rsemref          = "";
  my $outdir           = "";
  my $params_rsem      = "";
+ my $previous         = "";
  my $bowtiepath       = "";
+ my $spaired          = "";
  my $rsemCmd          = "/project/umw_biocore/bin/rsem-1.2.3/rsem-calculate-expression";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -43,7 +45,9 @@ GetOptions(
 	'outdir=s'       => \$outdir,
         'cmdrsem=s'      => \$rsemCmd,
         'bowtiepath=s'   => \$bowtiepath,
+        'dspaired=s'       => \$spaired,
         'paramsrsem=s'   => \$params_rsem,
+        'previous=s'     => \$previous,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'rsemref=s'      => \$rsemref,
@@ -67,57 +71,74 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtiepath eq "") or ($o
 
  
 ################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
- 
+#    maps the reads to the the genome and put the files under $outdir directory
 
-my $indir   = "$outdir/after_ribosome";
-$outdir  = "$outdir/rsem";
+
+my $inputdir="";
+print "$previous\n";
+if ($previous=~/NONE/g)
+{
+  $inputdir = "$outdir/input";
+}
+else
+{
+  $inputdir = "$outdir/seqmapping/".lc($previous);
+}
+
+$outdir   = "$outdir/rsem";
+`mkdir -p $outdir`;
 $params_rsem =~s/,/ /g;
+my $com="";
+if ($spaired eq "single")
+{
+  $com=`ls $inputdir/*.fastq`;
+}
+else
+{
+  $com=`ls $inputdir/*.1.fastq`;
+}
 
-mkdir $outdir if (! -e $outdir);
+print $com;
+my @files = split(/[\n\r\s\t,]+/, $com);
 
-opendir D, $indir or die "Could not open $indir\n";
-my @files = grep /\.1\.notR$/, readdir(D);
-closedir D;
 if ($params_rsem=~/NONE/)
 {
    $params_rsem="";
 }
-if (@files>0)
-{
-  foreach my $e(@files){
-    my $sec=$e;
-    $sec=~s/\.1\.notR/\.2\.notR/;
-    my $str_files ="$indir/$e $indir/$sec";
-    #print "$str_files\n";
-    $e =~ s/\.1\.notR//;
 
-    my $com="mkdir -p $outdir/pipe.rsem.$e/;$rsemCmd --bowtie-path $bowtiepath $params_rsem --output-genome-bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$e/rsem.out.$e";  
+foreach my $file (@files)
+{ 
+ $file=~/.*\/(.*).fastq/;
+ my $bname=$1;
+ die "Error 64: please check the file:".$file unless (checkFile($file));
+ print "spaired = $spaired\n";
+  
+ if ($spaired eq "paired")
+ {
+    $file=~/(.*\/(.*)).1.fastq/;
+    $bname=$2;
+    my $file2=$1.".2.fastq";
+    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
+    my $str_files ="$file $file2";
+
+    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
    
-    my $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
-    print $job."\n";
-    `$job`;
-  }
+ }
+ else
+ {
+    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
+ }
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";
+ `$job`;
 }
-else
+
+
+sub checkFile
 {
-   opendir D, $indir or die "Could not open $indir\n";
-   @files = grep /notR$/, readdir(D);
-   closedir D;
-
-   foreach my $e(@files){
-      my $str_files ="$indir/$e";
-      #print "$str_files\n";
-      $e =~ s/\.notR//;
-
-	#my $outdir1=$outdir."_1";
-        #`mkdir -p $outdir1`;
-	#print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
-        my $com="mkdir -p $outdir/pipe.rsem.$e/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $str_files $rsemref $outdir/pipe.rsem.$e/rsem.out.$e\n"; 
-        print "$com\n";
-        my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$e." -c \"$com\"";
-        `$job`;
-   }
+ my ($file) = $_[0];
+ return 1 if (-e $file);
+ return 0;
 }
 
 __END__
@@ -178,7 +199,6 @@ stepRSEM.pl
 
 =head1 AUTHORS
 
- Hennady Shulha, PhD 
 
  Alper Kucukural, PhD
 

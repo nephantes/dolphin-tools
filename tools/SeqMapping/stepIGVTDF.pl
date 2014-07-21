@@ -1,15 +1,15 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMirza.pl
+#                                       stepIGVTDF.pl
 #########################################################################################
 # 
-# This program runs mirza for all the files in $outdir/files directory
-# Inputs of the program is  
+#  Converts bam files for IGV visualization.
 #
 #########################################################################################
 # AUTHORS:
 #
+# Hennady Shulha, PhD 
 # Alper Kucukural, PhD 
 # 
 #########################################################################################
@@ -24,29 +24,28 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $outdir           = ""; 
- my $exp              = "";
- my $miRNAseq         = "";
+ my $genome           = "";
+ my $type             = "";
+ my $outdir           = "";
+ my $samtools         = "";
+ my $igvtools         = "";
  my $jobsubmit        = "";
  my $servicename      = "";
- my $dir              = "";
- my $type             = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
-
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'exp=s'          => \$exp,
-        'mirnaseq=s'     => \$miRNAseq,
+        'type=s'         => \$type,
+        'samtools=s'     => \$samtools,
+        'igvtools=s'     => \$igvtools,
         'jobsubmit=s'    => \$jobsubmit,
-	'type=s'         => \$type,
         'servicename=s'  => \$servicename,
-	'dir=s'          => \$dir,
+        'genome=s'       => \$genome,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -63,60 +62,73 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($exp eq "") or ($outdir eq "") or ($miRNAseq eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($genome eq "") or ($outdir eq "") );	
 
  
 ################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
+#   converts the mapped reads for IGV visualization
 
+my $outd  = "$outdir/tdf_$type";
 
-my $indir   = "$outdir/files";
-my $odir  = "$outdir/mirza";
-
-`mkdir -p $odir`;
-
-opendir D, $indir or die "Could not open $indir\n";
-my @files = grep /.fa/, readdir(D);
-closedir D;
-
-if (@files>0)
-{
-  foreach my $file(@files){
-    my $ofdir="$odir/$file";
-    `mkdir -p $ofdir`;
-    my $com="cd  $ofdir;nohup $dir/launch_MIRZA $exp $miRNAseq $indir/$file $type $dir > /dev/null 2>&1\n"; 
-    if(@files>1)
-    {
-      my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$file." -c \"$com\"";
-      `$job`;
-    }
-    else
-    { 
-      `$com`;
-    }
-  }
+`mkdir -p $outd`;
+my @files=();
+print $type."\n";
+if ($type eq "RSEM")
+{ 
+   my $indir   = "$outdir/rsem";
+   @files = <$indir/pipe*/*.genome.sorted.bam>;
 }
+else
+{
+   my $indir   = "$outdir/tophat";
+   print $indir."\n";
+   @files = <$indir/pipe*/*.sorted.bam>;
+}
+foreach my $d (@files){ 
+  my ($com, $libname, $dirname)=();
+  print $d."\n";
 
-
+  if ($type eq "RSEM")
+  {
+     $libname=basename($d, ".genome.sorted.bam");
+     $dirname=dirname($d);
+     $libname=~s/rsem.out.//g;
+     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam;\n";
+     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai;\n";
+  }
+  else
+  {
+     $dirname=dirname($d);
+     $libname=basename($d, ".sorted.bam");
+     
+     $com="cp $d $outd/$libname.bam;\n";
+     $com.="cp $d.bai $outd/$libname.bam.bai;\n";
+  }
+ 
+  $com.="cd $outdir; $igvtools count -w 5 $outd/$libname.bam  $outd/$libname.tdf $genome\n"; 
+  
+  my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  print $job."\n";   
+  `$job`;
+}
 
 __END__
 
 
 =head1 NAME
 
-stepMirza.pl
+stepIGVTDF.pl
 
 =head1 SYNOPSIS  
 
-stepMirza.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
-stepMirza.pl -help
+stepIGVTDF.pl -help
 
-stepMirza.pl -version
+stepIGVTDF.pl -version
 
 For help, run this script with -help option.
 
@@ -124,19 +136,15 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
+the output files will be "$outdir/after_ribosome/tdf" 
 
-=head2 -b tophatCmd <bowtie dir and file> 
+=head2  -g genome <genome files> 
 
-Fullpath of tophat executable file. Ex: ~/tophat_dir/tophat
+Genome fasta file. (Full path)
 
-=head2  -g gtf <ucsc gtf files> 
+=head2   -t samtools <samtools fullpath> 
 
-Transcript annotation file
-
-=head2  -r bowtie2Ind <ribosome Index file>
-
-Bowtie2 index files. Ex: ~/bowtie_ind/hg18
+Samtools full path
 
 =head2 -help
 
@@ -152,11 +160,10 @@ Display the version
 
 =head1 EXAMPLE
 
-stepMirza.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
 =head1 AUTHORS
 
