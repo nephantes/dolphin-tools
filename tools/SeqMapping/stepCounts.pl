@@ -82,10 +82,19 @@ foreach my $mapname (@mapnames_arr)
   # Custom index, it requires the fasta file in the same directory with index file
      $name=$arr[0];
      my $ind=$arr[1];
-     if ($ind!~/fasta/)
+     if(checkFile("$ind.fasta"))
      {
-        $ind.=".fasta";
+       $ind.=".fasta";
      }
+     elsif(checkFile("$ind.fa"))
+     {
+       $ind.=".fa";
+     }
+     else
+     {
+      die "Error 64: please check the file: $ind.fa or $ind.fasta "; 
+     }
+
      $bedfile="$outd/tmp/$name.bed";
      $com="mkdir -p $outd/tmp;";
      $com.="$bedmake $ind $name>$bedfile";
@@ -120,6 +129,14 @@ foreach my $mapname (@mapnames_arr)
   $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv;\n";
   print $com."\n"; 
   `$com`;
+}
+
+
+sub checkFile
+{
+ my ($file) = $_[0];
+ return 1 if (-e $file);
+ return 0;
 }
 
 __END__

@@ -73,9 +73,9 @@ if ($barcode=~/NONE/g)
 }
 else
 {
-  $inputdir = "$outdir/seqmapping/".lc($barcode);
+  $inputdir = "$outdir/seqmapping/barcode";
 }
-
+print $inputdir."\n";
 $outdir   = "$outdir/fastqc";
 `mkdir -p $outdir`;
 my $com="";

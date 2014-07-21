@@ -141,12 +141,12 @@ foreach my $file (@files)
        $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
        $com.="samtools index $outdir/$bname.sorted.bam;";
   }
- print $com."\n\n";
- `$com`;
+ #print $com."\n\n";
+ #`$com`;
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- #print $job."\n";   
- #`$job`;
+ print $job."\n";   
+ `$job`;
 }
 
 sub checkFile

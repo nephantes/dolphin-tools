@@ -26,6 +26,7 @@
 #################### VARIABLES ######################
  my $outfile          = "";
  my $outdir           = "";
+ my $mappingnames     = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -36,7 +37,8 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'foutfile=s'      => \$outfile,
+	'foutfile=s'     => \$outfile,
+        'mappingnames=s' => \$mappingnames,
 	'outdir=s'       => \$outdir,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
@@ -69,6 +71,8 @@ $outdir   = "$outdir/counts";
 open(OUT, ">$outdir/index.html");
 
 my $com=`ls $inputdir/*.summary.tsv`;
+
+my @mnames=split(/,/,$mappingnames);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -105,31 +109,37 @@ print OUT "<body>\n";
 print OUT "<br><h4>Count files:</h4><br>\n";
 print OUT "All the count files are in the following directory: $outdir</h4><br>\n";
 print OUT "<div class=\"container\">";
+
+my %orderedmap=();
 foreach my $file (@files)
 {
    open(IN, $file);
    $file=~/.*\/(.*).summary.tsv/;
    my $name=$1;
    my $j=0;
-   print OUT "<br><h4>$name </h4><br>\n";
-   print OUT "<table class=\"table.colored\">\n";
+   $orderedmap{$name}="<br><h4>$name </h4><br>\n";
+   $orderedmap{$name}.= "<table class=\"table.colored\">\n";
    while (my $line=<IN>)
    {
-      print OUT "<tr>\n";
+      $orderedmap{$name}.="<tr>\n";
       my @arr=split(/\t/, $line);
       my $i=0;
       foreach my $val (@arr)
       {
-         print OUT "<th>$val</th>" if ($j==0 || $i ==0);
-         print OUT "<td>$val</td>" if ($j>0 && $i>0);
+         $orderedmap{$name}.="<th>$val</th>" if ($j==0 || $i ==0);
+         $orderedmap{$name}.="<td>$val</td>" if ($j>0 && $i>0);
          $i++;
       }
       $j++;
-      print OUT "</tr>\n";
+      $orderedmap{$name}.="</tr>\n";
    }
-   print OUT "</table>\n";
+   $orderedmap{$name}.="</table>\n";
 }
 
+foreach my $mapname (@mnames)
+{
+    print OUT $orderedmap{$mapname};
+}
 print OUT "</div>";
 print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/js/bootstrap.min.js\"></script>\n";
 

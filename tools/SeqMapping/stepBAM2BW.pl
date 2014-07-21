@@ -28,11 +28,7 @@
  my $type             = "";
  my $GCB              = "";
  my $W2BW             = "";
- my $username         = "";
  my $outdir           = "";
- my $output           = "";
- my $outputhtml       = "";
- my $build            = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -47,10 +43,6 @@ GetOptions(
         'type=s'         => \$type,
         'coverage=s'     => \$GCB,
 	'wig2bigwig=s'   => \$W2BW,
-	'username=s'     => \$username,
-	'build=s'        => \$build,
-        'putout=s'       => \$output,
-        'indexhtml=s'    => \$outputhtml,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genomesize=s'   => \$genomesize,
@@ -77,7 +69,6 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 #   converts the mapped reads for IGV visualization
 
 my $name=basename($outdir);
-`cp $outdir/rsem/*.tsv $output`;
  
 `mkdir -p $outdir/ucsc_$type`;
 my @files=();
@@ -104,14 +95,13 @@ foreach my $d (@files){
   {
      $libname=basename($d, ".sorted.bam");
   }
-  my $outputbg="$outdir/ucsc/$libname.bg";
-  my $outputbw="$outdir/ucsc/$libname.bw";
+  my $outputbg="$outdir/ucsc_$type/$libname.bg";
+  my $outputbw="$outdir/ucsc_$type/$libname.bw";
 
   my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;\n";
   $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;\n";
 
   $com.="rm -rf $outputbg;\n";
-
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   
   `$job`;
@@ -129,7 +119,6 @@ stepBAM2BW.pl
 stepBAM2BW.pl 
             -o outdir <output directory> 
             -g genomesize <genome size file> 
-            -b build <genome build> 
 
 stepBAM2BW.pl -help
 
@@ -146,8 +135,6 @@ the output files will be "$outdir/after_ribosome/tdf"
 =head2  -g genomesize <genome size file> 
 
 Genome size file. (Full path)
-
-=head2   -b build <genome build> 
 
 Samtools full path
 
