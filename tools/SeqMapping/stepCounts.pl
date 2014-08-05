@@ -105,10 +105,22 @@ foreach my $mapname (@mapnames_arr)
     # Common index, it requires the fasta file in the same directory with index file
       $name=$mapname;
       $bedfile="$gcommondb/$mapname/$mapname.bed";
+      print "MAPNAME:$mapname # $gcommondb\n\n";
+      if ($mapname=~/mm10/) #&& checkFile("$gcommondb/$mapname/piRNA.bed") )
+      {
+         print "HERE: $gcommondb/$mapname/piRNA.bed\n\n";
+         countCov($mapname, "piRNA", "$gcommondb/$mapname/piRNA.bed" , $outdir, $outd, $cmd);
+      }
   }
 
-  $inputdir = "$outdir/seqmapping/".lc($mapname);
-  $com=`ls $inputdir/*.sorted.bam`;
+countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd);
+}
+
+sub countCov
+{
+  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd)=@_; 
+  my $inputdir = "$outdir/seqmapping/".lc($mapname);
+  my $com=`ls $inputdir/*.sorted.bam`;
 
   my @files = split(/[\n\r\s\t,]+/, $com);
   my $filestr="";
@@ -122,10 +134,11 @@ foreach my $mapname (@mapnames_arr)
   }
   $com="mkdir -p $outd/tmp;\n"; 
   $com.="echo \"$header\">$outd/tmp/$name.header.tsv;\n"; 
-  $com.= "$cmd -bams $filestr -bed $bedfile -F -p>$outd/tmp/$name.counts.tmp;\n";
-  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$1\"\\t\"\$3\"\\t\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv;\n";
-  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.counts.tsv>$outd/$name.counts.tsv;\n";
-  $com.= "echo \"File\tReads\tPaired reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header;\n";
+  $com.= "$cmd -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp;\n";
+  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$4\"\\t\"\$3\"\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv;\n";
+  $com.= "sort -k3,3nr $outd/tmp/$name.counts.tsv>$outd/tmp/$name.sorted.tsv;\n";
+  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv;\n";
+  $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header;\n";
   $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv;\n";
   print $com."\n"; 
   `$com`;

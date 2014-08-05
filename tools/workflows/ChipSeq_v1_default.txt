@@ -13,7 +13,7 @@
 @RUNFASTQC   = "module load fastqc/0.10.1;fastqc"
 @FASTQCWRAPPER   = perl @TOOLSDIR/CHIPSeq/fastqc_wrapper.pl
 @FASTQCUNITER = perl @TOOLSDIR/CHIPSeq/stepAfterFastQC.pl
-@JFASTQ        = "@JOB -p 1 -m 4024 -t 1000"
+@JFASTQ        = "@JOB -p 1 -m 4024 -t 600"
 
 #stepSplit Fastq
 #@NUMBER          = 2000
@@ -62,7 +62,7 @@
 @MACSOUTDIR = @OUTDIR/macsout
 @MACSmodule = module load macs/1.4.2
 @MACSCMD = "@MACSmodule;macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
-@JMACS        = "@JOB -p 1 -m 4096 -t 240 -q short"
+@JMACS        = "@JOB -p 1 -m 16000 -t 600 -q short"
 
 #RunAggregation
 @RUNAGGREGATION  = @LDPATH;perl @TOOLSDIR/CHIPSeq/agg_plot_wrapper.pl

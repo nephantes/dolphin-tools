@@ -88,6 +88,7 @@ else
 $outdir   = "$outdir/rsem";
 `mkdir -p $outdir`;
 $params_rsem =~s/,/ /g;
+$params_rsem=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {

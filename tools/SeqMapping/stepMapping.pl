@@ -33,6 +33,7 @@
  my $jobsubmit        = "";
  my $awkdir           = "";
  my $bowtiePar        = "";
+ my $advparams        = "";
  my $bowtiecmd        = ""; 
  my $samtoolscmd      = "";
  my $servicename      = "";
@@ -54,6 +55,7 @@ GetOptions(
         'bowtiePar=s'    => \$bowtiePar,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
+        'radvparam=s'    => \$advparams,
         'param=s'        => \$param,
 	'help'           => \$help, 
 	'version'        => \$print_version,
@@ -80,6 +82,13 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 
 $indexpar=~s/_/ /g;
+
+if ($advparams ne "NONE")
+{
+  $indexpar=$advparams;
+  $indexpar=~s/,/ /g; 
+  $indexpar=~s/_/-/g; 
+}
 
 print "indexpar=$indexpar\n\n";
 
@@ -121,11 +130,17 @@ foreach my $file (@files)
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
 
-       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam >$outdir/$bname.bow 2>&1;";
-       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow>$outdir/$bname.sum;";
+       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
        $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
        $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
        $com.="samtools index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/$bname.fastq.mapped;";
+  #     $com.="rm -rf $file";
   }
   else
   {
@@ -136,10 +151,17 @@ foreach my $file (@files)
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
 
        $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow>$outdir/$bname.sum;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum;";
        $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
        $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
        $com.="samtools index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/*.mapped;";
+ #      $com.="rm -rf $inputdir/$bname.1.fastq";
+ #      $com.="rm -rf $inputdir/$bname.2.fastq";
   }
  #print $com."\n\n";
  #`$com`;

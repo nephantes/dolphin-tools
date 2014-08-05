@@ -16,7 +16,7 @@
 @RUNCHECK         = @PERL @TOOLSDIR/SeqMapping/stepCheck.pl
 
 #StepMapping
-@DEFBOWTIE2PARAM  = "-k 1 --no-unal"
+@DEFBOWTIE2PARAM  = "-N 1"
 @DEFDESCRIPTION   = "multiple mappers upto 1 mismatch"
 @RUNRECMAPPING    = @PERL @TOOLSDIR/SeqMapping/stepMapping.pl
 @AWKDIR           = @TOOLSDIR/SeqMapping

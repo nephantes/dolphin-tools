@@ -103,16 +103,9 @@ if (@files>0)
        #print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
        if($params eq "NONE"){$params="";}else{$params="--no-coverage-search"}
        my $com="$tophatCmd -p 4 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n"; 
-       if(@files>1)
-       {
-         my $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
-	 print $job."\n";
-         `$job`;
-       }
-       else
-       { 
-         `$com`;
-       }
+       my $job=$jobsubmit." -n ".$servicename."_".$e." -c \"$com\"";
+       print $job."\n";
+       `$job`;
     }
   }
 }
@@ -133,15 +126,9 @@ else
 	#print "$outdir/pipe.tophat.$e/accepted_hits.bam\n";
         if($params eq "NONE"){$params="";}else{$params="--no-coverage-search"}
         my $com="$tophatCmd  -p 4 $params -G $gtf $ti -o $outdir/pipe.tophat.$e $bowtie2Ind $str_files\n";
-        if(@files>1 && $jobsubmit!~/^$/)
-        {
-          my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$e." -c \"$com\"";
-          `$job`;
-        }
-        else
-        {  
-          `$com`;
-        }
+        my $job=$jobsubmit." -s $servicename -n ".$servicename."_".$e." -c \"$com\"";
+        print $job."\n";
+        `$job`;
       }
    }
 }

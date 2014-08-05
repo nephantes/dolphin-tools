@@ -89,6 +89,7 @@ else
 $outdir   = "$outdir/tophat";
 `mkdir -p $outdir`;
 $params_tophat =~s/,/ /g;
+$params_tophat=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {
@@ -132,7 +133,7 @@ foreach my $file (@files)
 
  if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"))
  {
-   $com="$tophatCmd -p 4 $params_tophat -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files;\n";
+   $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files;\n";
    $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted;\n";
    $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam;\n"; 
  }     
