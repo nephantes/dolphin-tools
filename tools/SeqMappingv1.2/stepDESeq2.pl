@@ -29,6 +29,8 @@
  my $num              = "";
  my $heatmap          = "";
  my $fitType          = "";
+ my $foldChange       = "";
+ my $padj             = "";
  my $rscriptCMD       = "";
  my $outdir           = "";
  my $jobsubmit        = "";
@@ -42,10 +44,12 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'cols=s'         => \$cols,
-	'dconds=s'        => \$conds,
-        'eheatmap=s'      => \$heatmap,
-        'num=s'           => \$num,
-        'fitType=s'      => \$fitType,
+	'dconds=s'       => \$conds,
+	'num=s'          => \$num,
+        'eheatmap=s'     => \$heatmap,
+        'tfitType=s'     => \$fitType,
+        'padj=s'         => \$padj,
+        'foldChange=s'   => \$foldChange,
         'rscriptCMD=s'   => \$rscriptCMD,
 	'outdir=s'       => \$outdir,
         'servicename=s'  => \$servicename,
@@ -81,12 +85,12 @@ $cols="c(\"$cols\")";
 $conds=~s/,/\",\"/g;
 $conds="c(\"$conds\")";
 
-makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap );
-makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap );
+makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange );
+makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange );
 
 sub makePlot
 {
-my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap )=@_;
+my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff)=@_;
 my $output = "$outdir/rscript_$type.R";
 my $table = "$outdir/deseq2_$type.csv";
 my $pdfname = "$outdir/heatmap_$type.pdf";
@@ -101,7 +105,7 @@ if ($heatmap eq "Yes")
 {
 $heatmapR=qq/
   f1<-res[!is.na(res\$padj) & !is.na(res\$log2FoldChange), ]
-  res_selected<-f1[(f1\$padj<0.01 & abs(f1\$log2FoldChange)>1),]
+  res_selected<-f1[(f1\$padj<$padj_cutoff & abs(f1\$log2FoldChange)>log2($foldChange_cutoff)),]
   ld <- log(filtd[rownames(res_selected),]+0.1,base=2)
 
   cldt <- scale(t(ld), center=TRUE, scale=TRUE);
@@ -109,8 +113,8 @@ $heatmapR=qq/
 
   dissimilarity <- 1 - cor(cld)
   distance <- as.dist(dissimilarity)
-  plot(hclust(distance),  main="Dissimilarity = 1 - Correlation", xlab="")
   pdf("$pdfname")
+  plot(hclust(distance),  main="Dissimilarity = 1 - Correlation", xlab="")
   heatmap.2(cld, col=redgreen(75), scale="row",
           key=TRUE, symkey=FALSE, density.info="none",cexRow=1,cexCol=1,margins=c(12,8),trace="none",srtCol=45)
   dev.off()

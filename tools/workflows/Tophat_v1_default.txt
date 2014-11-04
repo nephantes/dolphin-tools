@@ -22,7 +22,7 @@
 @BOWTIE2INDEX     = @GENOMEDB/@VERSION
 @GTF              = @GENOMEDB/ucsc.gtf#Required
 @TOPHAT2CMD       = "module load samtools/0.0.19; module load bowtie2/2-2.1.0; module load tophat/2.0.9; tophat2"
-@JTOPHAT          = "@JOB -p 4 -m 4096 -t 720"
+@JTOPHAT          = "@JOB -p 4 -m 4096 -t 900 -q long"
 
 #StepMerge
 @RUNSTEPMERGE     = @TOOLSDIR/Tophat/stepMerge.pl 

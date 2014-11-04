@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepDESeq2.pl
+#                                       stepMakeReport.pl
 #########################################################################################
 # 
 #  This program removes adapter sequence. 
@@ -24,13 +24,9 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $cols             = "";
- my $conds            = "";
- my $num              = "";
- my $heatmap          = "";
- my $fitType          = "";
- my $rscriptCMD       = "";
+ my $outfile          = "";
  my $outdir           = "";
+ my $mappingnames     = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -41,12 +37,8 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'cols=s'         => \$cols,
-	'dconds=s'        => \$conds,
-        'eheatmap=s'      => \$heatmap,
-        'num=s'           => \$num,
-        'fitType=s'      => \$fitType,
-        'rscriptCMD=s'   => \$rscriptCMD,
+	'foutfile=s'     => \$outfile,
+        'mappingnames=s' => \$mappingnames,
 	'outdir=s'       => \$outdir,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
@@ -66,127 +58,113 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($cols eq "") or ($conds eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ( $outfile eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
 my $inputdir="";
 
-$inputdir = "$outdir/rsem";
-$outdir   = "$outdir/DESeq2p$num";
+$inputdir = "$outdir/counts";
+$outdir   = "$outdir/counts";
 `mkdir -p $outdir`;
-$cols=~s/,/\",\"/g;
-$cols="c(\"$cols\")";
-$conds=~s/,/\",\"/g;
-$conds="c(\"$conds\")";
+open(OUT, ">$outdir/index.html");
 
-makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap );
-makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap );
+my $com=`ls $inputdir/*.summary.tsv`;
 
-sub makePlot
+my @mnames=split(/,/,$mappingnames);
+
+print $com;
+my @files = split(/[\n\r\s\t,]+/, $com);
+
+print OUT "<html>\n";
+print OUT "<link href=\"http://bioinfo.umassmed.edu/dist/css/bootstrap.css\" rel=\"stylesheet\">\n";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/lib/jquery-1.7.2.min.js\" type=\"text/javascript\"></script>\n";
+print OUT "<style type=\"text/css\">
+table.gridtable {
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
+}
+table.gridtable th {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
+}
+table.gridtable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
+}
+</style>";
+   
+print OUT "<body>\n";
+print OUT "<br><h4>Count files:</h4><br>\n";
+print OUT "All the count files are in the following directory: $outdir</h4><br>\n";
+print OUT "<div class=\"container\">";
+
+my %orderedmap=();
+foreach my $file (@files)
 {
-my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap )=@_;
-my $output = "$outdir/rscript_$type.R";
-my $table = "$outdir/deseq2_$type.csv";
-my $pdfname = "$outdir/heatmap_$type.pdf";
-my $alldetected = "$outdir/alldetected_$type.csv";
-my $selected_log2fc = "$outdir/selected_log2fc_$type.csv";
-my $inputfile=$inputdir."/".$type."_expression_expected_count.tsv";
-my $col=1;
-$col=2 if ($type eq "isoforms");
-
-my $heatmapR="";
-if ($heatmap eq "Yes")
-{
-$heatmapR=qq/
-  f1<-res[!is.na(res\$padj) & !is.na(res\$log2FoldChange), ]
-  res_selected<-f1[(f1\$padj<0.01 & abs(f1\$log2FoldChange)>1),]
-  ld <- log(filtd[rownames(res_selected),]+0.1,base=2)
-
-  cldt <- scale(t(ld), center=TRUE, scale=TRUE);
-  cld <- t(cldt)
-
-  dissimilarity <- 1 - cor(cld)
-  distance <- as.dist(dissimilarity)
-  plot(hclust(distance),  main="Dissimilarity = 1 - Correlation", xlab="")
-  pdf("$pdfname")
-  heatmap.2(cld, col=redgreen(75), scale="row",
-          key=TRUE, symkey=FALSE, density.info="none",cexRow=1,cexCol=1,margins=c(12,8),trace="none",srtCol=45)
-  dev.off()
-/;
+   open(IN, $file);
+   $file=~/.*\/(.*).summary.tsv/;
+   my $name=$1;
+   my $j=0;
+   $orderedmap{$name}="<br><h4>$name </h4><br>\n";
+   $orderedmap{$name}.= "<table class=\"table.colored\">\n";
+   while (my $line=<IN>)
+   {
+      $orderedmap{$name}.="<tr>\n";
+      my @arr=split(/\t/, $line);
+      my $i=0;
+      foreach my $val (@arr)
+      {
+         $orderedmap{$name}.="<th>$val</th>" if ($j==0 || $i ==0);
+         $orderedmap{$name}.="<td>$val</td>" if ($j>0 && $i>0);
+         $i++;
+      }
+      $j++;
+      $orderedmap{$name}.="</tr>\n";
+   }
+   $orderedmap{$name}.="</table>\n";
 }
 
-open(OUT, ">$output");
-my $rscript=qq/
-library("DESeq2")
-library("ggplot2")
-library("gplots")
-analyseDE <-  function(data,cond, fitType, tablefile )
+foreach my $mapname (@mnames)
 {
-  data1<-data.frame(data)
-  cols = c(1:dim(data1)[2]);
-  data1[,cols] = apply(data1[,cols], 2, function(x) as.numeric(as.integer(x)))
-  conds <- factor(cond)
-  colData = as.data.frame((colnames(data1)));
-  colData<-cbind(colData, conds)
-  colnames(colData) = c("Cond","group");
-  groups = factor(colData[,2]);
-  sumd = apply(X=data1,MARGIN=1,FUN=sum);
-
-  filtd = subset(data1, sumd > 10);
-
-  dds = DESeqDataSetFromMatrix(countData=as.matrix(filtd), colData=colData, design = ~ group);
-
-  dds <- DESeq(dds);
-
-  res <- results(dds);
-  
-  write.csv(res, file=tablefile)    
-  $heatmapR
-  ult<-cbind(data[rownames(res_selected), ], res[rownames(res_selected), c("padj", "log2FoldChange")],  2 ^ (res[rownames(res_selected), "log2FoldChange"]) )
-  colnames(ult)[dim(ult)[2]]<-"foldChange"
-  write.csv(ult, paste("$selected_log2fc",sep=""))
-
-  all<-cbind(data[rownames(filtd), ], res[rownames(res), c("padj", "log2FoldChange")], 2 ^ (res[rownames(res), "log2FoldChange"]) )
-  colnames(all)[dim(all)[2]]<-"foldChange"
-  write.csv(all, "$alldetected")
-
+    print OUT $orderedmap{$mapname};
 }
+print OUT "</div>";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/js/bootstrap.min.js\"></script>\n";
 
-file<-"$inputfile"
-rsem<- data.frame(read.table(file,sep="\t", header=TRUE, row.names=$col, quote = "\\"", dec = "."), stringsAsFactors=TRUE);
-
-data <- rsem[, $cols]
-cond <- factor( $conds )
-analyseDE(data, cond, "$fitType","$table")
-/;
-
-print OUT $rscript; 
 close(OUT);
 
-my $com="$rscriptCMD $output > /dev/null 2>&1";
-`$com`;
-}
+`cp $outdir/index.html $outfile`;
 
 __END__
 
 
 =head1 NAME
 
-stepDESeq2.pl
+stepMakeReport.pl
 
 =head1 SYNOPSIS  
 
-stepDESeq2.pl -i input <fastq> 
+stepMakeReport.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepDESeq2.pl -help
+stepMakeReport.pl -help
 
-stepDESeq2.pl -version
+stepMakeReport.pl -version
 
 For help, run this script with -help option.
 
@@ -237,9 +215,11 @@ Display the version
 =head1 EXAMPLE
 
 
-stepDESeq2.pl -d col1
+stepMakeReport.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
-            -f cbowtie_dir/bowtie
+            -b ~/bowtie_dir/bowtie
+            -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
+            -r ~/bowtie_ind/rRNA
 
 =head1 AUTHORS
 

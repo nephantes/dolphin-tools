@@ -17,14 +17,14 @@
 @RUNRIBO          = @PERL @TOOLSDIR/RNASeqRSEM/stepRibo.pl
 @RIBOINDEX        = @GENOMEDB/ribosomal_RNA #Required
 @BOWTIE2CMD       = @BIN/bowtie2-2.1.0/bowtie2
-@JRIBO          = "@JOB -p 2 -m 4096 -t 600 -q short"
+@JRIBO          = "@JOB -p 2 -m 4096 -t 240 -q short"
 
 #StepRSEM
 @RUNRSEM          = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEM.pl
 @RSEMCMD          = "@PERL @BIN/RSEM/rsem-calculate-expression"
 @BOWTIEPATH       = @BIN/bowtie-0.12.9
 @RSEMREF          = @GENOMEDB/rsem_ref
-@JRSEM            = "@JOB -p 4 -m 4096 -t 600 -q short"
+@JRSEM            = "@JOB -p 4 -m 8192 -t 900 -q long"
 
 #StepRSEMCount
 @RUNRSEMCOUNT     = @PERL @TOOLSDIR/RNASeqRSEM/stepRSEMcount.pl
@@ -35,14 +35,14 @@
 @GENOMEFASTA      = @GENOMEDB/@VERSION.fa #Required
 @SAMTOOLS         = "module load samtools/0.0.19;samtools"
 @IGVTOOLS         = @BIN/igvtools.sh
-@JIGVTDF        = "@JOB -p 1 -m 4096 -t 600 -q short"
+@JIGVTDF        = "@JOB -p 1 -m 4096 -t 240 -q short"
 
 #Step Convert BW
 @GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
 @RUNBAM2BW        = @PERL @TOOLSDIR/RNASeqRSEM/stepBAM2BW.pl
 @RUNCOVERAGE      = "@BIN/bedtools/bin/genomeCoverageBed" 
 @WIGTOBIGWIG      = @BIN/wigToBigWig
-@JBAM2BW          = "@JOB -p 1 -m 4096 -t 60 -q short"
+@JBAM2BW          = "@JOB -p 1 -m 4096 -t 240 -q short"
 
 
 

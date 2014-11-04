@@ -84,7 +84,7 @@ def main():
         CPU="1";
 
    if (TIME == None):
-        TIME="600";
+        TIME="240";
 
    if (QUEUE == None):
         queue="-q short"
@@ -97,6 +97,8 @@ def main():
    if (DBHOSTNAME == None):
         DBHOSTNAME="galaxy.umassmed.edu"
         
+   COM.replace('\"{','\'{')
+   COM.replace('}\"','}\'')
    print "COMMAND: [" + COM + "]\n"
    print "NAME: [" + NAME + "]\n"
    print "cpu: [" + CPU + "]\n"

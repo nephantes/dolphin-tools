@@ -9,7 +9,7 @@
 @GENOMEDB         = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GENOMEDB/commondb
 @JOB              = @PYTHON @BIN/workflow/scripts/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
-@JGEN             = "@JOB -p 1 -m 4096 -t 600 -q short"
+@JGEN             = "@JOB -p 1 -m 4096 -t 230 -q short"
 
 
 #StepCheck Input Files
@@ -21,7 +21,7 @@
 @RUNRECMAPPING    = @PERL @TOOLSDIR/SeqMapping/stepMapping.pl
 @AWKDIR           = @TOOLSDIR/SeqMapping
 @BOWTIE2CMD       = @BIN/bowtie2-2.2.3/bowtie2
-@JMAPPING         = "@JOB -p 1 -m 4096 -t 600 -q short"
+@JMAPPING         = "@JOB -p 1 -m 4096 -t 230 -q short"
 
 #StepBarcode Separation
 @RUNBARCODE         = @PERL @TOOLSDIR/SeqMapping/stepBarcode.pl
@@ -31,7 +31,7 @@
 #StepAdapter Remover
 @RUNADAPTER         = @PERL @TOOLSDIR/SeqMapping/stepAdapter.pl
 @ADAPTERREMOVERCMD  = "@JAVA -jar /project/umw_biocore/bin/Trimmomatic-0.32/trimmomatic-0.32.jar"
-@JADAPTER           = "@JOB -p 1 -m 8096 -t 600 -q short"
+@JADAPTER           = "@JOB -p 1 -m 8096 -t 230 -q short"
 
 #StepTrim 
 @RUNTRIM            = @PERL @TOOLSDIR/SeqMapping/stepTrimmer.pl
@@ -60,7 +60,7 @@
 @RSEMCMD          = "@PERL @BIN/RSEM/rsem-calculate-expression"
 @BOWTIEPATH       = @BIN/bowtie-0.12.9
 @RSEMREF          = @GENOMEDB/rsem_ref
-@JRSEM          = "@JOB -p 4 -m 4096 -t 600"
+@JRSEM          = "@JOB -p 4 -m 4096 -t 900 -q long"
 
 #StepRSEMCount
 @RUNRSEMCOUNT     = @PERL @TOOLSDIR/SeqMapping/stepRSEMcount.pl
@@ -71,20 +71,20 @@
 @BOWTIE2INDEX     = @GENOMEDB/@VERSION
 @GTF              = @GENOMEDB/ucsc.gtf#Required
 @TOPHAT2CMD       = "module load samtools/0.0.19; module load bowtie2/2-2.1.0; module load tophat/2.0.9; tophat2"
-@JTOPHAT          = "@JOB -p 4 -m 4096 -t 600 -q short"
+@JTOPHAT          = "@JOB -p 4 -m 4096 -t 900 -q long"
 
 #StepIGVTDF
 @RUNIGVTDF        = @PERL @TOOLSDIR/SeqMapping/stepIGVTDF.pl
 @GENOMEFASTA      = @GENOMEDB/@VERSION.fa #Required
 @IGVTOOLS         = @BIN/igvtools.sh
-@JIGVTDF          = "@JOB -p 4 -m 4096 -t 120"
+@JIGVTDF          = "@JOB -p 4 -m 4096 -t 230"
 
 #Step Convert BW
 @GENOMESIZE       = @GENOMEDB/@VERSION.chrom.sizes
 @RUNBAM2BW        = @PERL @TOOLSDIR/SeqMapping/stepBAM2BW.pl
 @RUNCOVERAGE      = "@BIN/bedtools/bin/genomeCoverageBed" 
 @WIGTOBIGWIG      = @BIN/wigToBigWig
-@JBAM2BW          = "@JOB -p 1 -m 4096 -t 60"
+@JBAM2BW          = "@JOB -p 1 -m 4096 -t 230"
 
 
 
