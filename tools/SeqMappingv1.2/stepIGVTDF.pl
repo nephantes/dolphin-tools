@@ -25,6 +25,7 @@
 #################### VARIABLES ######################
  my $genome           = "";
  my $type             = "";
+ my $pair             = "";
  my $insertlen        = "";
  my $outdir           = "";
  my $samtools         = "";
@@ -44,6 +45,7 @@ GetOptions(
         'samtools=s'     => \$samtools,
         'igvtools=s'     => \$igvtools,
         'len=s'          => \$insertlen,
+        'pair=s'         => \$pair,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genome=s'       => \$genome,
@@ -96,11 +98,16 @@ else
    @files = <$indir/pipe*/*.sorted.bam>;
 }
 
-my $inslen="";
+my $param="";
 if ($insertlen!~/^$/)
 {
-  $inslen="-e $insertlen";
+  $param="-e $insertlen";
 }
+if ($pair eq "paired")
+{
+  $param="--pairs";
+}
+
 
 foreach my $d (@files){ 
   my ($com, $libname, $dirname)=();
@@ -124,7 +131,7 @@ foreach my $d (@files){
      $com.="cp $d.bai $outd/$libname.bam.bai;\n";
   }
  
-  $com.="cd $outdir; $igvtools count -w 5 $inslen $outd/$libname.bam  $outd/$libname.tdf $genome\n"; 
+  $com.="cd $outdir; $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome\n"; 
   
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   

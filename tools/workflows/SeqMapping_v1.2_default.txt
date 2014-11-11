@@ -16,12 +16,12 @@
 @RUNCHECK         = @PERL @SEQMAPPING/stepCheck.pl
 
 #StepMapping
-@DEFBOWTIE2PARAM  = "-N 1"
+@DEFBOWTIE2PARAM  = "-p 2 -N 1"
 @DEFDESCRIPTION   = "multiple mappers upto 1 mismatch"
 @RUNRECMAPPING    = @PERL @SEQMAPPING/stepMapping.pl
 @AWKDIR           = @SEQMAPPING
 @BOWTIE2CMD       = @BIN/bowtie2-2.2.3/bowtie2
-@JMAPPING         = "@JOB -p 1 -m 4096 -t 230 -q short"
+@JMAPPING         = "@JOB -p 2 -m 16096 -t 900 -q long"
 
 #StepBarcode Separation
 @RUNBARCODE         = @PERL @SEQMAPPING/stepBarcode.pl
