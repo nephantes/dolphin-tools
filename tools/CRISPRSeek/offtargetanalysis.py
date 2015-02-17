@@ -223,12 +223,13 @@ def runCRISPRSeek( inputfile, outputdir, output, username, bsgenomename, maxmism
         Rprog+=getName(bsgenomename, "library(%s)\n", bsgenomesdict) 
         Rprog+=getName(bsgenomename, "library(%s)\n", txdbdict) 
         Rprog+=getName(bsgenomename, "library(%s)\n", genomeanndict)
-
+	Rprog+="setwd('"+outputdir+"')\n"
         Rprog+="outputDir <- file.path('"+outputdir+"','CRISPRSeek' )\n"
         Rprog+="offTargetAnalysis('%s',\n"%inputfile
         Rprog+=getName(bsgenomename, "   BSgenomeName = %s,\n", bsgenomenamedict) 
         Rprog+=getName(bsgenomename, "   txdb = %s,\n", txdbdict)
         Rprog+="   REpatternFile = system.file('extdata', 'NEBenzymes.fa', package = 'CRISPRseek'),\n"
+	Rprog+="   findgRNAsWithREcutOnly = FALSE,\n";
         if (maxmismatch > 0):
            Rprog+="   max.mismatch=%s,\n"%str(maxmismatch)
         if (len(getName(bsgenomename, '%s', organndict))>0):
@@ -316,7 +317,7 @@ def parse_content( content, ncols=8, base64=False, verbose=0 ) :
 	'''
 
 	content = content.replace( '__gt__', '>' ) 
-	content = re.sub( ':', '\n', content ) 
+	content = re.sub( '[:,]', '\n', content ) 
         return content
 
 if __name__ == "__main__":

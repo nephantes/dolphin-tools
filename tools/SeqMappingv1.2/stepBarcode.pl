@@ -70,6 +70,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($barcode eq "") or ($outd
 $outdir   = "$outdir/seqmapping/barcode";
 `mkdir -p $outdir`;
 my @names=();
+my @barcodes=();
 open(OUT, ">$outdir/barcode.fa");
 $barcode=~s/[,\s]+/\t/g;
 $barcode=~s/:+/\n/g;
@@ -77,7 +78,11 @@ my @nms=split(/\n/,$barcode);
 foreach my $n(@nms)
 {
   $n=~/(.*)\t(.*)/;
-  push(@names, $1);
+  if ($1!~/^Distance/ || $1!~/^Format/)
+  {
+    push(@names, $1);
+    push(@barcodes, $2);
+  }
 }
 print OUT "$barcode";
 close(OUT);
@@ -95,15 +100,17 @@ foreach my $line (@files)
  {
     die "Error 64: please check the file:".$line unless (checkFile($line));
     print $line."\n\n";
-    $line=~/.*\/(.*)\./;
+    $line=~/.*\/(.*)\.(.*)/;
     my $nm=$1;
+    my $ext=$2;
     $bname=$nm;
     my $mvcom="";
-    foreach my $name (@names)
+    for (my $i=0; $i<@names; $i++)
     {
-       $mvcom.="mv $outdir/$nm.$name.fq $outdir/$name.fastq;";
+       $mvcom.="mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq;";
+       $mvcom.="rmdir $outdir/$barcodes[$i];";
     }
-    $com="$cmdPE -bcfile $outdir/barcode.fa -in $line -outdir $outdir > /dev/null;$mvcom";  
+    $com="$cmdPE -b $outdir/barcode.fa -f $line -d $outdir > /dev/null;$mvcom";  
  }
  else
  {
@@ -119,19 +126,24 @@ foreach my $line (@files)
       my $file1=$files[0];
       my $file2=$files[1];
       print "$file1:$file2\n\n";
-      $file1=~/.*\/(.*)\./;
+      $file1=~/.*\/(.*)\.(.*)/;
       my $nm1=$1;
+      my $ext1=$2;
       $bname=$nm1;
-      $file2=~/.*\/(.*)\./;
+      $file2=~/.*\/(.*)\.(.*)/;
       my $nm2=$1;
+      my $ext2=$2;
       my $mvcom="";
-      foreach my $name (@names)
+      for (my $i=0; $i<@names; $i++)
       {
-         $mvcom.="mv $outdir/$nm1.$name.fq $outdir/$name.1.fastq;";
-         $mvcom.="mv $outdir/$nm2.$name.fq $outdir/$name.2.fastq;";
+         $mvcom.="mv $outdir/$barcodes[$i]/$nm1.$ext1 $outdir/$names[$i].1.fastq;";
+         $mvcom.="mv $outdir/$barcodes[$i]/$nm2.$ext2 $outdir/$names[$i].2.fastq;";
+         $mvcom.="rmdir $outdir/$barcodes[$i];";
       }
 
-      $com="$cmdPE -bcfile $outdir/barcode.fa -in $file1 -pair2File $file2 -outdir $outdir > /dev/null;$mvcom";  
+      #$com="$cmdPE -bcfile $outdir/barcode.fa -in $file1 -pair2File $file2 -outdir $outdir > /dev/null;$mvcom";  
+      $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null;$mvcom";  
+      #$com="$mvcom";  
     }
  }
  #print $com."\n\n";

@@ -159,12 +159,14 @@ analyseDE <-  function(data,cond, fitType, tablefile )
 }
 
 file<-"$inputfile"
-rsem<- data.frame(read.table(file,sep="\t", header=TRUE, row.names=$col, quote = "\\"", dec = "."), stringsAsFactors=TRUE);
+rsem<- data.frame(read.table(file,sep="\\t", header=TRUE, row.names=$col, quote = "\\"", dec = "."), stringsAsFactors=TRUE);
 
 data <- rsem[, $cols]
 cond <- factor( $conds )
 analyseDE(data, cond, "$fitType","$table")
 /;
+print $rscript; 
+
 
 print OUT $rscript; 
 close(OUT);

@@ -25,7 +25,8 @@
 
 #StepBarcode Separation
 @RUNBARCODE         = @PERL @SEQMAPPING/stepBarcode.pl
-@PAIREDBSPLITTERCMD = "@JAVA -jar /project/umw_garberlab/bin/fqsplitter.jar"
+#@PAIREDBSPLITTERCMD = "@JAVA -jar /project/umw_garberlab/bin/fqsplitter.jar"
+@PAIREDBSPLITTERCMD = "@BIN/novo/novocraft/novobarcode"
 @FASTX              = @BIN/fastx_toolkit_0.0.13/bin
 @SINGLEBSPLITTERCMD = "@PERL @FASTX/fastx_barcode_splitter.pl"
 
@@ -76,7 +77,7 @@
 @BOWTIE2INDEX       = @GDB/@VERSION
 @GTF                = @GDB/ucsc.gtf#Required
 @TOPHAT2CMD         = "module load samtools/0.0.19; module load bowtie2/2-2.1.0; module load tophat/2.0.9; tophat2"
-@JTOPHAT            = "@JOB -p 4 -m 4096 -t 900 -q long"
+@JTOPHAT            = "@JOB -p 4 -m 4096 -t 1200 -q long"
 
 #stepSplit Fastq
 @RUNSPLIT           = @SEQMAPPING/stepSplit.pl

@@ -4,4 +4,4 @@ OUTDIR=$1
 TARFILE=$2
 
 cd $OUTDIR
-tar cvfz $TARFILE CRISPRSeek offtargetanalysis.R 
+tar cvfz $TARFILE CRISPRSeek *.R 

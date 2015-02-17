@@ -4,7 +4,7 @@
 #                                       stepRSEMCount.pl
 #########################################################################################
 # 
-#  This program runs the Cuffdiff after cufflinks
+#  This program merges rsem output files
 #
 #########################################################################################
 # AUTHORS:
@@ -173,7 +173,7 @@ Display the version
 
 =head1 DESCRIPTION
 
-This program runs the Cuffdiff after cufflinks
+This program merges rsem output files
 
 =head1 EXAMPLE
 

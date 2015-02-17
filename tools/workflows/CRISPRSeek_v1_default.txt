@@ -13,6 +13,7 @@
 
 #StepCrisprSeek
 @RUNCRISPRSEEK    = module load R/3.1.0;module load R/DEV_MOD/3.1.0/CRISPRseek/1.5.5;@PYTHON @CRISPRSEEK/offtargetanalysis.py 
+@COMPARE2SEQ      = module load R/3.1.0;module load R/DEV_MOD/3.1.0/CRISPRseek/1.5.5;@PYTHON @CRISPRSEEK/compare2sequences.py
 @JCRISPRSEEK      = "@JOB -p 1 -m 4096 -t 230 -q short"
 
 #StepPackResults
