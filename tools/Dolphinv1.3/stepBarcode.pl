@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAdapter.pl
+#                                       stepBarcode.pl
 #########################################################################################
 # 
-#  This program removes adapter sequence. 
+#  This program removes barcode sequence. 
 #
 #
 #########################################################################################
@@ -24,11 +24,11 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $adapter          = "";
+ my $barcode          = "";
  my $outdir           = "";
  my $jobsubmit        = "";
  my $spaired          = "";
- my $previous         = ""; 
+ my $input            = ""; 
  my $cmd              = ""; 
  my $servicename      = "";
  my $help             = "";
@@ -36,13 +36,11 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
-
 GetOptions( 
-        'adapter=s'      => \$adapter,
+        'input=s'        => \$input,
+        'barcode=s'      => \$barcode,
 	'outdir=s'       => \$outdir,
         'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
         'cmd=s'          => \$cmd,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
@@ -62,75 +60,103 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($barcode eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/g)
-{
-  $inputdir = "$outdir/input";
-}
-else
-{
-  $inputdir = "$outdir/seqmapping/".lc($previous);
-}
+my $inputdir   = "$outdir/input";
 
-$outdir   = "$outdir/seqmapping/adapter";
+$outdir   = "$outdir/seqmapping/barcode";
 `mkdir -p $outdir`;
-open(OUT, ">$outdir/adapter.fa");
-my @adaps=split(/:/,$adapter);
-my $i=1;
-foreach my $adap (@adaps)
+my @names=();
+my @barcodes=();
+open(OUT, ">$outdir/barcode.fa");
+$barcode=~s/[,\s]+/\t/g;
+$barcode=~s/:+/\n/g;
+my @nms=split(/\n/,$barcode);
+foreach my $n(@nms)
 {
- print OUT ">adapter$i\n$adap\n";
- $i++;
+  $n=~/(.*)\t(.*)/;
+  if ($1!~/^Distance/ || $1!~/^Format/)
+  {
+    push(@names, $1);
+    push(@barcodes, $2);
+  }
 }
+print OUT "$barcode";
 close(OUT);
 
 my $com="";
-if ($spaired eq "single")
-{
- $com=`ls $inputdir/*.fastq 2>&1`;
-}
-else
-{
- $com=`ls $inputdir/*.1.fastq 2>&1`;
-}
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+my @files=split(/:/,$input);
+my @cmds=split(/:/,$cmd);
+my $cmdSE=$cmds[0];
+my $cmdPE=$cmds[1];
 
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
-
-foreach my $file (@files)
-{
- die "Error 64: please check the file:".$file unless (checkFile($file));
  my $bname="";
  if ($spaired eq "single")
  {
-    $file=~/.*\/(.*).fastq/;
-    $bname=$1;
-    print $file."\n\n";
-    $com="$cmd SE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $outdir/$bname.fastq ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:15";  
+    my $filename=getFileName($inputdir, 0);
+
+    print $filename."\n\n";
+    $filename=~/.*\/(.*)\.(.*)/;
+    my $nm=$1;
+    my $ext=$2;
+    $bname=$nm;
+    my $mvcom="";
+    for (my $i=0; $i<@names; $i++)
+    {
+      if ($names[$i]!~/^$/){
+       $mvcom.="mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq;";
+       $mvcom.="rmdir $outdir/$barcodes[$i];";
+      }
+    }
+    $com="$cmdPE -b $outdir/barcode.fa -f $filename -d $outdir > /dev/null;$mvcom";  
  }
  else
  {
     print "PAIRED\n\n";
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    print "$file:$file2\n\n";
-    $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:20";  
+    
+      my $file1=getFileName($inputdir, 1);
+      my $file2=getFileName($inputdir, 2);
+      print "$file1:$file2\n\n";
+      $file1=~/.*\/(.*)\.(.*)/;
+      my $nm1=$1;
+      my $ext1=$2;
+      $bname=$nm1;
+      $file2=~/.*\/(.*)\.(.*)/;
+      my $nm2=$1;
+      my $ext2=$2;
+      my $mvcom="";
+      for (my $i=0; $i<@names; $i++)
+      {
+        if ($names[$i]!~/^$/){
+         $mvcom.="mv $outdir/$barcodes[$i]/$nm1.$ext1 $outdir/$names[$i].1.fastq;";
+         $mvcom.="mv $outdir/$barcodes[$i]/$nm2.$ext2 $outdir/$names[$i].2.fastq;";
+         $mvcom.="rmdir $outdir/$barcodes[$i];";
+        }
+      }
+
+      #$com="$cmdPE -bcfile $outdir/barcode.fa -in $file1 -pair2File $file2 -outdir $outdir > /dev/null;$mvcom";  
+      $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null;$mvcom";  
+      #$com="$mvcom";  
  }
- print $com."\n\n";
+ #print $com."\n\n";
  #`$com`;
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+
+sub getFileName
+{
+  my ($inputdir, $i)= @_;
+  
+  my  $pairstr="";
+  $pairstr=".$i" if ($i>0);
+  my $filename="$inputdir/data$pairstr.fastq";
+  die "Error 64: please check the file or check if you chose single and paired end library right!".$filename unless (checkFile($filename));
+  return $filename;
 }
 
 sub checkFile
@@ -145,19 +171,19 @@ __END__
 
 =head1 NAME
 
-stepAdapter.pl
+stepBarcode.pl
 
 =head1 SYNOPSIS  
 
-stepAdapter.pl -i input <fastq> 
+stepBarcode.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepAdapter.pl -help
+stepBarcode.pl -help
 
-stepAdapter.pl -version
+stepBarcode.pl -version
 
 For help, run this script with -help option.
 
@@ -208,7 +234,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepBarcode.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"

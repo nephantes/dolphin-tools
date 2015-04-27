@@ -83,14 +83,14 @@ $outdir   = "$outdir/seqmapping/trim";
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
-
-print $com;
+die "Error 64: please check the if you defined the trimming parameters right:" unless ($com !~/No such file or directory/);
+print "HERE".$com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 foreach my $file (@files)
@@ -154,11 +154,11 @@ sub trimFiles
       $i++;
     }
     $com.="mv $outfile $outdir/$bname.fastq;rm -rf $outdir/*.tmp";
-    print $com."\n";
-    `$com`;
+    #print $com."\n";
+    #`$com`;
     my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-    #print $job."\n";   
-    #`$job`;
+    print $job."\n";   
+    `$job`;
 }
 
 # automatic format detection

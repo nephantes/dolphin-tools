@@ -93,33 +93,27 @@ $params_rsem=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {
-  $com=`ls $inputdir/*.fastq 2>&1`;
+  $com=`ls $inputdir/*.fastq`;
 }
 else
 {
-  $com=`ls $inputdir/*.1.fastq 2>&1`;
+  $com=`ls $inputdir/*.1.fastq`;
 }
 
-die "Error 64: please check the if you defined the parameters are right:" unless ($com !~/No such file or directory/);
-
 print $com;
+my @files = split(/[\n\r\s\t,]+/, $com);
 
 if ($params_rsem=~/NONE/)
 {
    $params_rsem="";
 }
 
-my @files = split(/[\n\r\s\t,]+/, $com);
-
 foreach my $file (@files)
 { 
  $file=~/.*\/(.*).fastq/;
  my $bname=$1;
- print $file."\n";
- print $bname."\n";
-
  $bname=~s/[\s\t\n]+//g;
- if (length($bname) > 0 )
+ if (length($bname) > 1 )
  {
   die "Error 64: please check the file:".$file unless (checkFile($file));
   print "spaired = $spaired\n";
@@ -138,9 +132,7 @@ foreach my $file (@files)
   else
   {
     $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
-
   }
-    print $com."\n";
   my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
   print $job."\n";
   `$job`;

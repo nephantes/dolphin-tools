@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAdapter.pl
+#                                       stepCounts.pl
 #########################################################################################
 # 
-#  This program removes adapter sequence. 
+#  This program trims the reads in the files. 
 #
 #
 #########################################################################################
@@ -24,11 +24,11 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $adapter          = "";
+ my $mapnames         = "";
  my $outdir           = "";
  my $jobsubmit        = "";
- my $spaired          = "";
- my $previous         = ""; 
+ my $bedmake          = "";
+ my $gcommondb        = "";
  my $cmd              = ""; 
  my $servicename      = "";
  my $help             = "";
@@ -39,15 +39,15 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'adapter=s'      => \$adapter,
-	'outdir=s'       => \$outdir,
-        'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
+        'mapnames=s'     => \$mapnames,
+		'outdir=s'       => \$outdir,
         'cmd=s'          => \$cmd,
+        'bedmake=s'      => \$bedmake,
+        'gcommondb=s'    => \$gcommondb,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+		'help'           => \$help, 
+		'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -62,76 +62,94 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($mapnames eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/g)
-{
-  $inputdir = "$outdir/input";
-}
-else
-{
-  $inputdir = "$outdir/seqmapping/".lc($previous);
+my $outd   = "$outdir/counts";
+`mkdir -p $outd`;
+my ($inputdir, $com)=();
+
+my @mapnames_arr=split(/[,\t\s]+/, $mapnames);
+foreach my $mapname (@mapnames_arr)
+{ 
+  my ($name, $bedfile)=();
+  my @arr = split(/:/, $mapname);
+  $com="";
+  if (scalar(@arr)==2)
+  {
+  # Custom index, it requires the fasta file in the same directory with index file
+     $name=$arr[0];
+     my $ind=$arr[1];
+     if(checkFile("$ind.fasta"))
+     {
+       $ind.=".fasta";
+     }
+     elsif(checkFile("$ind.fa"))
+     {
+       $ind.=".fa";
+     }
+     else
+     {
+      die "Error 64: please check the file: $ind.fa or $ind.fasta "; 
+     }
+
+     $bedfile="$outd/tmp/$name.bed";
+     $com="mkdir -p $outd/tmp;\n";
+     $com.="$bedmake $ind $name>$bedfile;\n";
+  }
+  else
+  {
+    # Common index, it requires the fasta file in the same directory with index file
+      $name=$mapname;
+      $bedfile="$gcommondb/$mapname/$mapname.bed";
+      print "MAPNAME:$mapname # $gcommondb\n\n";
+      if ($gcommondb=~/$mapname/) #&& checkFile("$gcommondb/$mapname/piRNA.bed") )
+      {
+         if (checkFile("$gcommondb/$mapname/piRNAcoor.bed"))
+         {
+           countCov($mapname, "piRNAcoor", "$gcommondb/$mapname/piRNAcoor.bed" , $outdir, $outd, $cmd, "");
+         }
+         if (checkFile("$gcommondb/$mapname/miRNAcoor.bed"))
+         {
+           countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "");
+         }
+      }
+  }
+
+countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com);
 }
 
-$outdir   = "$outdir/seqmapping/adapter";
-`mkdir -p $outdir`;
-open(OUT, ">$outdir/adapter.fa");
-my @adaps=split(/:/,$adapter);
-my $i=1;
-foreach my $adap (@adaps)
+sub countCov
 {
- print OUT ">adapter$i\n$adap\n";
- $i++;
-}
-close(OUT);
+  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom)=@_; 
+  my $inputdir = "$outdir/seqmapping/".lc($mapname);
+  my $com=`ls $inputdir/*.sorted.bam`;
 
-my $com="";
-if ($spaired eq "single")
-{
- $com=`ls $inputdir/*.fastq 2>&1`;
+  my @files = split(/[\n\r\s\t,]+/, $com);
+  my $filestr="";
+  
+  my $header="id\tlen";
+  foreach my $file (@files)
+  {
+    $filestr.=$file." ";
+    $file=~/.*\/(.*)\.sorted.bam/;
+    $header.="\t$1";
+  }
+  $com="mkdir -p $outd/tmp;\n\n"; 
+  $com.=$precom."\n\n";
+  $com.="echo \"$header\">$outd/tmp/$name.header.tsv;\n"; 
+  $com.= "$cmd -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp;\n";
+  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$4\"\\t\"(\$3-\$2)\"\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv;\n";
+  $com.= "sort -k3,3nr $outd/tmp/$name.counts.tsv>$outd/tmp/$name.sorted.tsv;\n";
+  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv;\n";
+  $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header;\n";
+  $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv;\n";
+  print $com."\n"; 
+  `$com`;
 }
-else
-{
- $com=`ls $inputdir/*.1.fastq 2>&1`;
-}
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
-
-foreach my $file (@files)
-{
- die "Error 64: please check the file:".$file unless (checkFile($file));
- my $bname="";
- if ($spaired eq "single")
- {
-    $file=~/.*\/(.*).fastq/;
-    $bname=$1;
-    print $file."\n\n";
-    $com="$cmd SE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $outdir/$bname.fastq ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:15";  
- }
- else
- {
-    print "PAIRED\n\n";
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    print "$file:$file2\n\n";
-    $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:20";  
- }
- print $com."\n\n";
- #`$com`;
- 
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
-}
 
 sub checkFile
 {
@@ -145,19 +163,19 @@ __END__
 
 =head1 NAME
 
-stepAdapter.pl
+stepCounts.pl
 
 =head1 SYNOPSIS  
 
-stepAdapter.pl -i input <fastq> 
+stepCounts.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepAdapter.pl -help
+stepCounts.pl -help
 
-stepAdapter.pl -version
+stepCounts.pl -version
 
 For help, run this script with -help option.
 
@@ -208,7 +226,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepCounts.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"

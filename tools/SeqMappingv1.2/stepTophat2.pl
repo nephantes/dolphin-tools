@@ -93,12 +93,13 @@ $params_tophat=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters are right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -106,10 +107,10 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 my $ucsc=$gtf;
 $ucsc=~s/\.gtf/\.fa/;
 my $ti="";
-if (-s $ucsc) {
-  $ucsc=~s/\.fa//;
-  $ti=" --transcriptome-index=$ucsc";
-}
+#if (-s $ucsc) {
+#  $ucsc=~s/\.fa//;
+#  $ti=" --transcriptome-index=$ucsc";
+#}
 
 if ($params_tophat=~/NONE/)
 {

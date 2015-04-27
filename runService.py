@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import logging
 from optparse import OptionParser
 import sys
 import os
@@ -136,6 +136,9 @@ def main():
       comstr=COM
 
     #print "\n\n\n\n\n"+comstr+"\n"
+    logging.basicConfig(filename='/project/umw_biocore/bin/tmp/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(comstr)
 
     f=open(bash_script_file, 'w')
    

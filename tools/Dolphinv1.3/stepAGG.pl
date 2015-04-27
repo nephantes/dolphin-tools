@@ -82,10 +82,7 @@ if ($previous=~/SPLIT/g)
 $outdir  = "$outdir/agg";
 `mkdir -p $outdir`;
 my $com="";
-$com=`ls $inputdir/*$sorted.bam 2>&1`;
-
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
-
+$com=`ls $inputdir/*$sorted.bam`;
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 

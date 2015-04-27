@@ -91,6 +91,11 @@ elsif ($type eq "mergechip")
    my $indir   = "$outdir/seqmapping/mergechip";
    @files = <$indir/*.bam>;
 }
+elsif ($type eq "mergesplit")
+{ 
+   my $indir   = "$outdir/mergesplit";
+   @files = <$indir/*.bam>;
+}
 else
 {
    my $indir   = "$outdir/tophat";

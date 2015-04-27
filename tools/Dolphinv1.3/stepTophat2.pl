@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRSEM.pl
+#                                       stepTophat2.pl
 #########################################################################################
 # 
 #  This program quantify the genes using RSEM 
@@ -23,13 +23,14 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $rsemref          = "";
+ my $gtf              = "";
  my $outdir           = "";
- my $params_rsem      = "";
+ my $params_tophat    = "";
  my $previous         = "";
- my $bowtiepath       = "";
+ my $bowtie2Ind       = "";
  my $spaired          = "";
- my $rsemCmd          = "/project/umw_biocore/bin/rsem-1.2.3/rsem-calculate-expression";
+ my $tophatCmd        = "";
+ my $samtools         = ""; 
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -42,14 +43,15 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'cmdrsem=s'      => \$rsemCmd,
-        'bowtiepath=s'   => \$bowtiepath,
-        'dspaired=s'       => \$spaired,
-        'paramsrsem=s'   => \$params_rsem,
+        'tophatcmd=s'    => \$tophatCmd,
+        'dspaired=s'     => \$spaired,
+        'paramstophat=s' => \$params_tophat,
+        'bowtie2Ind=s'   => \$bowtie2Ind,
         'previous=s'     => \$previous,
         'jobsubmit=s'    => \$jobsubmit,
+        'samtools=s'     => \$samtools,
         'servicename=s'  => \$servicename,
-        'rsemref=s'      => \$rsemref,
+        'gtf=s'          => \$gtf,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -66,7 +68,7 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtiepath eq "") or ($outdir eq "") or ($rsemCmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtie2Ind eq "") or ($outdir eq "") or ($tophatCmd eq "") );	
 
  
 ################### MAIN PROGRAM ####################
@@ -84,69 +86,62 @@ else
   $inputdir = "$outdir/seqmapping/".lc($previous);
 }
 
-$outdir   = "$outdir/rsem";
+$outdir   = "$outdir/tophat";
 `mkdir -p $outdir`;
-$params_rsem=~s/,+/ /g;
-$params_rsem=~s/:+/ /g;
-$params_rsem=~s/[\s\t]+/ /g;
-$params_rsem=~s/_/-/g;
+$params_tophat =~s/,/ /g;
+$params_tophat=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {
-  $com=`ls $inputdir/*.fastq 2>&1`;
+ $com=`ls $inputdir/*.fastq`;
 }
 else
 {
-  $com=`ls $inputdir/*.1.fastq 2>&1`;
+ $com=`ls $inputdir/*.1.fastq`;
 }
-
-die "Error 64: please check the if you defined the parameters are right:" unless ($com !~/No such file or directory/);
 
 print $com;
-
-if ($params_rsem=~/NONE/)
-{
-   $params_rsem="";
-}
-
 my @files = split(/[\n\r\s\t,]+/, $com);
 
+my $ucsc=$gtf;
+$ucsc=~s/\.gtf/\.fa/;
+my $ti="";
+if (-s $ucsc) {
+  $ucsc=~s/\.fa//;
+  $ti=" --transcriptome-index=$ucsc";
+}
+
+if ($params_tophat=~/NONE/)
+{
+   $params_tophat="";
+}
 foreach my $file (@files)
 { 
  $file=~/.*\/(.*).fastq/;
  my $bname=$1;
- print $file."\n";
- print $bname."\n";
-
- $bname=~s/[\s\t\n]+//g;
- if (length($bname) > 0 )
+ my $str_files=$file;
+ die "Error 64: please check the file:".$file unless (checkFile($file));
+ if ($spaired ne "single")
  {
-  die "Error 64: please check the file:".$file unless (checkFile($file));
-  print "spaired = $spaired\n";
-  
-  if ($spaired eq "paired")
-  {
     $file=~/(.*\/(.*)).1.fastq/;
     $bname=$2;
     my $file2=$1.".2.fastq";
     die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    my $str_files ="$file $file2";
 
-    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
-   
-  }
-  else
-  {
-    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
-
-  }
-    print $com."\n";
-  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-  print $job."\n";
-  `$job`;
+    $str_files ="$file $file2";
  }
-}
 
+ if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"))
+ {
+   $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files;\n";
+   $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted;\n";
+   $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam;\n"; 
+ }     
+ print "$com\n";
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";
+ `$job`;
+}
 
 sub checkFile
 {
@@ -160,20 +155,19 @@ __END__
 
 =head1 NAME
 
-stepRSEM.pl
+stepTophat2.pl
 
 =head1 SYNOPSIS  
 
-stepRSEM.pl 
+stepTophat2.pl 
             -o outdir <output directory> 
-            -r rsemref <rsemref files> 
-            -c cmdrsem <rsem Commandd> 
-            -b bowtiepath <ribosome Index file>
-            -p paramsrsem <rsem parameters>
+            -r tophatref <tophatref files> 
+            -c cmdtophat <tophat Commandd> 
+            -p paramstophat <tophat parameters>
 
-stepRSEM.pl -help
+stepTophat2.pl -help
 
-stepRSEM.pl -version
+stepTophat2.pl -version
 
 For help, run this script with -help option.
 
@@ -185,11 +179,11 @@ the output files will be "$outdir/after_ribosome"
 
 =head2 -c CmdRSEM <bowtie dir and file> 
 
-Fullpath of rsem-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/rsem-calculate-expression
+Fullpath of tophat-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/tophat-calculate-expression
 
-=head2  -r rsemref <rsem ref files> 
+=head2  -r tophatref <tophat ref files> 
 
-rsem reference file
+tophat reference file
 
 =head2 -help
 
@@ -205,14 +199,13 @@ Display the version
 
 =head1 EXAMPLE
 
-stepRSEM.pl 
+stepTophat2.pl 
             -o outdir <output directory> 
             -g gtf <ucsc gtf files> 
             -t tophatCmd <tophat dir and file> 
             -b bowtie2Ind <ribosome Index file>
 
 =head1 AUTHORS
-
 
  Alper Kucukural, PhD
 

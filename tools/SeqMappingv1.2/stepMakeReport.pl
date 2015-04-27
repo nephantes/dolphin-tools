@@ -70,7 +70,9 @@ $outdir   = "$outdir/counts";
 `mkdir -p $outdir`;
 open(OUT, ">$outdir/index.html");
 
-my $com=`ls $inputdir/*.summary.tsv`;
+my $com=`ls $inputdir/*.summary.tsv 2>&1`;
+
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 my @mnames=split(/,/,$mappingnames);
 

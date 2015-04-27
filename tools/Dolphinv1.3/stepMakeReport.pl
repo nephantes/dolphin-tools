@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAdapter.pl
+#                                       stepMakeReport.pl
 #########################################################################################
 # 
 #  This program removes adapter sequence. 
@@ -24,12 +24,10 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $adapter          = "";
+ my $outfile          = "";
  my $outdir           = "";
+ my $mappingnames     = "";
  my $jobsubmit        = "";
- my $spaired          = "";
- my $previous         = ""; 
- my $cmd              = ""; 
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -39,11 +37,9 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'adapter=s'      => \$adapter,
+	'foutfile=s'     => \$outfile,
+        'mappingnames=s' => \$mappingnames,
 	'outdir=s'       => \$outdir,
-        'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
-        'cmd=s'          => \$cmd,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
 	'help'           => \$help, 
@@ -62,102 +58,113 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ( $outfile eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
 my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/g)
-{
-  $inputdir = "$outdir/input";
-}
-else
-{
-  $inputdir = "$outdir/seqmapping/".lc($previous);
-}
 
-$outdir   = "$outdir/seqmapping/adapter";
+$inputdir = "$outdir/counts";
+$outdir   = "$outdir/counts";
 `mkdir -p $outdir`;
-open(OUT, ">$outdir/adapter.fa");
-my @adaps=split(/:/,$adapter);
-my $i=1;
-foreach my $adap (@adaps)
-{
- print OUT ">adapter$i\n$adap\n";
- $i++;
-}
-close(OUT);
+open(OUT, ">$outdir/index.html");
 
-my $com="";
-if ($spaired eq "single")
-{
- $com=`ls $inputdir/*.fastq 2>&1`;
-}
-else
-{
- $com=`ls $inputdir/*.1.fastq 2>&1`;
-}
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+my $com=`ls $inputdir/*.summary.tsv`;
+
+my @mnames=split(/,/,$mappingnames);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
+print OUT "<html>\n";
+print OUT "<link href=\"http://bioinfo.umassmed.edu/dist/css/bootstrap.css\" rel=\"stylesheet\">\n";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/lib/jquery-1.7.2.min.js\" type=\"text/javascript\"></script>\n";
+print OUT "<style type=\"text/css\">
+table.gridtable {
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
+}
+table.gridtable th {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
+}
+table.gridtable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
+}
+</style>";
+   
+print OUT "<body>\n";
+print OUT "<br><h4>Count files:</h4><br>\n";
+print OUT "All the count files are in the following directory: $outdir</h4><br>\n";
+print OUT "<div class=\"container\">";
+
+my %orderedmap=();
 foreach my $file (@files)
 {
- die "Error 64: please check the file:".$file unless (checkFile($file));
- my $bname="";
- if ($spaired eq "single")
- {
-    $file=~/.*\/(.*).fastq/;
-    $bname=$1;
-    print $file."\n\n";
-    $com="$cmd SE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $outdir/$bname.fastq ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:15";  
- }
- else
- {
-    print "PAIRED\n\n";
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    print "$file:$file2\n\n";
-    $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:20";  
- }
- print $com."\n\n";
- #`$com`;
- 
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
+   open(IN, $file);
+   $file=~/.*\/(.*).summary.tsv/;
+   my $name=$1;
+   my $j=0;
+   $orderedmap{$name}="<br><h4>$name </h4><br>\n";
+   $orderedmap{$name}.= "<table class=\"table.colored\">\n";
+   while (my $line=<IN>)
+   {
+      $orderedmap{$name}.="<tr>\n";
+      my @arr=split(/\t/, $line);
+      my $i=0;
+      foreach my $val (@arr)
+      {
+         $orderedmap{$name}.="<th>$val</th>" if ($j==0 || $i ==0);
+         $orderedmap{$name}.="<td>$val</td>" if ($j>0 && $i>0);
+         $i++;
+      }
+      $j++;
+      $orderedmap{$name}.="</tr>\n";
+   }
+   $orderedmap{$name}.="</table>\n";
 }
 
-sub checkFile
+foreach my $mapname (@mnames)
 {
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
+    print OUT $orderedmap{$mapname};
 }
+print OUT "</div>";
+print OUT "<script src=\"http://bioinfo.umassmed.edu/dist/js/bootstrap.min.js\"></script>\n";
+
+close(OUT);
+
+`cp $outdir/index.html $outfile`;
 
 __END__
 
 
 =head1 NAME
 
-stepAdapter.pl
+stepMakeReport.pl
 
 =head1 SYNOPSIS  
 
-stepAdapter.pl -i input <fastq> 
+stepMakeReport.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepAdapter.pl -help
+stepMakeReport.pl -help
 
-stepAdapter.pl -version
+stepMakeReport.pl -version
 
 For help, run this script with -help option.
 
@@ -208,7 +215,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepMakeReport.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"

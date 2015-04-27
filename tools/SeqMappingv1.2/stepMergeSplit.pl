@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAGG.pl
+#                                       stepMergeChip.pl
 #########################################################################################
 # 
 #  This program trims the reads in the files. 
@@ -11,7 +11,7 @@
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# Aug 18, 2014
+# Aug 14, 2014
 #########################################################################################
 
 ############## LIBRARIES AND PRAGMAS ################
@@ -23,14 +23,10 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $bedtoolsgencov   = "";
- my $genome           = "";
- my $act              = "";
- my $reference        = "";
- my $creationpdf      = "";
  my $outdir           = "";
+ my $samtools         = "";
  my $jobsubmit        = "";
- my $previous         = ""; 
+ my $spaired          = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -40,17 +36,13 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
- 	'bedtoolsgencov=s' => \$bedtoolsgencov,
-	'genome=s'         => \$genome, #(hg19.chromInfo)
-	'reference=s'      => \$reference, #(refseq4col)
-        'act=s'            => \$act,
- 	'creationpdf=s'    => \$creationpdf,
-	'outdir=s'         => \$outdir,
-        'previous=s'       => \$previous,
-        'servicename=s'    => \$servicename,
-        'jobsubmit=s'      => \$jobsubmit,
-	'help'             => \$help, 
-	'version'          => \$print_version,
+	'outdir=s'       => \$outdir,
+        'samtools=s'     => \$samtools,
+        'dspaired=s'     => \$spaired,
+        'servicename=s'  => \$servicename,
+        'jobsubmit=s'    => \$jobsubmit,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -65,51 +57,48 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($act eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-print "$previous\n";
-my $sorted=".sorted";
-my $inputdir = "$outdir/seqmapping/chip";
-if ($previous=~/SPLIT/g)
-{
-  $inputdir = "$outdir/seqmapping/mergechip";
-  $sorted="";
-}
-
-$outdir  = "$outdir/agg";
+my $inputdir = "$outdir/tophat";
+$outdir  = "$outdir/mergesplit";
 `mkdir -p $outdir`;
 my $com="";
-$com=`ls $inputdir/*$sorted.bam 2>&1`;
-
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
-
+$com=`ls $inputdir/*/*.bam`;
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
+my %mergeCmd=();
 foreach my $file (@files)
 {
- die "Error 64: please check the file:".$file unless (checkFile($file));
- $file=~/.*\/(.*)$sorted.bam/;
- my $bname=$1;
- $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed;\n";
- $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig;\n";
- $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig;\n";
- $com.= "$creationpdf --args $outdir/$bname.agg_plot.out;\n";
- #print $com."\n\n";  
- #`$com`;
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
+ $file=~/(.*\/(.*))_[\d]+.sorted.bam/;
+ my $bpath=$1;
+ my $bname=$2;
+ $mergeCmd{$bpath."*.sorted.bam"}=$bname;
 }
 
-sub checkFile
+foreach $cmd (keys %mergeCmd)
 {
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
+ my $bname=$mergeCmd{$cmd};
+ my $outfile=$outdir."/$bname.bam"; 
+ my $fcount=`ls $cmd|wc -l`;
+ chomp($fcount);
+ if ($fcount>1)
+ {
+   $com ="$samtools merge $outfile $cmd -f;\n";
+   $com .="$samtools index $outfile;\n";
+ }
+ else
+ {
+   $com ="cp $cmd $outfile;\n";
+   $com .="cp $cmd.bai $outfile.bai;\n";
+ }
+ print $com."\n\n";
+ `$com`;
+ #my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ #print $job."\n";   
+ #`$job`;
 }
 
 __END__
@@ -117,17 +106,17 @@ __END__
 
 =head1 NAME
 
-stepAGG.pl
+stepMergeChip.pl
 
 =head1 SYNOPSIS  
 
-stepAGG.pl -o outdir <output directory> 
+stepMergeChip.pl -o outdir <output directory> 
             -p previous 
             -n #reads
 
-stepAGG.pl -help
+stepMergeChip.pl -help
 
-stepAGG.pl -version
+stepMergeChip.pl -version
 
 For help, run this script with -help option.
 
@@ -135,7 +124,7 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/split" 
+the output files will be "$outdir/MergeChip" 
 
 =head2  -p previous
 
@@ -157,7 +146,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAGG.pl 
+stepMergeChip.pl 
             -o ~/out
             -n 1000
             -p previous

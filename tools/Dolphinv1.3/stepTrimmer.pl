@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAdapter.pl
+#                                       stepTrimmer.pl
 #########################################################################################
 # 
-#  This program removes adapter sequence. 
+#  This program trims the reads in the files. 
 #
 #
 #########################################################################################
@@ -24,7 +24,7 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $adapter          = "";
+ my $trim             = "";
  my $outdir           = "";
  my $jobsubmit        = "";
  my $spaired          = "";
@@ -39,7 +39,7 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'adapter=s'      => \$adapter,
+        'trim=s'         => \$trim,
 	'outdir=s'       => \$outdir,
         'dspaired=s'     => \$spaired,
         'previous=s'     => \$previous,
@@ -62,7 +62,7 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($trim eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
@@ -78,28 +78,17 @@ else
   $inputdir = "$outdir/seqmapping/".lc($previous);
 }
 
-$outdir   = "$outdir/seqmapping/adapter";
+$outdir   = "$outdir/seqmapping/trim";
 `mkdir -p $outdir`;
-open(OUT, ">$outdir/adapter.fa");
-my @adaps=split(/:/,$adapter);
-my $i=1;
-foreach my $adap (@adaps)
-{
- print OUT ">adapter$i\n$adap\n";
- $i++;
-}
-close(OUT);
-
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq 2>&1`;
+ $com=`ls $inputdir/*.fastq`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq 2>&1`;
+ $com=`ls $inputdir/*.1.fastq`;
 }
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -107,31 +96,128 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 foreach my $file (@files)
 {
  die "Error 64: please check the file:".$file unless (checkFile($file));
- my $bname="";
  if ($spaired eq "single")
  {
     $file=~/.*\/(.*).fastq/;
-    $bname=$1;
-    print $file."\n\n";
-    $com="$cmd SE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $outdir/$bname.fastq ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:15";  
+    my $bname=$1;
+    my $format=getFormat($file);
+    trimFiles($file, $trim, $bname, $format);
  }
  else
  {
     print "PAIRED\n\n";
     $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
+    my $bname=$2;
     my $file2=$1.".2.fastq";
     die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    print "$file:$file2\n\n";
-    $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:20";  
+    $trim=~/([\d]*,[\d]*),([\d]*,[\d]*)/;
+    my $trim1=$1;
+    my $trim2=$2;
+    my $format=getFormat($file);
+    trimFiles($file, $trim1, $bname.".1", $format);
+    trimFiles($file2, $trim2, $bname.".2", $format);
  }
- print $com."\n\n";
- #`$com`;
- 
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
 }
+
+sub trimFiles
+{
+  my ($file, $trim, $bname, $format)=@_;
+    my @nts=split(/[,\s\t]+/,$trim);
+    print "\n$bname\n\n";
+    my $inpfile="";
+    my $com="";
+    my $i=1;
+    my $outfile="";
+    my $param="-f";
+    my $quality="";
+    if ($format eq "sanger")
+    {   
+      $quality="-Q33";
+    }
+    foreach my $nt (@nts)
+    {
+      if ($nt!~/^$/ && $nt>=0)
+      {
+        $nt++;
+        if ($i%2==0)
+        {
+           $param="-t";
+           $nt--;
+        }
+        if ($nt>0)
+        {
+         $outfile="$outdir/$bname.fastq.$i.tmp";
+         $com.="$cmd $quality -v $param $nt -o $outfile -i $file;";
+         $file=$outfile;
+        }
+      }
+      $i++;
+    }
+    $com.="mv $outfile $outdir/$bname.fastq;rm -rf $outdir/*.tmp";
+    print $com."\n";
+    `$com`;
+    my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+    #print $job."\n";   
+    #`$job`;
+}
+
+# automatic format detection
+sub getFormat
+{
+   my ($filename)=@_;
+
+   # set function variables
+   open (IN, $filename);
+   my $j=1;
+   my $qualities="";
+   while(my $line=<IN> && $j<10 )
+   {
+     if ($j%4==0)
+     {
+        $qualities.=$line;
+     }
+     $j++;
+   }
+   close(IN);
+  
+   my $format = "";
+
+   # set regular expressions
+   my $sanger_regexp = qr/[!"#$%&'()*+,-.\/0123456789:]/;
+   my $solexa_regexp = qr/[\;<=>\?]/;
+   my $solill_regexp = qr/[JKLMNOPQRSTUVWXYZ\[\]\^\_\`abcdefgh]/;
+   my $all_regexp = qr/[\@ABCDEFGHI]/;
+
+   # set counters
+   my $sanger_counter = 0;
+   my $solexa_counter = 0;
+   my $solill_counter = 0;
+
+   # check qualities
+   if( $qualities =~ m/$sanger_regexp/ ){
+          $sanger_counter = 1;
+   }
+   if( $qualities =~ m/$solexa_regexp/ ){
+          $solexa_counter = 1;
+   }
+   if( $qualities =~ m/$solill_regexp/ ){
+           $solill_counter = 1;
+   }
+
+   # determine format
+   if( $sanger_counter ){
+        $format = "sanger";
+    }elsif( !$sanger_counter && $solexa_counter ){
+        $format = "solexa";
+    }elsif( !$sanger_counter && !$solexa_counter && $solill_counter ){
+        $format = "illumina";
+    }
+
+    # return file format
+    return( $format );
+}
+
+
 
 sub checkFile
 {
@@ -145,19 +231,19 @@ __END__
 
 =head1 NAME
 
-stepAdapter.pl
+stepTrimmer.pl
 
 =head1 SYNOPSIS  
 
-stepAdapter.pl -i input <fastq> 
+stepTrimmer.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepAdapter.pl -help
+stepTrimmer.pl -help
 
-stepAdapter.pl -version
+stepTrimmer.pl -version
 
 For help, run this script with -help option.
 
@@ -208,7 +294,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepTrimmer.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"

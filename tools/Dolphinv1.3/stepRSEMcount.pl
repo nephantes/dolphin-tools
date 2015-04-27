@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRSEM.pl
+#                                       stepRSEMCount.pl
 #########################################################################################
 # 
-#  This program quantify the genes using RSEM 
+#  This program merges rsem output files
 #
 #########################################################################################
 # AUTHORS:
@@ -12,7 +12,6 @@
 # Alper Kucukural, PhD 
 # 
 #########################################################################################
-
 
 ############## LIBRARIES AND PRAGMAS ################
 
@@ -23,27 +22,26 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
+ my $gene_iso         = "genes";
+ my $tpm_fpkm         = "tpm";
  my $outdir           = "";
- my $barcode          = "";
- my $prog             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
-
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
-GetOptions( 
-	'outdir=s'       => \$outdir,
-        'prog=s'         => \$prog,
-        'barcode=s'      => \$barcode,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+GetOptions(
+	'outdir=s'        => \$outdir,
+	'gene_iso=s'      => \$gene_iso,
+	'tpm_fpkm=s'      => \$tpm_fpkm,
+        'jobsubmit=s'     => \$jobsubmit,
+        'servicename=s'   => \$servicename,
+	'help'            => \$help, 
+	'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -58,72 +56,100 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($prog eq "") or ($outdir eq "") or ($barcode eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") );	
 
+if (!($tpm_fpkm  eq "tpm" || $tpm_fpkm eq "fpkm" || $tpm_fpkm eq "expected_count"))
+{
+    $tpm_fpkm="tpm";
+}
+
+my %tf = (
+        expected_count => 4,
+        tpm => 5,
+        fpkm => 6,
+    );
  
-################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir directory
+################### MAIN PROGRAM ####################++
+#    maps the reads to the the genome and put the files under $outdir/after_ribosome/tophat directory
+
+my $indir   = "$outdir/rsem";
+$outdir  = "$outdir/rsem";
+
+opendir D, $indir or die "Could not open $indir\n";
+my @alndirs = sort { $a cmp $b } grep /^pipe/, readdir(D);
+
+closedir D;
+
+my @a=();
+my %b=();
+my %c=();
+my $i=0;
+foreach my $d (@alndirs){ 
+ my $dir = "${indir}/$d";
+ print $d."\n";
+ my $libname=$d;
+ $libname=~s/pipe\.rsem\.//;
+
+ $i++;
+ $a[$i]=$libname;
+ open IN,"${dir}/rsem.out.$libname.$gene_iso.results";
+ $_=<IN>;
+ while(<IN>)
+ {
+  my @v=split; 
+  $b{$v[0]}{$i}=$v[$tf{$tpm_fpkm}];
+  $c{$v[0]}=$v[1];
+ }
+ close IN;
+}
+
+open OUT, ">${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
+
+print OUT "gene\ttranscript";
 
 
-my $inputdir="";
-if ($barcode=~/NONE/g)
+for(my $j=1;$j<=$i;$j++)
 {
-  $inputdir = "$outdir/input";
+ print OUT "\t$a[$j]";
 }
-else
+print OUT "\n";
+
+foreach my $key (keys %b)
 {
-  $inputdir = "$outdir/seqmapping/barcode";
-}
-print $inputdir."\n";
-$outdir   = "$outdir/fastqc";
-`mkdir -p $outdir`;
-my $com="";
-$com=`ls $inputdir/*.fastq 2>&1`;
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
-
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
-
-foreach my $file (@files)
-{ 
- $file=~/.*\/(.*).fastq/;
- my $bname=$1;
- die "Error 64: please check the file:".$file unless (checkFile($file));
- my $dir=$outdir."/".$bname;
- `mkdir -p $dir`;
- $com="$prog ".$file." -o $dir";
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";
- `$job`;
+ if ($gene_iso ne "isoforms") {
+   print OUT "$key\t$c{$key}";
+ }
+ else
+ {
+    print OUT "$c{$key}\t$key";
+ }
+ for(my $j=1;$j<=$i;$j++)
+ {
+  print OUT "\t$b{$key}{$j}";
+ }
+ print OUT "\n";
 }
 
-
-sub checkFile
-{
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
-}
+close OUT;
 
 __END__
 
 
 =head1 NAME
 
-stepRSEM.pl
+stepRSEMCount.pl
 
 =head1 SYNOPSIS  
 
-stepRSEM.pl 
+stepRSEMCount.pl 
             -o outdir <output directory> 
-            -r rsemref <rsemref files> 
-            -c cmdrsem <rsem Commandd> 
-            -b bowtiepath <ribosome Index file>
-            -p paramsrsem <rsem parameters>
+            -t tpm_fpkm <tpm or fpkm>
+	    -g gene_iso <gene or isoform>
 
-stepRSEM.pl -help
 
-stepRSEM.pl -version
+stepRSEMCount.pl -help
+
+stepRSEMCount.pl -version
 
 For help, run this script with -help option.
 
@@ -131,15 +157,11 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
+the output files will be stored "$outdir/rsem" 
 
-=head2 -c CmdRSEM <bowtie dir and file> 
+=head2 -c conversion <ucsc conversion> 
 
-Fullpath of rsem-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/rsem-calculate-expression
-
-=head2  -r rsemref <rsem ref files> 
-
-rsem reference file
+Tab delimited ucsc id gene name conversion file
 
 =head2 -help
 
@@ -151,18 +173,15 @@ Display the version
 
 =head1 DESCRIPTION
 
- This program maps the reads using tophat2
+This program merges rsem output files
 
 =head1 EXAMPLE
 
-stepRSEM.pl 
+stepRSEMCount.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -c conversion <ucsc conversion file> 
 
 =head1 AUTHORS
-
 
  Alper Kucukural, PhD
 
@@ -182,7 +201,4 @@ stepRSEM.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
-
-
 

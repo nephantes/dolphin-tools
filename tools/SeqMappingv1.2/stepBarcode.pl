@@ -67,6 +67,8 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($barcode eq "") or ($outd
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
+my $inputdir   = "$outdir/input";
+
 $outdir   = "$outdir/seqmapping/barcode";
 `mkdir -p $outdir`;
 my @names=();
@@ -93,38 +95,32 @@ my @cmds=split(/:/,$cmd);
 my $cmdSE=$cmds[0];
 my $cmdPE=$cmds[1];
 
-foreach my $line (@files)
-{
  my $bname="";
  if ($spaired eq "single")
  {
-    die "Error 64: please check the file:".$line unless (checkFile($line));
-    print $line."\n\n";
-    $line=~/.*\/(.*)\.(.*)/;
+    my $filename=getFileName($inputdir, 0);
+
+    print $filename."\n\n";
+    $filename=~/.*\/(.*)\.(.*)/;
     my $nm=$1;
     my $ext=$2;
     $bname=$nm;
     my $mvcom="";
     for (my $i=0; $i<@names; $i++)
     {
+      if ($names[$i]!~/^$/){
        $mvcom.="mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq;";
        $mvcom.="rmdir $outdir/$barcodes[$i];";
+      }
     }
-    $com="$cmdPE -b $outdir/barcode.fa -f $line -d $outdir > /dev/null;$mvcom";  
+    $com="$cmdPE -b $outdir/barcode.fa -f $filename -d $outdir > /dev/null;$mvcom";  
  }
  else
  {
     print "PAIRED\n\n";
-    print $line."\n";
-    my @files=split(/[,\s\t]+/,$line);
-    foreach my $file (@files)
-    {
-        die "Error 64: please check the file:".$file unless (checkFile($file));
-    }
-    if (scalar(@files)==2)
-    {
-      my $file1=$files[0];
-      my $file2=$files[1];
+    
+      my $file1=getFileName($inputdir, 1);
+      my $file2=getFileName($inputdir, 2);
       print "$file1:$file2\n\n";
       $file1=~/.*\/(.*)\.(.*)/;
       my $nm1=$1;
@@ -136,15 +132,16 @@ foreach my $line (@files)
       my $mvcom="";
       for (my $i=0; $i<@names; $i++)
       {
+        if ($names[$i]!~/^$/){
          $mvcom.="mv $outdir/$barcodes[$i]/$nm1.$ext1 $outdir/$names[$i].1.fastq;";
          $mvcom.="mv $outdir/$barcodes[$i]/$nm2.$ext2 $outdir/$names[$i].2.fastq;";
          $mvcom.="rmdir $outdir/$barcodes[$i];";
+        }
       }
 
       #$com="$cmdPE -bcfile $outdir/barcode.fa -in $file1 -pair2File $file2 -outdir $outdir > /dev/null;$mvcom";  
       $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null;$mvcom";  
       #$com="$mvcom";  
-    }
  }
  #print $com."\n\n";
  #`$com`;
@@ -152,6 +149,16 @@ foreach my $line (@files)
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+
+sub getFileName
+{
+  my ($inputdir, $i)= @_;
+  
+  my  $pairstr="";
+  $pairstr="_R$i" if ($i>0);
+  my $filename="$inputdir/data$pairstr.fastq";
+  die "Error 64: please check the file or check if you chose single and paired end library right!".$filename unless (checkFile($filename));
+  return $filename;
 }
 
 sub checkFile

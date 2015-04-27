@@ -75,7 +75,7 @@ def insertJob( username, wkey, com, jobname, service_name, jobnum, result):
                 sys.exit(2);
 
 def updateJob( username, wkey, jobname, service_name, field, jobnum, result):
-    print "username="+str(username)+", wkey="+str(wkey)+", jobname="+str(jobname)+", ser="+str(service_name)+", field="+str(field)+", jobnum="+str(jobnum)+", res="+str(result) 
+    #print "username="+str(username)+", wkey="+str(wkey)+", jobname="+str(jobname)+", ser="+str(service_name)+", field="+str(field)+", jobnum="+str(jobnum)+", res="+str(result) 
     kw = {'url':url}
     b = NPBinding(**kw)
     mesg=b.updateJob(a=username , c=wkey , b=jobname, e=service_name , d=field, g=jobnum, f=result)
@@ -84,7 +84,7 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result):
     wkey=json.loads(data)
 
     ret=str(wkey['return'])
-    print "JOB updated:"+ret+"\n"
+    #print "JOB updated:"+ret+"\n"
     if (ret.startswith("ERROR")):
                 print jobname + ":" + ret + "\n"
                 print "Check the job#:"+jobnum+"\n"

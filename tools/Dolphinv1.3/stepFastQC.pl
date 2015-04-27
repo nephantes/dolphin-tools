@@ -23,13 +23,9 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $rsemref          = "";
  my $outdir           = "";
- my $params_rsem      = "";
- my $previous         = "";
- my $bowtiepath       = "";
- my $spaired          = "";
- my $rsemCmd          = "/project/umw_biocore/bin/rsem-1.2.3/rsem-calculate-expression";
+ my $barcode          = "";
+ my $prog             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -42,14 +38,10 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'cmdrsem=s'      => \$rsemCmd,
-        'bowtiepath=s'   => \$bowtiepath,
-        'dspaired=s'       => \$spaired,
-        'paramsrsem=s'   => \$params_rsem,
-        'previous=s'     => \$previous,
+        'prog=s'         => \$prog,
+        'barcode=s'      => \$barcode,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
-        'rsemref=s'      => \$rsemref,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -66,7 +58,7 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtiepath eq "") or ($outdir eq "") or ($rsemCmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($prog eq "") or ($outdir eq "") or ($barcode eq "") );	
 
  
 ################### MAIN PROGRAM ####################
@@ -74,77 +66,34 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtiepath eq "") or ($o
 
 
 my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/g)
+if ($barcode=~/NONE/g)
 {
   $inputdir = "$outdir/input";
 }
 else
 {
-  $inputdir = "$outdir/seqmapping/".lc($previous);
+  $inputdir = "$outdir/seqmapping/barcode";
 }
-
-$outdir   = "$outdir/rsem";
+print $inputdir."\n";
+$outdir   = "$outdir/fastqc";
 `mkdir -p $outdir`;
-$params_rsem=~s/,+/ /g;
-$params_rsem=~s/:+/ /g;
-$params_rsem=~s/[\s\t]+/ /g;
-$params_rsem=~s/_/-/g;
 my $com="";
-if ($spaired eq "single")
-{
-  $com=`ls $inputdir/*.fastq 2>&1`;
-}
-else
-{
-  $com=`ls $inputdir/*.1.fastq 2>&1`;
-}
-
-die "Error 64: please check the if you defined the parameters are right:" unless ($com !~/No such file or directory/);
+$com=`ls $inputdir/*.fastq`;
 
 print $com;
-
-if ($params_rsem=~/NONE/)
-{
-   $params_rsem="";
-}
-
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 foreach my $file (@files)
 { 
  $file=~/.*\/(.*).fastq/;
  my $bname=$1;
- print $file."\n";
- print $bname."\n";
-
- $bname=~s/[\s\t\n]+//g;
- if (length($bname) > 0 )
- {
-  die "Error 64: please check the file:".$file unless (checkFile($file));
-  print "spaired = $spaired\n";
-  
-  if ($spaired eq "paired")
-  {
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    my $str_files ="$file $file2";
-
-    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
-   
-  }
-  else
-  {
-    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
-
-  }
-    print $com."\n";
-  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-  print $job."\n";
-  `$job`;
- }
+ die "Error 64: please check the file:".$file unless (checkFile($file));
+ my $dir=$outdir."/".$bname;
+ `mkdir -p $dir`;
+ $com="$prog ".$file." -o $dir";
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";
+ `$job`;
 }
 
 

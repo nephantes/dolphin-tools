@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAGG.pl
+#                                       stepMACS.pl
 #########################################################################################
 # 
 #  This program trims the reads in the files. 
@@ -23,14 +23,11 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $bedtoolsgencov   = "";
- my $genome           = "";
- my $act              = "";
- my $reference        = "";
- my $creationpdf      = "";
+ my $chipinput        = "";
  my $outdir           = "";
  my $jobsubmit        = "";
  my $previous         = ""; 
+ my $acmd             = ""; 
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -40,17 +37,14 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
- 	'bedtoolsgencov=s' => \$bedtoolsgencov,
-	'genome=s'         => \$genome, #(hg19.chromInfo)
-	'reference=s'      => \$reference, #(refseq4col)
-        'act=s'            => \$act,
- 	'creationpdf=s'    => \$creationpdf,
-	'outdir=s'         => \$outdir,
-        'previous=s'       => \$previous,
-        'servicename=s'    => \$servicename,
-        'jobsubmit=s'      => \$jobsubmit,
-	'help'             => \$help, 
-	'version'          => \$print_version,
+        'inputchip=s'    => \$chipinput,
+	'outdir=s'       => \$outdir,
+        'previous=s'     => \$previous,
+        'acmd=s'         => \$acmd,
+        'servicename=s'  => \$servicename,
+        'jobsubmit=s'    => \$jobsubmit,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -65,10 +59,10 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($act eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($chipinput eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
+#  It runs macs14 to find the peaks using alined peaks   
 
 print "$previous\n";
 my $sorted=".sorted";
@@ -79,26 +73,29 @@ if ($previous=~/SPLIT/g)
   $sorted="";
 }
 
-$outdir  = "$outdir/agg";
+$outdir  = "$outdir/macs";
 `mkdir -p $outdir`;
-my $com="";
-$com=`ls $inputdir/*$sorted.bam 2>&1`;
 
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+my @chiplibs=split(/:/,$chipinput);
 
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
-
-foreach my $file (@files)
+foreach my $chipline (@chiplibs)
 {
- die "Error 64: please check the file:".$file unless (checkFile($file));
- $file=~/.*\/(.*)$sorted.bam/;
- my $bname=$1;
- $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed;\n";
- $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig;\n";
- $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig;\n";
- $com.= "$creationpdf --args $outdir/$bname.agg_plot.out;\n";
- #print $com."\n\n";  
+ my @chips=split(/,/,$chipline);
+ my $first=$chips[0];
+ my $bname=$first;
+ my $file1=$inputdir."/".$first."$sorted.bam";
+ die "Error 64: please check the file:".$file1 unless (checkFile($file1));
+ my $com="$acmd -t $file1 --name=$outdir/$first\n";
+ 
+ if (@chips>1 && length($chips[1])>=1)
+ {
+    my $second=$chips[1];
+    my $file2=$inputdir."/".$second."$sorted.bam";
+    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
+    $bname="$first.vs.$second";
+    $com="$acmd -t $file1 -c $file2 --name=$outdir/$first.vs.$second\n";
+ }
+ #print $com;  
  #`$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
@@ -117,17 +114,17 @@ __END__
 
 =head1 NAME
 
-stepAGG.pl
+stepMACS.pl
 
 =head1 SYNOPSIS  
 
-stepAGG.pl -o outdir <output directory> 
+stepMACS.pl -o outdir <output directory> 
             -p previous 
             -n #reads
 
-stepAGG.pl -help
+stepMACS.pl -help
 
-stepAGG.pl -version
+stepMACS.pl -version
 
 For help, run this script with -help option.
 
@@ -157,7 +154,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAGG.pl 
+stepMACS.pl 
             -o ~/out
             -n 1000
             -p previous

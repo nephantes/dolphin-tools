@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRSEM.pl
+#                                       stepIGVTDF.pl
 #########################################################################################
 # 
-#  This program quantify the genes using RSEM 
+#  Converts bam files for IGV visualization.
 #
 #########################################################################################
 # AUTHORS:
@@ -23,25 +23,32 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
+ my $genome           = "";
+ my $type             = "";
+ my $pair             = "";
+ my $insertlen        = "";
  my $outdir           = "";
- my $barcode          = "";
- my $prog             = "";
+ my $samtools         = "";
+ my $igvtools         = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
-
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'prog=s'         => \$prog,
-        'barcode=s'      => \$barcode,
+        'type=s'         => \$type,
+        'samtools=s'     => \$samtools,
+        'igvtools=s'     => \$igvtools,
+        'len=s'          => \$insertlen,
+        'pair=s'         => \$pair,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
+        'genome=s'       => \$genome,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -58,51 +65,77 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($prog eq "") or ($outdir eq "") or ($barcode eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($genome eq "") or ($outdir eq "") );	
 
  
 ################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir directory
+#   converts the mapped reads for IGV visualization
 
+my $outd  = "$outdir/tdf_$type";
 
-my $inputdir="";
-if ($barcode=~/NONE/g)
-{
-  $inputdir = "$outdir/input";
+`mkdir -p $outd`;
+my @files=();
+print $type."\n";
+if ($type eq "RSEM")
+{ 
+   my $indir   = "$outdir/rsem";
+   @files = <$indir/pipe*/*.genome.sorted.bam>;
+}
+elsif ($type eq "chip")
+{ 
+   my $indir   = "$outdir/seqmapping/chip";
+   @files = <$indir/*.sorted.bam>;
+}
+elsif ($type eq "mergechip")
+{ 
+   my $indir   = "$outdir/seqmapping/mergechip";
+   @files = <$indir/*.bam>;
 }
 else
 {
-  $inputdir = "$outdir/seqmapping/barcode";
-}
-print $inputdir."\n";
-$outdir   = "$outdir/fastqc";
-`mkdir -p $outdir`;
-my $com="";
-$com=`ls $inputdir/*.fastq 2>&1`;
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
-
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
-
-foreach my $file (@files)
-{ 
- $file=~/.*\/(.*).fastq/;
- my $bname=$1;
- die "Error 64: please check the file:".$file unless (checkFile($file));
- my $dir=$outdir."/".$bname;
- `mkdir -p $dir`;
- $com="$prog ".$file." -o $dir";
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";
- `$job`;
+   my $indir   = "$outdir/tophat";
+   print $indir."\n";
+   @files = <$indir/pipe*/*.sorted.bam>;
 }
 
-
-sub checkFile
+my $param="";
+if ($insertlen!~/^$/)
 {
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
+  $param="-e $insertlen";
+}
+if ($pair eq "paired")
+{
+  $param="--pairs";
+}
+
+
+foreach my $d (@files){ 
+  my ($com, $libname, $dirname)=();
+  print $d."\n";
+
+  if ($type eq "RSEM")
+  {
+     $libname=basename($d, ".genome.sorted.bam");
+     $dirname=dirname($d);
+     $libname=~s/rsem.out.//g;
+     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam;\n";
+     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai;\n";
+  }
+  else
+  {
+     $dirname=dirname($d);
+     $libname=basename($d, ".sorted.bam");
+     $libname=basename($d, ".bam")  if ($type eq "mergechip");
+     
+     $com="cp $d $outd/$libname.bam;\n";
+     $com.="cp $d.bai $outd/$libname.bam.bai;\n";
+  }
+ 
+  $com.="cd $outdir; $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome\n"; 
+  
+  my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  print $job."\n";   
+  `$job`;
 }
 
 __END__
@@ -110,20 +143,18 @@ __END__
 
 =head1 NAME
 
-stepRSEM.pl
+stepIGVTDF.pl
 
 =head1 SYNOPSIS  
 
-stepRSEM.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
-            -r rsemref <rsemref files> 
-            -c cmdrsem <rsem Commandd> 
-            -b bowtiepath <ribosome Index file>
-            -p paramsrsem <rsem parameters>
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
-stepRSEM.pl -help
+stepIGVTDF.pl -help
 
-stepRSEM.pl -version
+stepIGVTDF.pl -version
 
 For help, run this script with -help option.
 
@@ -131,15 +162,15 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
+the output files will be "$outdir/after_ribosome/tdf" 
 
-=head2 -c CmdRSEM <bowtie dir and file> 
+=head2  -g genome <genome files> 
 
-Fullpath of rsem-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/rsem-calculate-expression
+Genome fasta file. (Full path)
 
-=head2  -r rsemref <rsem ref files> 
+=head2   -t samtools <samtools fullpath> 
 
-rsem reference file
+Samtools full path
 
 =head2 -help
 
@@ -155,14 +186,12 @@ Display the version
 
 =head1 EXAMPLE
 
-stepRSEM.pl 
+stepIGVTDF.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+            -g genome <genome files> 
+            -s samtools <samtools fullpath> 
 
 =head1 AUTHORS
-
 
  Alper Kucukural, PhD
 
@@ -182,7 +211,6 @@ stepRSEM.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
 
 
 

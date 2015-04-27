@@ -1,17 +1,19 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAdapter.pl
+#                                       stepMapping.pl
 #########################################################################################
 # 
-#  This program removes adapter sequence. 
+#  This program maps the reads to Ribosomal RNAs, if there is no Ribosomal RNA for this
+#  genome the program copy the input file into the necessary location for downstream 
+#  analysis.
 #
 #
 #########################################################################################
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# Jul 4, 2014
+# 
 #########################################################################################
 
 
@@ -22,15 +24,20 @@
  use File::Basename;
  use Getopt::Long;
  use Pod::Usage; 
-
+ 
 #################### VARIABLES ######################
- my $adapter          = "";
+ my $input            = "";
  my $outdir           = "";
- my $jobsubmit        = "";
+ my $cmd              = "";
  my $spaired          = "";
- my $previous         = ""; 
- my $cmd              = ""; 
+ my $jobsubmit        = "";
+ my $awkdir           = "";
+ my $bowtiePar        = "";
+ my $advparams        = "";
+ my $bowtiecmd        = ""; 
+ my $samtoolscmd      = "";
  my $servicename      = "";
+ my $param            = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -39,13 +46,17 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'adapter=s'      => \$adapter,
+	'input=s'        => \$input,
 	'outdir=s'       => \$outdir,
+        'cmd=s'          => \$bowtiecmd,
+        'msamtoolscmd=s' => \$samtoolscmd,
+        'awkdir=s'       => \$awkdir,
         'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
-        'cmd=s'          => \$cmd,
+        'bowtiePar=s'    => \$bowtiePar,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
+        'radvparam=s'    => \$advparams,
+        'param=s'        => \$param,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -62,14 +73,29 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir eq "") or ($bowtiecmd eq "") );	
 
+ print "[$servicename]\n";
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
+#    maps the reads to the index files and put the files under $outdir/recmapping/$indexname directory
+
+my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
+
+$indexpar=~s/_/ /g;
+
+if ($advparams ne "NONE")
+{
+  $indexpar=$advparams;
+  $indexpar=~s/,/ /g; 
+  $indexpar=~s/_/-/g; 
+}
+
+print "indexpar=$indexpar\n\n";
 
 my $inputdir="";
 print "$previous\n";
-if ($previous=~/NONE/g)
+
+if ($previous=~/NONE/)
 {
   $inputdir = "$outdir/input";
 }
@@ -77,55 +103,67 @@ else
 {
   $inputdir = "$outdir/seqmapping/".lc($previous);
 }
+$outdir   = "$outdir/seqmapping/".lc($indexname);
+print "I:$inputdir\n";
+print "O:$outdir\n";
 
-$outdir   = "$outdir/seqmapping/adapter";
 `mkdir -p $outdir`;
-open(OUT, ">$outdir/adapter.fa");
-my @adaps=split(/:/,$adapter);
-my $i=1;
-foreach my $adap (@adaps)
-{
- print OUT ">adapter$i\n$adap\n";
- $i++;
-}
-close(OUT);
-
 my $com="";
+
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq 2>&1`;
+ $com=`ls $inputdir/*.fastq`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq 2>&1`;
+ $com=`ls $inputdir/*.1.fastq`;
 }
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
-
+$com="";
 foreach my $file (@files)
 {
- die "Error 64: please check the file:".$file unless (checkFile($file));
- my $bname="";
- if ($spaired eq "single")
- {
-    $file=~/.*\/(.*).fastq/;
-    $bname=$1;
-    print $file."\n\n";
-    $com="$cmd SE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $outdir/$bname.fastq ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:15";  
- }
- else
- {
-    print "PAIRED\n\n";
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    print "$file:$file2\n\n";
-    $com="$cmd PE -threads 1 -phred64 -trimlog $outdir/$bname.log $file $file2 $outdir/$bname.1.fastq $outdir/$bname.1.fastq.unpaired $outdir/$bname.2.fastq $outdir/$bname.1.fastq.unpaired ILLUMINACLIP:$outdir/adapter.fa:1:30:5 MINLEN:20";  
- }
- print $com."\n\n";
+  $file=~/.*\/(.*).fastq/;
+  my $bname=$1;
+  if ($spaired eq "single")
+  {
+       die "Error 64: please check the file:".$file unless (checkFile($file)); 
+
+       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
+       $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/$bname.fastq.mapped;";
+       # $com.="rm -rf $file";
+  }
+  else
+  {
+       $file=~/.*\/(.*).1.fastq/;
+       $bname=$1;
+       my $str_file="-1 $inputdir/$bname.1.fastq -2 $inputdir/$bname.2.fastq";
+       die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
+       die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
+
+       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
+       $com.="samtools index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/*.mapped;";
+ #      $com.="rm -rf $inputdir/$bname.1.fastq";
+ #      $com.="rm -rf $inputdir/$bname.2.fastq";
+  }
+ #print $com."\n\n";
  #`$com`;
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
@@ -145,19 +183,19 @@ __END__
 
 =head1 NAME
 
-stepAdapter.pl
+stepMapping.pl
 
 =head1 SYNOPSIS  
 
-stepAdapter.pl -i input <fastq> 
+stepMapping.pl -i input <fastq> 
             -o outdir <output directory> 
             -b bowtieCmd <bowtie dir and file> 
             -p params <bowtie params> 
             -r ribosomeInd <ribosome Index file>
 
-stepAdapter.pl -help
+stepMapping.pl -help
 
-stepAdapter.pl -version
+stepMapping.pl -version
 
 For help, run this script with -help option.
 
@@ -208,7 +246,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
+stepMapping.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
             -o ~/out
             -b ~/bowtie_dir/bowtie
             -p "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
@@ -235,4 +273,4 @@ stepAdapter.pl -i test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
 
-
+ 

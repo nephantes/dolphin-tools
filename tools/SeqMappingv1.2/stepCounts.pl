@@ -125,7 +125,8 @@ sub countCov
 {
   my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom)=@_; 
   my $inputdir = "$outdir/seqmapping/".lc($mapname);
-  my $com=`ls $inputdir/*.sorted.bam`;
+  my $com=`ls $inputdir/*.sorted.bam 2>&1`;
+  die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
   my @files = split(/[\n\r\s\t,]+/, $com);
   my $filestr="";

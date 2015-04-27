@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepAGG.pl
+#                                       stepSplit.pl
 #########################################################################################
 # 
 #  This program trims the reads in the files. 
@@ -11,7 +11,7 @@
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# Aug 18, 2014
+# Jul 4, 2014
 #########################################################################################
 
 ############## LIBRARIES AND PRAGMAS ################
@@ -23,14 +23,12 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $bedtoolsgencov   = "";
- my $genome           = "";
- my $act              = "";
- my $reference        = "";
- my $creationpdf      = "";
+ my $number           = "";
  my $outdir           = "";
  my $jobsubmit        = "";
  my $previous         = ""; 
+ my $spaired          = "";
+ my $cmd              = ""; 
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -40,17 +38,15 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
- 	'bedtoolsgencov=s' => \$bedtoolsgencov,
-	'genome=s'         => \$genome, #(hg19.chromInfo)
-	'reference=s'      => \$reference, #(refseq4col)
-        'act=s'            => \$act,
- 	'creationpdf=s'    => \$creationpdf,
-	'outdir=s'         => \$outdir,
-        'previous=s'       => \$previous,
-        'servicename=s'    => \$servicename,
-        'jobsubmit=s'      => \$jobsubmit,
-	'help'             => \$help, 
-	'version'          => \$print_version,
+        'number=s'       => \$number,
+	'outdir=s'       => \$outdir,
+        'previous=s'     => \$previous,
+        'dspaired=s'     => \$spaired,
+        'cmd=s'          => \$cmd,
+        'servicename=s'  => \$servicename,
+        'jobsubmit=s'    => \$jobsubmit,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -65,42 +61,47 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($act eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($number eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
+my $inputdir="";
 print "$previous\n";
-my $sorted=".sorted";
-my $inputdir = "$outdir/seqmapping/chip";
-if ($previous=~/SPLIT/g)
+if ($previous=~/NONE/g)
 {
-  $inputdir = "$outdir/seqmapping/mergechip";
-  $sorted="";
+  $inputdir = "$outdir/input";
+}
+else
+{
+  $inputdir = "$outdir/seqmapping/".lc($previous);
 }
 
-$outdir  = "$outdir/agg";
+$outdir  = "$outdir/seqmapping/split";
 `mkdir -p $outdir`;
 my $com="";
-$com=`ls $inputdir/*$sorted.bam 2>&1`;
-
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
-
+$com=`ls $inputdir/*.fastq`;
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 foreach my $file (@files)
 {
  die "Error 64: please check the file:".$file unless (checkFile($file));
- $file=~/.*\/(.*)$sorted.bam/;
+ $file=~/.*\/(.*).fastq/;
  my $bname=$1;
- $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed;\n";
- $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig;\n";
- $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig;\n";
- $com.= "$creationpdf --args $outdir/$bname.agg_plot.out;\n";
- #print $com."\n\n";  
+ my $pairednum="";
+ if ($spaired eq "paired")
+ {
+    $file=~/.*\/(.*)(.[12]).fastq/;
+    $bname=$1;
+    $pairednum=$2;
+ }
+ $com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname$pairednum._;\n";
+ $com.= "ls $outdir/$bname$pairednum._*|awk '{split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[length(a)]\\\"$pairednum.fastq\\\")}';\n"; 
+ #$com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname^$pairednum^_; ls $outdir/$bname^$pairednum^_*|grep -v fastq|awk '{split(\$1,a,\"^\");system(\"mv \"\$1\" \"a[1]a[3]\"$pairednum.fastq\")}'"; 
+ print $com."\n\n";  
  #`$com`;
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ my $job=$jobsubmit." -n ".$servicename."_".$bname.$pairednum." -c \"$com\"";
  print $job."\n";   
  `$job`;
 }
@@ -117,17 +118,17 @@ __END__
 
 =head1 NAME
 
-stepAGG.pl
+stepSplit.pl
 
 =head1 SYNOPSIS  
 
-stepAGG.pl -o outdir <output directory> 
+stepSplit.pl -o outdir <output directory> 
             -p previous 
             -n #reads
 
-stepAGG.pl -help
+stepSplit.pl -help
 
-stepAGG.pl -version
+stepSplit.pl -version
 
 For help, run this script with -help option.
 
@@ -157,7 +158,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepAGG.pl 
+stepSplit.pl 
             -o ~/out
             -n 1000
             -p previous

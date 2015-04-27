@@ -107,165 +107,55 @@ if($trim ne "NONE")
 $outdir   = "$outdir/input";
 `mkdir -p $outdir`;
 
-my $pair=0;
-if($barcode eq "NONE")
-{
-  my %prefiles1=();
-  my %prefiles2=();
-  my $cat=0;
-  for(my $i=0;$i<scalar(@pfiles);$i++) 
-  {
-    my @files=split(/[,\s\t]+/,$pfiles[$i]);
-    print "[".$files[1]."]\n";
-    if (length($files[1])>1)
-    {
-    die "Error 64: please check the file:".$files[1] unless (checkFile($files[1]));
-    if (exists $prefiles1{$files[0]})
-    {
-      $cat=1;
-      $prefiles1{$files[0]}.=$files[1]." ";
-    }
-    else
-    {
-      $prefiles1{$files[0]}=$files[1]." ";
-    }
-    if (scalar(@files)==3) 
-    {
-      $pair=1;
-      die "Error 64: please check the file:".$files[2] unless (checkFile($files[2]));
-      $prefiles2{$files[0]}.=$files[2]." ";  
-    }
-    }
-  }
+my %prefiles=();
+foreach my $line (@pfiles)
+{ 
+  print $line."\n";
 
-  foreach my $libname (keys %prefiles1) 
-  {
-    my $str_file="";
-    my $com="";
-    if (!$pair) 
-    {
-       $str_file=$prefiles1{$libname};  
- 
-       if ($str_file=~/\.gz/)
-       {
-         $com="zcat $str_file > $outdir/$libname.fastq;";
-         $str_file= "$outdir/$libname.fastq";
-       }
-       else
-       {
-         if ($cat)
-         {
-           $com="cat $str_file > $outdir/$libname.fastq;";
-         }
-         else
-         {
-           $com="ln -sf $str_file $outdir/$libname.fastq;";
-         }
-       }
-    }
-    else
-    {
-      my $file1=$prefiles1{$libname};  
-      my $file2=$prefiles2{$libname};  
-      
-      if ($file1=~/\.gz/)
-      {
-       $com="zcat ".$file1." > $outdir/$libname.1.fastq;";
-       $com.="zcat ".$file2." > $outdir/$libname.2.fastq;";
-      }
-      else
-      {
-         if ($cat)
-         {
-           $com="cat ".$file1." > $outdir/$libname.1.fastq;";
-           $com.="cat ".$file2." > $outdir/$libname.2.fastq;";
-         }
-         else
-         {
-           $com="ln -sf $file1 $outdir/$libname.1.fastq;";
-           $com.="ln -sf $file2 $outdir/$libname.2.fastq;";
-         }
-       }      
-     }
-     if ($com=~/^ln/)
-     {
-       print $com."\n";
-       `$com`;       
-     }
-     else
-     {
-       my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-       print $job."\n";   
-       `$job`;
-     }
-  }  
-}
-else
-{
-  # If we are going to do a barcode separation, just check lane files exists in
-  # given location
- 
-  my @prefiles=();
-  foreach my $line (@pfiles)
-  { 
-
-    print $line."\n";
-    my @files=split(/[,\s\t]+/,$line);
-    if (scalar(@files)>1)
-    {
-       $pair=1;
-    }
-    foreach my $file (@files)
-    {
-        print "[$file]\n";
-        die "Error 64: please check the file:".$file unless (checkFile($file));
-    }
-    $prefiles[0].=$files[0]." ";
-    if ($pair){
-       $prefiles[1].=$files[1]." ";
-    }
-  }
-  my $i=1;
-  my $com="";
-  foreach my $file (@prefiles)
-  {
-    if($file!~/^$/)
-    {
-      my $pairedstr="";
-      $pairedstr="_R$i" if ($pair); 
-      if ($file=~/\.gz/)
-      {
-        $com="zcat ".$file." > $outdir/data$pairedstr.fastq";
-      }
-      else
-      {
-
-         if (scalar(@pfiles)==1)
-         {
-            $com="ln -s ".$file." $outdir/data$pairedstr.fastq";
-         }
-         else
-         {
-            $com="cat ".$file." > $outdir/data$pairedstr.fastq";
-         }
-      }
-
-      print "COMMAND: [ $com ]\n\n";
-      if ($com=~/^ln/)
-      {
-        `$com`;
-      }
-      else
-      {
-         my $job=$jobsubmit." -n ".$servicename.$i." -c \"$com\"";
-         print $job."\n\n";
-         `$job`;
-      }
-      $i++;
-    }
-   }
-  # If all the files exists check if the barcodes and library names were defined right
+  my @files=split(/[,\s\t]+/,$line);
+  my $libname="data";
   
+  my $maxindex=2;
+  my $offset=1;
+  if($barcode eq "NONE")
+  {
+    $libname=$files[0];
+    print "Libname:[$libname]\n";
+    $maxindex=3;
+    $offset=0;
+  }
+  for (my $i=($maxindex-2); $i<@files; $i++)
+  {
+      my $file=$files[$i];
+      print "[$file]\n";
+      die "Error 64: please check the file:".$file unless (checkFile($file));
+      my $pairedstr="";
+      $pairedstr=".".($i+$offset) if (scalar(@files)>($maxindex-1));
+      $prefiles{$libname.$pairedstr}.=$file." ";
+  }
+}
+my $i=1;
+my $com="";
+
+foreach my $libname (keys %prefiles)
+{
+  my $filestr=$prefiles{$libname};
+  if($libname!~/^$/)
+  {
+    my $cat="cat";
+    $cat="zcat" if ($filestr=~/\.gz/);
+    $com="$cat $filestr > $outdir/$libname.fastq";
+
+    print "COMMAND: [ $com ]\n\n";
+    my $job=$jobsubmit." -n ".$servicename.$libname." -c \"$com\"";
+    print $job."\n\n";
+    `$job`;
+    $i++;
+  }
+ }
+
+if($barcode ne "NONE")
+{  
   my @blines=split(/:/,$barcode);
   foreach my $line (@blines)
   {
