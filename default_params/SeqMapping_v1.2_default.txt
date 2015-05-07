@@ -9,7 +9,7 @@
 @SEQMAPPING       = @TOOLSDIR/SeqMappingv1.2
 @GDB              = /export/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GDB/commondb
-@JOB              = @PYTHON @SHARE/runJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
+@JOB              = @PYTHON @SHARE/src/runJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
 @JGEN             = "@JOB -p 1 -m 16096 -t 230 -q short"
 
 
