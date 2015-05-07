@@ -3,7 +3,7 @@
 @PYTHON           = python 
 @JAVA             = java
 @SAMTOOLS         = samtools
-@BIN              = /usr/local/bin/dolphin_bin
+@BIN              = /usr/local/bin/dolphin-bin
 @SHARE            = /usr/local/share/dolphin_tools
 @TOOLSDIR         = @SHARE/tools
 @SEQMAPPING       = @TOOLSDIR/SeqMappingv1.2
