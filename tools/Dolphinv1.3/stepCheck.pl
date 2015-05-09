@@ -94,8 +94,10 @@ $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
 
-`$dbcommcmd -r $runparamsid -w $wkey -o $outdir`;
- 
+$cmd="$dbcommcmd -r $runparamsid -w $wkey -o $outdir";
+print $cmd."\n";
+`$cmd`;
+
 my @pfiles=split(/:/,$input);
 
 if($adapter ne "NONE")
