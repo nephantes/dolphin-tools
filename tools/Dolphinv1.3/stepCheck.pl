@@ -33,7 +33,10 @@
  my $jobsubmit        = "";
  my $barcode          = "";
  my $adapter          = ""; 
- my $trim             = ""; 
+ my $trim             = "";
+ my $dbcommcmd        = ""; 
+ my $wkey             = "";
+ my $runparamsid      = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -41,16 +44,20 @@
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $execdir= dirname($0);
 
 GetOptions( 
 	'input=s'        => \$input,
 	'resume=s'       => \$resume,
 	'outdir=s'       => \$outdir,
-        'barcode=s'      => \$barcode,
-        'adapter=s'      => \$adapter,
-        'trim=s'         => \$trim,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
+    'barcode=s'      => \$barcode,
+    'adapter=s'      => \$adapter,
+    'trim=s'         => \$trim,
+	'wkey=s'         => \$wkey,
+	'dbcommcmd=s'    => \$dbcommcmd,
+	'paramsid=s'     => \$runparamsid,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized options.\nFor help, run this script with -help option.\n");
@@ -86,6 +93,8 @@ if ($resume eq "fresh")
 $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
+
+`$dbcommcmd -r $runparamsid -w $wkey -o $outdir`;
  
 my @pfiles=split(/:/,$input);
 
