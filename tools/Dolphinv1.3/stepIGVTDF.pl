@@ -48,7 +48,7 @@ GetOptions(
         'igvtools=s'     => \$igvtools,
         'len=s'          => \$insertlen,
         'pair=s'         => \$pair,
-        'pubdir=s'      => \$pubdir,
+        'pubdir=s'       => \$pubdir,
         'wkey=s'         => \$wkey,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,

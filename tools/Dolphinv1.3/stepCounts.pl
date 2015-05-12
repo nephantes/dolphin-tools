@@ -129,7 +129,7 @@ countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com);
 
 #Copy count directory to its web accessible area
 
-`cp -R $outd $puboutdir`;  
+`rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
 
 sub countCov
 {

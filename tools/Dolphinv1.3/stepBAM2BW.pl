@@ -44,7 +44,7 @@ GetOptions(
         'type=s'         => \$type,
         'coverage=s'     => \$GCB,
 	'wig2bigwig=s'   => \$W2BW,
-        'pubdir=s'      => \$pubdir,
+        'pubdir=s'       => \$pubdir,
         'wkey=s'         => \$wkey,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
