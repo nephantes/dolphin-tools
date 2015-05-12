@@ -79,7 +79,7 @@ my $outd  = "$outdir/tdf_$type";
 
 `mkdir -p $outd`;
 
-my $puboutdir   = "$pubdir/$wkey";
+my $puboutdir   = "$pubdir/$wkey/tdf_$type";
 `mkdir -p $puboutdir`;
 
 my @files=();
@@ -140,7 +140,7 @@ foreach my $d (@files){
   }
  
   $com.="cd $outdir && $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome && "; 
-  $com.="cp -R $outdir $puboutdir/.";
+  $com.="cp -R $outd/$libname.* $puboutdir/.";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   
   `$job`;
