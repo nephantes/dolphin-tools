@@ -11,6 +11,8 @@
 @GCOMMONDB        = @GDB/commondb
 @JOB              = @PYTHON @SHARE/src/runJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
 @JGEN             = "@JOB -p 1 -m 16096 -t 230 -q short"
+@PUBDIR           = /export/pub 
+
 
 
 #STEPCHECK INPUT FILES
