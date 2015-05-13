@@ -28,6 +28,8 @@
  my $GCB              = "";
  my $W2BW             = "";
  my $outdir           = "";
+ my $pubdir          = "";
+ my $wkey             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -42,6 +44,8 @@ GetOptions(
         'type=s'         => \$type,
         'coverage=s'     => \$GCB,
 	'wig2bigwig=s'   => \$W2BW,
+        'pubdir=s'       => \$pubdir,
+        'wkey=s'         => \$wkey,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genomesize=s'   => \$genomesize,
@@ -70,6 +74,9 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 my $name=basename($outdir);
  
 `mkdir -p $outdir/ucsc_$type`;
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+
 my @files=();
 my $indir="";
 
@@ -111,9 +118,11 @@ foreach my $d (@files){
   my $outputbg="$outdir/ucsc_$type/$libname.bg";
   my $outputbw="$outdir/ucsc_$type/$libname.bw";
 
-  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg;";
-  $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw;";
-  $com.="rm -rf $outputbg;";
+  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg && ";
+  $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw && ";
+  $com.="rm -rf $outputbg && ";
+  $com.="cp -R $outdir/ucsc_$type $puboutdir/.";
+
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print "\n".$job."\n";   
   `$job`;

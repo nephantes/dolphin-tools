@@ -28,6 +28,8 @@
  my $pair             = "";
  my $insertlen        = "";
  my $outdir           = "";
+ my $pubdir          = "";
+ my $wkey             = "";
  my $samtools         = "";
  my $igvtools         = "";
  my $jobsubmit        = "";
@@ -46,6 +48,8 @@ GetOptions(
         'igvtools=s'     => \$igvtools,
         'len=s'          => \$insertlen,
         'pair=s'         => \$pair,
+        'pubdir=s'       => \$pubdir,
+        'wkey=s'         => \$wkey,
         'jobsubmit=s'    => \$jobsubmit,
         'servicename=s'  => \$servicename,
         'genome=s'       => \$genome,
@@ -74,6 +78,10 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($gen
 my $outd  = "$outdir/tdf_$type";
 
 `mkdir -p $outd`;
+
+my $puboutdir   = "$pubdir/$wkey/tdf_$type";
+`mkdir -p $puboutdir`;
+
 my @files=();
 print $type."\n";
 if ($type eq "RSEM")
@@ -118,8 +126,8 @@ foreach my $d (@files){
      $libname=basename($d, ".genome.sorted.bam");
      $dirname=dirname($d);
      $libname=~s/rsem.out.//g;
-     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam;\n";
-     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai;\n";
+     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam && ";
+     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai && ";
   }
   else
   {
@@ -127,12 +135,12 @@ foreach my $d (@files){
      $libname=basename($d, ".sorted.bam");
      $libname=basename($d, ".bam")  if ($type eq "mergechip");
      
-     $com="cp $d $outd/$libname.bam;\n";
-     $com.="cp $d.bai $outd/$libname.bam.bai;\n";
+     $com="cp $d $outd/$libname.bam && ";
+     $com.="cp $d.bai $outd/$libname.bam.bai && ";
   }
  
-  $com.="cd $outdir; $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome\n"; 
-  
+  $com.="cd $outdir && $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome && "; 
+  $com.="cp -R $outd/$libname.* $puboutdir/.";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   
   `$job`;

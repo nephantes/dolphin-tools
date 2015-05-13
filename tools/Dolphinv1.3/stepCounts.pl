@@ -27,6 +27,8 @@
  my $mapnames         = "";
  my $outdir           = "";
  my $jobsubmit        = "";
+ my $pubdir          = "";
+ my $wkey             = "";
  my $bedmake          = "";
  my $gcommondb        = "";
  my $cmd              = ""; 
@@ -40,14 +42,16 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
         'mapnames=s'     => \$mapnames,
-		'outdir=s'       => \$outdir,
+	'outdir=s'       => \$outdir,
         'cmd=s'          => \$cmd,
         'bedmake=s'      => \$bedmake,
         'gcommondb=s'    => \$gcommondb,
+        'pubdir=s'      => \$pubdir,
+        'wkey=s'         => \$wkey,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
-		'help'           => \$help, 
-		'version'        => \$print_version,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -69,6 +73,8 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($mapnames eq "") or ($out
 
 my $outd   = "$outdir/counts";
 `mkdir -p $outd`;
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
 my ($inputdir, $com)=();
 
 my @mapnames_arr=split(/[,\t\s]+/, $mapnames);
@@ -116,10 +122,14 @@ foreach my $mapname (@mapnames_arr)
            countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "");
          }
       }
-  }
+   }
 
 countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com);
 }
+
+#Copy count directory to its web accessible area
+
+`rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
 
 sub countCov
 {

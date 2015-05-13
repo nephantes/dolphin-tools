@@ -79,7 +79,9 @@ def main():
   
    if (DBHOSTNAME == None):
         DBHOSTNAME="localhost"
-        
+   sdir=os.path.dirname(sys.argv[0])
+
+     
    print "COMMAND: [" + COM + "]\n"
    print "NAME: [" + NAME + "]\n"
    print "cpu: [" + CPU + "]\n"
@@ -87,7 +89,6 @@ def main():
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    #print "EXECDIR" + exec_dir
-   sdir=os.environ["DOLPHIN_TOOLS_PATH"]
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
    lsf=OUTDIR + "/tmp/lsf"
@@ -105,16 +106,16 @@ def main():
      f.write("sleep 1\n")
      f.write("cd " + exec_dir + "\n")
      f.write("echo '"+str(COM)+"'\n")
-     f.write("python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $JOB_NUM -j "+ str(NAME)+ " -m 2\n")
+     f.write("python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $JOB_NUM -j "+ str(NAME)+ " -m 2\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
      if (str(NAME) != str(SERVICENAME)):
        f.write("touch "+success_file+"\n")
-     f.write("  python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $JOB_NUM -j "+ str(NAME)+ " -m 3\n")
+     f.write("  python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $JOB_NUM -j "+ str(NAME)+ " -m 3\n")
      f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  echo success\nelse\n  echo failed\n")
-     f.write("  python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $JOB_NUM -j "+ str(NAME)+ " -m 0\n")
+     f.write("  python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $JOB_NUM -j "+ str(NAME)+ " -m 0\n")
      f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  exit 127\nfi\ndate\n")
 
@@ -132,7 +133,7 @@ def main():
      pid = subprocess.Popen(command, shell=True).pid
      print "\n\n\nPID:"+str(pid)+"\n\n\n"
 
-     command = python+" " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -n "+ str(pid) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
+     command = python+" " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -n "+ str(pid) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
      #print command
      #PUT TRY CATCH HERE 
      if pid>0:

@@ -92,7 +92,7 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result):
 
 def insertJobOut(username, wkey, jobnum, outdir, edir):
    file=str(outdir)+"/tmp/lsf/"+str(jobnum)
-   command="python " + edir  + "/src/readLSFout.py -f "+file
+   command="python " + edir  + "/readLSFout.py -f "+file
    child = os.popen(command)
    jobout = child.read().rstrip()
    err = child.close()
@@ -125,6 +125,7 @@ def main():
         print "for help use --help"
         sys.exit(2)
 
+   edir=os.path.dirname(sys.argv[0])
 
    USERNAME                = options.username   
    WKEY                    = options.wkey 
@@ -137,7 +138,6 @@ def main():
    OUTDIR                  = options.outdir
 
         
-   edir=os.environ["DOLPHIN_TOOLS_PATH"]
 
    if (TYPE == "dbSubmitJob"):
 	insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, MESSAGE) # MESSAGE has jobnum here

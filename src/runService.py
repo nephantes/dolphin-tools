@@ -62,6 +62,8 @@ def main():
     except:
         print "OptionParser Error:for help use --help"
         sys.exit(2)
+    edir=os.path.dirname(sys.argv[0])
+
     INPUTPARAM  = options.inputparam
     PARAMFILE   = options.paramfile
     DBHOSTNAME  = options.dbhostname
@@ -72,8 +74,7 @@ def main():
     NAME        = options.name
     CPU         = options.cpu
     OUTDIR      = options.outdir
-   
-    edir        = os.environ["DOLPHIN_TOOLS_PATH"]
+ 
     python      = "python ";
     
     if (DBHOSTNAME == None):
@@ -140,7 +141,7 @@ def main():
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/src/runJobs.py -d "+DBHOSTNAME+" -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + edir  + "/runJobs.py -d "+DBHOSTNAME+" -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command 
     ## PUT TRY CATCH HERE
     child = os.popen(command)

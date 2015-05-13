@@ -37,12 +37,6 @@ def runSQL(sql):
         db.close()
     return results
 
-def updateRunParams(runparamsid, wkey):
-   
-    sql = "UPDATE biocore.ngs_runparams set wkey='"+str(wkey)+"' where id="+str(runparamsid)
- 
-    return runSQL(sql)
-
 def getFileList(runparamsid, barcode):
     if (barcode != "NONE"):
         sql = "SELECT DISTINCT ns.id, ns.name, sf.file_name, d.fastq_dir, d.backup_dir FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
@@ -76,7 +70,6 @@ def main():
         parser.add_option('-b', '--barcode', help='barcode', dest='barcode')
         parser.add_option('-j', '--jobsubmit', help='jobsubmit', dest='jobsubmit')
         parser.add_option('-r', '--runparamsid', help='run params id', dest='runparamsid')
-        parser.add_option('-w', '--wkey', help='wkey', dest='wkey')
         parser.add_option('-u', '--username', help='username', dest='username')
         parser.add_option('-p', '--pairedend', help='pairedend', dest='paired')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
@@ -93,7 +86,6 @@ def main():
     RUNPARAMSID             = options.runparamsid
     JOBSUBMIT               = options.jobsubmit
     OUTDIR                  = options.outdir
-    WKEY                    = options.wkey
 
 
 
@@ -105,11 +97,8 @@ def main():
     print PAIRED
     print JOBSUBMIT
     print OUTDIR
-    print USERNAME
-    print WKEY
     print RUNPARAMSID
     
-    updateRunParams(RUNPARAMSID, WKEY)
     filelist=getFileList(RUNPARAMSID, BARCODE)
     
     inputdir=OUTDIR+"/input"

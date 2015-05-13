@@ -25,6 +25,8 @@
  my $gene_iso         = "genes";
  my $tpm_fpkm         = "tpm";
  my $outdir           = "";
+ my $pubdir          = "";
+ my $wkey             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -38,6 +40,8 @@ GetOptions(
 	'outdir=s'        => \$outdir,
 	'gene_iso=s'      => \$gene_iso,
 	'tpm_fpkm=s'      => \$tpm_fpkm,
+        'pubdir=s'      => \$pubdir,
+        'wkey=s'         => \$wkey,
         'jobsubmit=s'     => \$jobsubmit,
         'servicename=s'   => \$servicename,
 	'help'            => \$help, 
@@ -75,6 +79,9 @@ my %tf = (
 my $indir   = "$outdir/rsem";
 $outdir  = "$outdir/rsem";
 
+my $puboutdir   = "$pubdir/$wkey/rsem";
+`mkdir -p $puboutdir`;
+
 opendir D, $indir or die "Could not open $indir\n";
 my @alndirs = sort { $a cmp $b } grep /^pipe/, readdir(D);
 
@@ -102,8 +109,8 @@ foreach my $d (@alndirs){
  }
  close IN;
 }
-
-open OUT, ">${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
+my $outfile="${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
+open OUT, ">$outfile";
 
 print OUT "gene\ttranscript";
 
@@ -131,6 +138,8 @@ foreach my $key (keys %b)
 }
 
 close OUT;
+
+`cp $outfile $puboutdir/.`;
 
 __END__
 

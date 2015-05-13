@@ -25,6 +25,8 @@
  
 #################### VARIABLES ######################
  my $outd             = "";
+ my $pubdir          = "";
+ my $wkey             = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -34,6 +36,8 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outd,
+        'pubdir=s'      => \$pubdir,
+        'wkey=s'         => \$wkey,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -63,6 +67,9 @@ my $filesdir="$outdir/UNITED/files";
 `mkdir -p $uniteddir`;
 `mkdir -p $filesdir`;
 
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+
 open outPBQ, ">$uniteddir/per_base_quality.html";
 print outPBQ "\<body\>\n";
 open outPSQ, ">$uniteddir/per_sequence_quality.html";
@@ -90,6 +97,7 @@ print outPBQ "\</body\>\n";
 print outPSQ "\</body\>\n";
 print outPBSC "\</body\>\n";
 
+`cp -R $outdir $puboutdir/.`;
 __END__
 
 
