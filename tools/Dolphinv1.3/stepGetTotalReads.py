@@ -86,7 +86,6 @@ def main():
     RUNPARAMSID             = options.runparamsid
     JOBSUBMIT               = options.jobsubmit
     OUTDIR                  = options.outdir
-    WKEY                    = options.wkey
 
 
 
@@ -98,7 +97,6 @@ def main():
     print PAIRED
     print JOBSUBMIT
     print OUTDIR
-    print USERNAME
     print RUNPARAMSID
     
     filelist=getFileList(RUNPARAMSID, BARCODE)
