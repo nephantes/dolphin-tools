@@ -141,7 +141,13 @@ foreach my $key (keys %b)
 close OUT;
 
 `cp $outfile $puboutdir/.`;
-my $com= "echo \"$rsem_version\\trsem\\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/reports.tsv ";
+unless (-e "$puboutdir/../reports.tsv")
+{
+  `echo \"version\\ttype\\tfile\" > $puboutdir/../reports.tsv`;
+}
+ 
+
+my $com= "echo \"$rsem_version\\trsem\\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/../reports.tsv ";
 `$com`;
 
 __END__
