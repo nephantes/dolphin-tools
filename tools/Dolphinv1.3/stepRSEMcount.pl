@@ -32,6 +32,7 @@
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
+ my $rsem_version     = "RSEM v1.2.7";
 ################### PARAMETER PARSING ####################
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
@@ -40,10 +41,10 @@ GetOptions(
 	'outdir=s'        => \$outdir,
 	'gene_iso=s'      => \$gene_iso,
 	'tpm_fpkm=s'      => \$tpm_fpkm,
-        'pubdir=s'      => \$pubdir,
-        'wkey=s'         => \$wkey,
-        'jobsubmit=s'     => \$jobsubmit,
-        'servicename=s'   => \$servicename,
+    'pubdir=s'        => \$pubdir,
+    'wkey=s'          => \$wkey,
+    'jobsubmit=s'     => \$jobsubmit,
+    'servicename=s'   => \$servicename,
 	'help'            => \$help, 
 	'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -140,6 +141,8 @@ foreach my $key (keys %b)
 close OUT;
 
 `cp $outfile $puboutdir/.`;
+my $com= "echo \"$rsem_version\\trsem\\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/reports.tsv ";
+`$com`;
 
 __END__
 
