@@ -79,7 +79,6 @@ def getAmazonCredentials(clusteruser):
     return results
 
 def updateInitialFileCounts(file_id, tablename, inputdir, filename, paired):
-    
     count=-1
     if (paired != "None"):
     	files=filename.split(',')
@@ -91,8 +90,8 @@ def updateInitialFileCounts(file_id, tablename, inputdir, filename, paired):
     	    count=firstCount
     	else:
     	    print "ERROR 85: The # of reads in paired end libary not equal"
-            print "%s"%(inputdir+'/tmp/'+files[0]+'.count')
-            print "%s"%(inputdir+'/tmp/'+files[1]+'.count')
+    	    print "%s"%(inputdir+'/tmp/'+files[0]+'.count')
+    	    print "%s"%(inputdir+'/tmp/'+files[1]+'.count')
     	    sys.exit(85)
     else:
     	count=getValfromFile(inputdir+'/tmp/'+filename+'.count')
@@ -177,6 +176,7 @@ def main():
         parser.add_option('-r', '--runparamsid', help='group id', dest='runparamsid')
         parser.add_option('-u', '--username', help='username', dest='username')
         parser.add_option('-p', '--pairedend', help='pairedend', dest='paired')
+        parser.add_option('-a', '--amazonupload', help='amazonupload', dest='amazonupload')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
 
         (options, args) = parser.parse_args()
@@ -191,6 +191,7 @@ def main():
     RUNPARAMSID             = options.runparamsid
     JOBSUBMIT               = options.jobsubmit
     OUTDIR                  = options.outdir
+    AMAZONUPLOAD            = options.amazonupload
 
 
     if (OUTDIR == None or JOBSUBMIT == None):
@@ -205,7 +206,7 @@ def main():
     
     amazon = getAmazonCredentials(USERNAME)
 
-    if (amazon!=()):   
+    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):   
        conn = S3Connection(amazon[0][1], amazon[0][2])
        pb = conn.get_bucket(amazon[0][3])
 
@@ -232,7 +233,8 @@ def main():
             processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
-    for libname, sample_id in processedLibs:
+    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):   
+      for libname, sample_id in processedLibs:
         if (checkReadCounts(sample_id, tablename)):
 
             if (filename.find(',')!=-1):

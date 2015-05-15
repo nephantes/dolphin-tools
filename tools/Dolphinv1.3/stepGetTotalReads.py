@@ -3,22 +3,22 @@
 import os, re, string, sys, commands
 import warnings
 import MySQLdb
+from parameters import *
 
 from sys import argv, exit, stderr
 from optparse import OptionParser
  
-
 warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
                         DeprecationWarning, 'MySQLdb')
 
 def runSQL(sql):
-    port=3306
+
     db = MySQLdb.connect(
-      host = 'galaxy.umassmed.edu',
-      user = 'biocore',
-      passwd = 'biocore2013',
-      db = 'biocore',
-      port = port)
+      host = DBHOST,
+      user = DBUSER,
+      passwd = DBPASS,
+      db = DB,
+      port = DBPORT)
     try:
         cursor = db.cursor()
         cursor.execute(sql)
@@ -97,6 +97,7 @@ def main():
     print PAIRED
     print JOBSUBMIT
     print OUTDIR
+    print USERNAME
     print RUNPARAMSID
     
     filelist=getFileList(RUNPARAMSID, BARCODE)
