@@ -32,6 +32,8 @@
  my $foldChange       = "";
  my $padj             = "";
  my $rscriptCMD       = "";
+ my $pubdir           = "";
+ my $wkey             = "";
  my $outdir           = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -46,14 +48,16 @@ GetOptions(
 	'cols=s'         => \$cols,
 	'dconds=s'       => \$conds,
 	'num=s'          => \$num,
-        'eheatmap=s'     => \$heatmap,
-        'tfitType=s'     => \$fitType,
-        'padj=s'         => \$padj,
-        'foldChange=s'   => \$foldChange,
-        'rscriptCMD=s'   => \$rscriptCMD,
+    'eheatmap=s'     => \$heatmap,
+    'tfitType=s'     => \$fitType,
+    'padj=s'         => \$padj,
+    'foldChange=s'   => \$foldChange,
+    'rscriptCMD=s'   => \$rscriptCMD,
 	'outdir=s'       => \$outdir,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
+    'pubdir=s'       => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -85,17 +89,23 @@ $cols="c(\"$cols\")";
 $conds=~s/,/\",\"/g;
 $conds="c(\"$conds\")";
 
-makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange );
-makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange );
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+
+makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num");
+makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num");
+
+`cp -R $outdir $puboutdir/.`;
 
 sub makePlot
 {
-my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff)=@_;
+my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff, $puboutdir, $deseqdir)=@_;
 my $output = "$outdir/rscript_$type.R";
-my $table = "$outdir/deseq2_$type.csv";
+my $table = "$outdir/deseq2_$type.tsv";
 my $pdfname = "$outdir/heatmap_$type.pdf";
-my $alldetected = "$outdir/alldetected_$type.csv";
-my $selected_log2fc = "$outdir/selected_log2fc_$type.csv";
+my $alldetected = "$outdir/alldetected_$type.tsv";
+my $selected_log2fc = "$outdir/selected_log2fc_$type.tsv";
+my $sessioninfo = "$outdir/sessionInfo.txt";
 my $inputfile=$inputdir."/".$type."_expression_expected_count.tsv";
 my $col=1;
 $col=2 if ($type eq "isoforms");
@@ -150,12 +160,12 @@ analyseDE <-  function(data,cond, fitType, tablefile )
   $heatmapR
   ult<-cbind(data[rownames(res_selected), ], res[rownames(res_selected), c("padj", "log2FoldChange")],  2 ^ (res[rownames(res_selected), "log2FoldChange"]) )
   colnames(ult)[dim(ult)[2]]<-"foldChange"
-  write.csv(ult, paste("$selected_log2fc",sep=""))
+  write.table(ult, "$selected_log2fc", sep="\t", col.names=NA)
 
   all<-cbind(data[rownames(filtd), ], res[rownames(res), c("padj", "log2FoldChange")], 2 ^ (res[rownames(res), "log2FoldChange"]) )
   colnames(all)[dim(all)[2]]<-"foldChange"
-  write.csv(all, "$alldetected")
-
+  write.table(all, "$alldetected", sep="\t", col.names=NA)
+  sessionInfo()
 }
 
 file<-"$inputfile"
@@ -171,7 +181,15 @@ print $rscript;
 print OUT $rscript; 
 close(OUT);
 
-my $com="$rscriptCMD $output > /dev/null 2>&1";
+my $com="$rscriptCMD $output > $sessioninfo 2>&1";
+`$com`;
+my $verstring =`grep DESeq2_ $sessioninfo`;
+$verstring =~/(DESeq[^\s]+)/;
+my $deseq_ver=$1;
+$com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetected &&";
+$com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
+$com.="echo \"$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
+$com.="echo \"$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
 `$com`;
 }
 
