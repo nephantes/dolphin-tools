@@ -226,14 +226,15 @@ def main():
         filename=sample[5]
         backup_dir=sample[6]
         amazon_bucket=sample[7]
-        amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
+
 
         updateInitialFileCounts(file_id, tablename, inputdir, filename, PAIRED)
         if (not [libname, sample_id] in processedLibs):
             processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
-    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):   
+    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):
+      amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
       for libname, sample_id in processedLibs:
         if (checkReadCounts(sample_id, tablename)):
 
