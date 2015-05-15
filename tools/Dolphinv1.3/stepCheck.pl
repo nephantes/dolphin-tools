@@ -78,7 +78,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
-if ($resume eq "fresh")
+if (lc($resume) eq "yes")
 {
    `rm -rf $outdir/tmp/track/*`;
    `rm -rf $outdir/seqmapping`;
@@ -100,11 +100,11 @@ print $cmd."\n";
 
 my @pfiles=split(/:/,$input);
 
-if($adapter ne "NONE")
+if(lc($adapter) ne "none")
 {
    die "Error 66: please check the adapter:$adapter" unless ($adapter =~/^[ACGT:]+$/);
 }
-if($trim ne "NONE")
+if(lc($trim) ne "none")
 {
    my @nts=split(/[,\s\t:]+/,$trim);
    foreach my $ntlen (@nts)
@@ -128,7 +128,7 @@ foreach my $line (@pfiles)
   
   my $maxindex=2;
   my $offset=1;
-  if($barcode eq "NONE")
+  if(lc($barcode) eq "none")
   {
     $libname=$files[0];
     print "Libname:[$libname]\n";
@@ -165,7 +165,7 @@ foreach my $libname (keys %prefiles)
   }
  }
 
-if($barcode ne "NONE")
+if(lc($barcode) ne "none")
 {  
   my @blines=split(/:/,$barcode);
   foreach my $line (@blines)
