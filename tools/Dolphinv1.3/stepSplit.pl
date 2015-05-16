@@ -35,18 +35,18 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'number=s'       => \$number,
-	'outdir=s'       => \$outdir,
-        'previous=s'     => \$previous,
-        'dspaired=s'     => \$spaired,
-        'cmd=s'          => \$cmd,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'number=s'       => \$number,
+    'outdir=s'       => \$outdir,
+    'previous=s'     => \$previous,
+    'dspaired=s'     => \$spaired,
+    'cmd=s'          => \$cmd,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -79,8 +79,11 @@ else
 
 $outdir  = "$outdir/seqmapping/split";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
 my $com="";
 $com=`ls $inputdir/*.fastq`;
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
@@ -96,14 +99,13 @@ foreach my $file (@files)
     $bname=$1;
     $pairednum=$2;
  }
- $com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname$pairednum._;\n";
- $com.= "ls $outdir/$bname$pairednum._*|awk '{split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[length(a)]\\\"$pairednum.fastq\\\")}';\n"; 
- #$com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname^$pairednum^_; ls $outdir/$bname^$pairednum^_*|grep -v fastq|awk '{split(\$1,a,\"^\");system(\"mv \"\$1\" \"a[1]a[3]\"$pairednum.fastq\")}'"; 
- print $com."\n\n";  
- #`$com`;
+ $com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname$pairednum._ && ";
+ $com.= "ls $outdir/$bname$pairednum._*|awk '{split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[length(a)]\\\"$pairednum.fastq\\\")}'"; 
+
  my $job=$jobsubmit." -n ".$servicename."_".$bname.$pairednum." -c \"$com\"";
  print $job."\n";   
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

@@ -43,7 +43,7 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 my $execdir= dirname($0);
 
 GetOptions( 
@@ -94,9 +94,10 @@ $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
 
-$cmd="$dbcommcmd -f running -r $runparamsid -w $wkey -o $outdir";
+my $cmd="$dbcommcmd -f running -r $runparamsid -w $wkey -o $outdir";
 print $cmd."\n";
 `$cmd`;
+die "Error 20: Cannot connect to the database:" if ($?);
 
 my @pfiles=split(/:/,$input);
 
@@ -117,6 +118,7 @@ if(lc($trim) ne "none")
 }
 $outdir   = "$outdir/input";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my %prefiles=();
 foreach my $line (@pfiles)
@@ -161,6 +163,7 @@ foreach my $libname (keys %prefiles)
     my $job=$jobsubmit." -n ".$servicename.$libname." -c \"$com\"";
     print $job."\n\n";
     `$job`;
+	die "Error 25: Cannot run the job:".$job if ($?);
     $i++;
   }
  }

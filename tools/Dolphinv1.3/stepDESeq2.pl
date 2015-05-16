@@ -183,6 +183,7 @@ close(OUT);
 
 my $com="$rscriptCMD $output > $sessioninfo 2>&1";
 `$com`;
+die "Error 22: Cannot run Rscript:" if ($?);
 my $verstring =`grep DESeq2_ $sessioninfo`;
 $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
@@ -191,6 +192,7 @@ $com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
 $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
 $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
 `$com`;
+die "Error 21: Cannot run DESeq2 output files:" if ($?);
 }
 
 __END__

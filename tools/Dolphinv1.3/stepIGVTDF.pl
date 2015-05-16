@@ -42,17 +42,17 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'outdir=s'       => \$outdir,
-        'type=s'         => \$type,
-        'samtools=s'     => \$samtools,
-        'igvtools=s'     => \$igvtools,
-        'len=s'          => \$insertlen,
-        'pair=s'         => \$pair,
-        'pubdir=s'       => \$pubdir,
-        'wkey=s'         => \$wkey,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-        'genome=s'       => \$genome,
+    'outdir=s'       => \$outdir,
+    'type=s'         => \$type,
+    'samtools=s'     => \$samtools,
+    'igvtools=s'     => \$igvtools,
+    'len=s'          => \$insertlen,
+    'pair=s'         => \$pair,
+    'pubdir=s'       => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'jobsubmit=s'    => \$jobsubmit,
+    'servicename=s'  => \$servicename,
+    'genome=s'       => \$genome,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -76,11 +76,12 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($gen
 #   converts the mapped reads for IGV visualization
 
 my $outd  = "$outdir/tdf_$type";
-
 `mkdir -p $outd`;
+die "Error 15: Cannot create the directory:$outd" if ($?);
 
 my $puboutdir   = "$pubdir/$wkey/tdf_$type";
 `mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 print $type."\n";
@@ -144,6 +145,7 @@ foreach my $d (@files){
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   
   `$job`;
+  die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 __END__

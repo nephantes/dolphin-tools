@@ -37,14 +37,14 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'inputchip=s'    => \$chipinput,
-	'outdir=s'       => \$outdir,
-        'previous=s'     => \$previous,
-        'acmd=s'         => \$acmd,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'inputchip=s'    => \$chipinput,
+    'outdir=s'       => \$outdir,
+    'previous=s'     => \$previous,
+    'acmd=s'         => \$acmd,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -75,6 +75,7 @@ if ($previous=~/SPLIT/g)
 
 $outdir  = "$outdir/macs";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:$outdir" if ($?);
 
 my @chiplibs=split(/:/,$chipinput);
 
@@ -100,6 +101,7 @@ foreach my $chipline (@chiplibs)
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

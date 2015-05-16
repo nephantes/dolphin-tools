@@ -4,7 +4,7 @@
 #                                       stepMergeChip.pl
 #########################################################################################
 # 
-#  This program trims the reads in the files. 
+#  This program merges chip output. 
 #
 #
 #########################################################################################
@@ -33,16 +33,16 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'outdir=s'       => \$outdir,
-        'samtools=s'     => \$samtools,
-        'dspaired=s'     => \$spaired,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'outdir=s'       => \$outdir,
+    'samtools=s'     => \$samtools,
+    'dspaired=s'     => \$spaired,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -64,8 +64,11 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($out
 my $inputdir = "$outdir/seqmapping/chip";
 $outdir  = "$outdir/seqmapping/mergechip";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
 my $com="";
-$com=`ls $inputdir/*.bam`;
+$com=`ls $inputdir/*.bam 2>&1`;
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
@@ -78,7 +81,7 @@ foreach my $file (@files)
  $mergeCmd{$bpath."*.sorted.bam"}=$bname;
 }
 
-foreach $cmd (keys %mergeCmd)
+foreach my $cmd (keys %mergeCmd)
 {
  my $bname=$mergeCmd{$cmd};
  my $outfile=$outdir."/$bname.bam"; 
@@ -86,19 +89,19 @@ foreach $cmd (keys %mergeCmd)
  chomp($fcount);
  if ($fcount>1)
  {
-   $com ="$samtools merge $outfile $cmd -f;\n";
-   $com .="$samtools index $outfile;\n";
+   $com ="$samtools merge $outfile $cmd -f && ";
+   $com .="$samtools index $outfile ";
  }
  else
  {
-   $com ="cp $cmd $outfile;\n";
-   $com .="cp $cmd.bai $outfile.bai;\n";
+   $com ="cp $cmd $outfile && ";
+   $com .="cp $cmd.bai $outfile.bai ";
  }
- print $com."\n\n";
- `$com`;
- #my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- #print $job."\n";   
- #`$job`;
+ #`$com`;
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+ print $job."\n";   
+ `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 __END__

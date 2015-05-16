@@ -39,7 +39,7 @@
 
 ################### PARAMETER PARSING ####################
 
-$cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
         'mapnames=s'     => \$mapnames,
@@ -74,8 +74,10 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($mapnames eq "") or ($out
 
 my $outd   = "$outdir/counts";
 `mkdir -p $outd`;
+die "Error 15: Cannot create the directory:".$outd if ($?);
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 my ($inputdir, $com)=();
 
 my @mapnames_arr=split(/[,\t\s]+/, $mapnames);
@@ -103,8 +105,8 @@ foreach my $mapname (@mapnames_arr)
      }
 
      $bedfile="$outd/tmp/$name.bed";
-     $com="mkdir -p $outd/tmp && \n";
-     $com.="$bedmake $ind $name>$bedfile &&\n";
+     $com="mkdir -p $outd/tmp && ";
+     $com.="$bedmake $ind $name>$bedfile ";
   }
   else
   {
@@ -131,12 +133,15 @@ countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $pubou
 #Copy count directory to its web accessible area
 
 `rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
+die "Error 17: Cannot copy the directory:".$puboutdir if ($?);
 
 sub countCov
 {
   my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom, $version, $puboutdi, $wkey)=@_; 
   my $inputdir = "$outdir/seqmapping/".lc($mapname);
-  my $com=`ls $inputdir/*.sorted.bam`;
+  my $com=`ls $inputdir/*.sorted.bam 2>&1`;
+  if ($com !~/No such file or directory/)
+  {
 
   my @files = split(/[\n\r\s\t,]+/, $com);
   my $filestr="";
@@ -161,6 +166,8 @@ sub countCov
   $com.= "echo \"$wkey\\t$version\\tcounts\\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
   print $com."\n"; 
   `$com`;
+  die "Error 18: Cannot add to the reports!" if ($?);
+  }
 }
 
 

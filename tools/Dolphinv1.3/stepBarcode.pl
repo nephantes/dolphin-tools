@@ -4,7 +4,7 @@
 #                                       stepBarcode.pl
 #########################################################################################
 # 
-#  This program removes barcode sequence. 
+#  This program does barcode separation. 
 #
 #
 #########################################################################################
@@ -36,16 +36,18 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
+my $command=$0." ".join(" ",@ARGV); ####command line copy
+
 GetOptions( 
-        'input=s'        => \$input,
-        'barcode=s'      => \$barcode,
+    'input=s'        => \$input,
+    'barcode=s'      => \$barcode,
 	'outdir=s'       => \$outdir,
-        'dspaired=s'     => \$spaired,
-        'cmd=s'          => \$cmd,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'dspaired=s'     => \$spaired,
+    'cmd=s'          => \$cmd,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help,
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -69,6 +71,7 @@ my $inputdir   = "$outdir/input";
 
 $outdir   = "$outdir/seqmapping/barcode";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
 my @names=();
 my @barcodes=();
 open(OUT, ">$outdir/barcode.fa");
@@ -107,11 +110,11 @@ my $cmdPE=$cmds[1];
     for (my $i=0; $i<@names; $i++)
     {
       if ($names[$i]!~/^$/){
-       $mvcom.="mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq;";
+       $mvcom.="&& mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq &&";
        $mvcom.="rmdir $outdir/$barcodes[$i];";
       }
     }
-    $com="$cmdPE -b $outdir/barcode.fa -f $filename -d $outdir > /dev/null;$mvcom";  
+    $com="$cmdPE -b $outdir/barcode.fa -f $filename -d $outdir > /dev/null $mvcom";  
  }
  else
  {
@@ -131,14 +134,14 @@ my $cmdPE=$cmds[1];
       for (my $i=0; $i<@names; $i++)
       {
         if ($names[$i]!~/^$/){
-         $mvcom.="mv $outdir/$barcodes[$i]/$nm1.$ext1 $outdir/$names[$i].1.fastq;";
-         $mvcom.="mv $outdir/$barcodes[$i]/$nm2.$ext2 $outdir/$names[$i].2.fastq;";
-         $mvcom.="rmdir $outdir/$barcodes[$i];";
+         $mvcom.="&& mv $outdir/$barcodes[$i]/$nm1.$ext1 $outdir/$names[$i].1.fastq ";
+         $mvcom.="&& mv $outdir/$barcodes[$i]/$nm2.$ext2 $outdir/$names[$i].2.fastq ";
+         $mvcom.="&& rmdir $outdir/$barcodes[$i] ";
         }
       }
 
       #$com="$cmdPE -bcfile $outdir/barcode.fa -in $file1 -pair2File $file2 -outdir $outdir > /dev/null;$mvcom";  
-      $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null;$mvcom";  
+      $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null $mvcom";  
       #$com="$mvcom";  
  }
  #print $com."\n\n";
@@ -147,6 +150,7 @@ my $cmdPE=$cmds[1];
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 
 sub getFileName
 {

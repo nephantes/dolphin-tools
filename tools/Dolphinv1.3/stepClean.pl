@@ -34,7 +34,7 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
@@ -70,12 +70,14 @@ if ($level==1) {
   my $com="rm -rf $outdir";
   print $com."\n\n";
   `$com`;
+  die "Error 19: Cannot remove the directory:".$outdir if ($?);
 }
-elsif($level==0){
-  my $com="$dbcommcmd -i $reportfile -f insertreport -w $wkey";
-  print $com."\n\n";
-  `$com`;
-}
+
+my $com="$dbcommcmd -i $reportfile -f insertreport -w $wkey";
+print $com."\n\n";
+`$com`;
+die "Error 20: Cannot connect to the database:" if ($?);
+
 
 
  
