@@ -92,14 +92,14 @@ $conds="c(\"$conds\")";
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
-makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num");
-makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num");
+makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
 
 `cp -R $outdir $puboutdir/.`;
 
 sub makePlot
 {
-my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff, $puboutdir, $deseqdir)=@_;
+my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff, $puboutdir, $deseqdir, $wkey)=@_;
 my $output = "$outdir/rscript_$type.R";
 my $table = "$outdir/deseq2_$type.tsv";
 my $pdfname = "$outdir/heatmap_$type.pdf";
@@ -188,8 +188,8 @@ $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
 $com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetected &&";
 $com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
-$com.="echo \"$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
-$com.="echo \"$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
+$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
+$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
 `$com`;
 }
 
