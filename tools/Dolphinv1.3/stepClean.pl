@@ -25,6 +25,10 @@
 
 #################### VARIABLES ######################
  my $outdir           = "";
+ my $level            = "";
+ my $pubdir           = "";
+ my $wkey             = "";
+ my $dbcommcmd        = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -34,6 +38,10 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
+	'level=s'        => \$level,
+    'pubdir=s'       => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'dbcommcmd=s'    => \$dbcommcmd,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -56,9 +64,20 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") );
 # cleans intermediate files
 
 $outdir   = "$outdir/seqmapping";
-my $com="rm -rf $outdir";
- print $com."\n\n";
- `$com`;
+my $reportfile   = "$pubdir/$wkey/reports.tsv";
+
+if ($level==1) {
+  my $com="rm -rf $outdir";
+  print $com."\n\n";
+  `$com`;
+}
+elsif($level==0){
+  my $com="$dbcommcmd -i $reportfile -f insertreport -w $wkey";
+  print $com."\n\n";
+  `$com`;
+}
+
+
  
 __END__
 

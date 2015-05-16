@@ -39,9 +39,19 @@ def runSQL(sql):
 
 def updateRunParams(runparamsid, wkey):
    
-    sql = "UPDATE biocore.ngs_runparams set wkey='"+str(wkey)+"' where id="+str(runparamsid)
+    sql = "UPDATE biocore.ngs_runparams set run_status=2, wkey='"+str(wkey)+"' where id="+str(runparamsid)
  
     return runSQL(sql)
+
+def insertReportTable(reportfile):
+   
+  with open(reportfile,'r') as source:
+     for line in source:
+         wkey, version, type, file=re.split(r'\t+', line.rstrip())
+         sql = "INSERT INTO report_list(wkey, version, type, file) VALUES ('%s', '%s','%s','%s')"%(wkey, version, type, file)
+         print sql
+         runSQL(sql)
+
 
 
 def main():
@@ -49,6 +59,8 @@ def main():
         parser = OptionParser()
         parser.add_option('-r', '--runparamsid', help='runparamsid', dest='runparamsid')
         parser.add_option('-w', '--wkey', help='wkey', dest='wkey')
+        parser.add_option('-i', '--insertreport', help='insert report table', dest='insertreport')
+        parser.add_option('-f', '--func', help='function', dest='func')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
 
         (options, args) = parser.parse_args()
@@ -58,10 +70,15 @@ def main():
         sys.exit(2)
 
     RUNPARAMSID             = options.runparamsid
+    INSERTREPORT            = options.insertreport
+    FUNC                    = options.func
     WKEY                    = options.wkey
     OUTDIR                  = options.outdir
-
-    updateRunParams(RUNPARAMSID, WKEY)
+    
+    if (FUNC == "running"):
+       updateRunParams(RUNPARAMSID, WKEY)
+    elif (FUNC == "insertreport"):
+       insertReportTable(INSERTREPORT)
     
     sys.exit(0)
 

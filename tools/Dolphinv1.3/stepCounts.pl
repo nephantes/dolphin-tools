@@ -116,16 +116,16 @@ foreach my $mapname (@mapnames_arr)
       {
          if (checkFile("$gcommondb/$mapname/piRNAcoor.bed"))
          {
-           countCov($mapname, "piRNAcoor", "$gcommondb/$mapname/piRNAcoor.bed" , $outdir, $outd, $cmd, "",$version, $puboutdir);
+           countCov($mapname, "piRNAcoor", "$gcommondb/$mapname/piRNAcoor.bed" , $outdir, $outd, $cmd, "",$version, $puboutdir, $wkey);
          }
          if (checkFile("$gcommondb/$mapname/miRNAcoor.bed"))
          {
-           countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "", $version, $puboutdir);
+           countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "", $version, $puboutdir, $wkey);
          }
       }
    }
 
-countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $puboutdir);
+countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $puboutdir, $wkey);
 }
 
 #Copy count directory to its web accessible area
@@ -134,7 +134,7 @@ countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $pubou
 
 sub countCov
 {
-  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom, $version, $puboutdir)=@_; 
+  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom, $version, $puboutdi, $wkey)=@_; 
   my $inputdir = "$outdir/seqmapping/".lc($mapname);
   my $com=`ls $inputdir/*.sorted.bam`;
 
@@ -157,8 +157,8 @@ sub countCov
   $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv && ";
   $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header && ";
   $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv && ";
-  $com.= "echo \"$version\\tsummary\\tcounts/$name.summary.tsv\" >> $puboutdir/reports.tsv && ";
-  $com.= "echo \"$version\\tcounts\\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
+  $com.= "echo \"$wkey\\t$version\\tsummary\\tcounts/$name.summary.tsv\" >> $puboutdir/reports.tsv && ";
+  $com.= "echo \"$wkey\\t$version\\tcounts\\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
   print $com."\n"; 
   `$com`;
 }
