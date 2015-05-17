@@ -36,18 +36,18 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'adapter=s'      => \$adapter,
-	'outdir=s'       => \$outdir,
-        'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
-        'cmd=s'          => \$cmd,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'adapter=s'      => \$adapter,
+    'outdir=s'       => \$outdir,
+    'dspaired=s'     => \$spaired,
+    'previous=s'     => \$previous,
+    'cmd=s'          => \$cmd,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -80,6 +80,8 @@ else
 
 $outdir   = "$outdir/seqmapping/adapter";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
+ 
 open(OUT, ">$outdir/adapter.fa");
 my @adaps=split(/:/,$adapter);
 my $i=1;
@@ -93,12 +95,13 @@ close(OUT);
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -130,6 +133,7 @@ foreach my $file (@files)
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

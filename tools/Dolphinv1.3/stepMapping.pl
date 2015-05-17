@@ -43,22 +43,22 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'input=s'        => \$input,
-	'outdir=s'       => \$outdir,
-        'cmd=s'          => \$bowtiecmd,
-        'msamtoolscmd=s' => \$samtoolscmd,
-        'awkdir=s'       => \$awkdir,
-        'dspaired=s'     => \$spaired,
-        'bowtiePar=s'    => \$bowtiePar,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-        'radvparam=s'    => \$advparams,
-        'param=s'        => \$param,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'input=s'        => \$input,
+    'outdir=s'       => \$outdir,
+    'cmd=s'          => \$bowtiecmd,
+    'msamtoolscmd=s' => \$samtoolscmd,
+    'awkdir=s'       => \$awkdir,
+    'dspaired=s'     => \$spaired,
+    'bowtiePar=s'    => \$bowtiePar,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'radvparam=s'    => \$advparams,
+    'param=s'        => \$param,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -108,16 +108,18 @@ print "I:$inputdir\n";
 print "O:$outdir\n";
 
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
 my $com="";
 
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -130,16 +132,18 @@ foreach my $file (@files)
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
 
-       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
-       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
-       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
-       $com.="rm -rf $outdir/$bname.sam;";
-       $com.="rm -rf $outdir/$bname.bam;";
-       $com.="rm -rf $outdir/$bname.fastq.mapped;";
+       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
+       $com="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
+	   $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
+	   $com.="if [[ \\\$(tail -n 1 $outdir/$bname.bow| cut -d \\\"%\\\" -f1) != 0.00 ]];then ";
+       
+       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum && ";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam 2>/dev/null && "; 
+       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted 2> /dev/null && ";
+       $com.="$samtoolscmd index $outdir/$bname.sorted.bam 2> /dev/null; fi && ";
+       $com.="rm -rf $outdir/$bname.sam && ";
+       $com.="rm -rf $outdir/$bname.bam && ";
+       $com.="rm -rf $outdir/$bname.fastq.mapped";
        # $com.="rm -rf $file";
   }
   else
@@ -150,16 +154,18 @@ foreach my $file (@files)
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
 
-       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
-       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
-       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="samtools index $outdir/$bname.sorted.bam;";
-       $com.="rm -rf $outdir/$bname.sam;";
-       $com.="rm -rf $outdir/$bname.bam;";
-       $com.="rm -rf $outdir/*.mapped;";
+       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
+	   $com.="if [[ \\\$(tail -n 1 $outdir/$bname.bow| cut -d \\\"%\\\" -f1) != 0.00 ]];then ";
+	   
+       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum && ";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam 2>/dev/null && "; 
+       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted 2> /dev/null && ";
+       $com.="samtools index $outdir/$bname.sorted.bam 2> /dev/null; fi && ";
+       $com.="rm -rf $outdir/$bname.sam && ";
+       $com.="rm -rf $outdir/$bname.bam && ";
+       $com.="rm -rf $outdir/$bname*.mapped";
  #      $com.="rm -rf $inputdir/$bname.1.fastq";
  #      $com.="rm -rf $inputdir/$bname.2.fastq";
   }
@@ -169,6 +175,7 @@ foreach my $file (@files)
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

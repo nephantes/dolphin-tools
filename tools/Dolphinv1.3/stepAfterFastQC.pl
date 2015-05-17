@@ -32,14 +32,14 @@
  my $version          = "1.0.0";
  ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'outdir=s'       => \$outd,
-        'pubdir=s'      => \$pubdir,
-        'wkey=s'         => \$wkey,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'outdir=s'       => \$outd,
+    'pubdir=s'      => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -65,10 +65,13 @@ my $uniteddir = "$outdir/UNITED";
 my $filesdir="$outdir/UNITED/files";
 
 `mkdir -p $uniteddir`;
+die "Error 15: Cannot create the directory:".$uniteddir if ($?);
 `mkdir -p $filesdir`;
+die "Error 15: Cannot create the directory:".$filesdir if ($?);
 
-my $puboutdir   = "$pubdir/$wkey";
+my $puboutdir = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 
 open outPBQ, ">$uniteddir/per_base_quality.html";
 print outPBQ "\<body\>\n";
@@ -85,8 +88,14 @@ foreach my $e(@files)
  if(!(($e eq ".")||($e eq "..")||($e eq "UNITED")) )
  {
   `cp $outdir/$e/*/Images/per_base_quality.png $filesdir/pbq_$e.png`;
+  die "Error 17: Cannot copy the file:$filesdir/pbq_$e.png" if ($?);
+
   `cp $outdir/$e/*/Images/per_sequence_quality.png $filesdir/psq_$e.png`;
+    die "Error 17: Cannot copy the file:$filesdir/psq_$e.png" if ($?);
+	
   `cp $outdir/$e/*/Images/per_base_sequence_content.png $filesdir/pbsc_$e.png`;
+  die "Error 17: Cannot copy the file:$filesdir/pbsc_$e.png" if ($?);
+	
   print outPBQ "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/pbq_$e.png\"\>\<\/p\>\n\<\/div\>";
   print outPSQ "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/psq_$e.png\"\>\<\/p\>\n\<\/div\>";
   print outPBSC "\<div class=\"module\"\>\<h2 id=\"M1\"\> $e \<\/h2>\n\<p\>\<img class=\"indented\" src=\"./files/pbsc_$e.png\"\>\<\/p\>\n\<\/div\>";
@@ -98,6 +107,8 @@ print outPSQ "\</body\>\n";
 print outPBSC "\</body\>\n";
 
 `cp -R $outdir $puboutdir/.`;
+die "Error 17: Cannot copy the directory:$puboutdir" if ($?);
+
 __END__
 
 

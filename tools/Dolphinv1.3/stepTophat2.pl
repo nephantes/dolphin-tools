@@ -39,7 +39,7 @@
 
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
@@ -88,17 +88,20 @@ else
 
 $outdir   = "$outdir/tophat";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
+
 $params_tophat =~s/,/ /g;
 $params_tophat=~s/_/-/g;
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -133,14 +136,15 @@ foreach my $file (@files)
 
  if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"))
  {
-   $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files;\n";
-   $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted;\n";
-   $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam;\n"; 
+   $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files && ";
+   $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted && ";
+   $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam "; 
  }     
- print "$com\n";
+
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

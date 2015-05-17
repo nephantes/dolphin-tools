@@ -36,18 +36,18 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-        'trim=s'         => \$trim,
-	'outdir=s'       => \$outdir,
-        'dspaired=s'     => \$spaired,
-        'previous=s'     => \$previous,
-        'cmd=s'          => \$cmd,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'trim=s'         => \$trim,
+    'outdir=s'       => \$outdir,
+    'dspaired=s'     => \$spaired,
+    'previous=s'     => \$previous,
+    'cmd=s'          => \$cmd,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -80,15 +80,18 @@ else
 
 $outdir   = "$outdir/seqmapping/trim";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
+
 my $com="";
 if ($spaired eq "single")
 {
- $com=`ls $inputdir/*.fastq`;
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -147,18 +150,18 @@ sub trimFiles
         if ($nt>0)
         {
          $outfile="$outdir/$bname.fastq.$i.tmp";
-         $com.="$cmd $quality -v $param $nt -o $outfile -i $file;";
+         $com.="$cmd $quality -v $param $nt -o $outfile -i $file && ";
          $file=$outfile;
         }
       }
       $i++;
     }
-    $com.="mv $outfile $outdir/$bname.fastq;rm -rf $outdir/*.tmp";
-    print $com."\n";
-    `$com`;
+    $com.="mv $outfile $outdir/$bname.fastq && rm -rf $outdir/*.tmp";
+
     my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-    #print $job."\n";   
-    #`$job`;
+    print $job."\n";   
+    `$job`;
+	die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 # automatic format detection

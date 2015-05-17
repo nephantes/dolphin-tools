@@ -28,7 +28,7 @@
  my $GCB              = "";
  my $W2BW             = "";
  my $outdir           = "";
- my $pubdir          = "";
+ my $pubdir           = "";
  my $wkey             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -37,20 +37,20 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'outdir=s'       => \$outdir,
-        'type=s'         => \$type,
-        'coverage=s'     => \$GCB,
-	'wig2bigwig=s'   => \$W2BW,
-        'pubdir=s'       => \$pubdir,
-        'wkey=s'         => \$wkey,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-        'genomesize=s'   => \$genomesize,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'outdir=s'       => \$outdir,
+    'type=s'         => \$type,
+    'coverage=s'     => \$GCB,
+    'wig2bigwig=s'   => \$W2BW,
+    'pubdir=s'       => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'jobsubmit=s'    => \$jobsubmit,
+    'servicename=s'  => \$servicename,
+    'genomesize=s'   => \$genomesize,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -74,8 +74,11 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($W2BW eq "") or ($genomes
 my $name=basename($outdir);
  
 `mkdir -p $outdir/ucsc_$type`;
+die "Error 15: Cannot create the directory:$outdir/ucsc_$type" if ($?);
+
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 my $indir="";
@@ -126,6 +129,7 @@ foreach my $d (@files){
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print "\n".$job."\n";   
   `$job`;
+  die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 __END__

@@ -4,7 +4,7 @@
 #                                       stepRSEMCount.pl
 #########################################################################################
 # 
-#  This program merges rsem output files
+#  This program merges rsem output files into single table file.
 #
 #########################################################################################
 # AUTHORS:
@@ -35,7 +35,7 @@
  my $rsem_version     = "RSEM v1.2.7";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions(
 	'outdir=s'        => \$outdir,
@@ -82,6 +82,7 @@ $outdir  = "$outdir/rsem";
 
 my $puboutdir   = "$pubdir/$wkey/rsem";
 `mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 
 opendir D, $indir or die "Could not open $indir\n";
 my @alndirs = sort { $a cmp $b } grep /^pipe/, readdir(D);
@@ -112,9 +113,7 @@ foreach my $d (@alndirs){
 }
 my $outfile="${indir}/".$gene_iso."_expression_".$tpm_fpkm.".tsv";
 open OUT, ">$outfile";
-
 print OUT "gene\ttranscript";
-
 
 for(my $j=1;$j<=$i;$j++)
 {
@@ -141,9 +140,11 @@ foreach my $key (keys %b)
 close OUT;
 
 `cp $outfile $puboutdir/.`;
+die "Error 17: Cannot copy the directory:$puboutdir" if ($?);
 
 my $com= "echo \"$wkey\\t$rsem_version\\trsem\\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/../reports.tsv ";
 `$com`;
+die "Error 18: Cannot add to the reports!" if ($?);
 
 __END__
 
@@ -157,7 +158,7 @@ stepRSEMCount.pl
 stepRSEMCount.pl 
             -o outdir <output directory> 
             -t tpm_fpkm <tpm or fpkm>
-	    -g gene_iso <gene or isoform>
+	        -g gene_iso <gene or isoform>
 
 
 stepRSEMCount.pl -help
