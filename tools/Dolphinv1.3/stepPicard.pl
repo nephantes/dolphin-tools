@@ -1,17 +1,16 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMergeChip.pl
+#                                       stepPicard.pl
 #########################################################################################
 # 
-#  This program merges chip output. 
-#
+#  This program runs the picard 
 #
 #########################################################################################
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# Aug 14, 2014
+# 
 #########################################################################################
 
 ############## LIBRARIES AND PRAGMAS ################
@@ -21,28 +20,28 @@
  use File::Basename;
  use Getopt::Long;
  use Pod::Usage; 
-
+ 
 #################### VARIABLES ######################
+ my $refflat          = "";
  my $outdir           = "";
- my $samtools         = "";
+ my $picardCmd        = "";
  my $jobsubmit        = "";
- my $spaired          = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $command=$0." ".join(" ",@ARGV); ####command line copy
+my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
-GetOptions( 
-    'outdir=s'       => \$outdir,
-    'samtools=s'     => \$samtools,
-    'dspaired=s'     => \$spaired,
-    'servicename=s'  => \$servicename,
-    'jobsubmit=s'    => \$jobsubmit,
-    'help'           => \$help, 
-    'version'        => \$print_version,
+GetOptions(
+	'outdir=s'        => \$outdir,
+        'refflat=s'       => \$refflat,
+        'picardCmd=s'     => \$picardCmd,
+        'jobsubmit=s'     => \$jobsubmit,
+        'servicename=s'   => \$servicename,
+	'help'            => \$help, 
+	'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -57,72 +56,51 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outdir eq "") or ($picardCmd eq "") );	
 
 ################### MAIN PROGRAM ####################
+# runs the picard program
 
-my $inputdir = "$outdir/seqmapping/chip";
-$outdir  = "$outdir/seqmapping/mergechip";
-die "Error 15: Cannot create the directory:".$outdir  if ($?);
-my $com="";
-$com=`ls $inputdir/*.bam 2>&1`;
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+my $indir   = "$outdir/tophat";
+$outdir  = "$outdir/picard";
+mkdir $outdir if (! -e $outdir);
 
-print $com;
-my @files = split(/[\n\r\s\t,]+/, $com);
+opendir D, $indir or die "Could not open $indir\n";
+my @alndirs = grep /^[^.]/, readdir(D);
+closedir D;
 
-my %mergeCmd=();
-foreach my $file (@files)
-{
- $file=~/(.*\/(.*))_[\d]+.sorted.bam/;
- my $bpath=$1;
- my $bname=$2;
- if ($bpath !~ "" && $bname !~ "") {
-	`mkdir -p $outdir`;
-    $mergeCmd{$bpath."*.sorted.bam"}=$bname;
- }
+foreach my $d (@alndirs){ #pipe.tophat*
+  my $dir = "${indir}/$d";
+  next if(! (-d $dir));
 
+  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outdir/$d.out INPUT=$dir/accepted_hits.bam\n";
+  if(@alndirs>1 && $jobsubmit!~/^$/)
+  {
+    my $job=$jobsubmit." -n ".$servicename."_".$d." -c \"$com\"";
+    `$job`;
+  }
+  else
+  { 
+    `$com`;
+  }
 }
-
-foreach my $cmd (keys %mergeCmd)
-{
- my $bname=$mergeCmd{$cmd};
- my $outfile=$outdir."/$bname.bam"; 
- my $fcount=`ls $cmd|wc -l`;
- chomp($fcount);
- if ($fcount>1)
- {
-   $com ="$samtools merge $outfile $cmd -f && ";
-   $com .="$samtools index $outfile ";
- }
- else
- {
-   $com ="cp $cmd $outfile && ";
-   $com .="cp $cmd.bai $outfile.bai ";
- }
- #`$com`;
- my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
- `$job`;
- die "Error 25: Cannot run the job:".$job if ($?);
-}
-
 __END__
 
 
 =head1 NAME
 
-stepMergeChip.pl
+stepPicard.pl
 
 =head1 SYNOPSIS  
 
-stepMergeChip.pl -o outdir <output directory> 
-            -p previous 
-            -n #reads
+stepPicard.pl 
+            -o outdir <output directory> 
+            -r refflat <ucsc gtf files> 
+            -p picardCmd <picard full path> 
 
-stepMergeChip.pl -help
+stepPicard.pl -help
 
-stepMergeChip.pl -version
+stepPicard.pl -version
 
 For help, run this script with -help option.
 
@@ -130,12 +108,15 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/MergeChip" 
+the output files will be stored "$outdir/after_ribosome/cuffdiff" 
 
-=head2  -p previous
+=head2 -p picardCmd <picard running line> 
 
-previous step
+Fullpath of picard running line. Ex: ~/cuffdiff_dir/cuffdiff
 
+=head2  -r refflat <refflat file>  
+
+ucsc refflat file
 
 =head2 -help
 
@@ -147,20 +128,18 @@ Display the version
 
 =head1 DESCRIPTION
 
- This program map the reads to rRNAs and put the rest into other files 
+This program runs the cufflinks after tophat mappings
 
 =head1 EXAMPLE
 
-
-stepMergeChip.pl 
-            -o ~/out
-            -n 1000
-            -p previous
+stepPicard.pl 
+            -o outdir <output directory> 
+            -g gtf <ucsc gtf files> 
+            -c cufflinksCmd <cufflinks full path> 
 
 =head1 AUTHORS
 
  Alper Kucukural, PhD
-
  
 =head1 LICENSE AND COPYING
 
@@ -177,5 +156,4 @@ stepMergeChip.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
 

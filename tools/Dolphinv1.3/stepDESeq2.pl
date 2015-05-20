@@ -111,7 +111,7 @@ my $col=1;
 $col=2 if ($type eq "isoforms");
 
 my $heatmapR="";
-if ($heatmap eq "Yes")
+if (lc($heatmap) eq "yes")
 {
 $heatmapR=qq/
   f1<-res[!is.na(res\$padj) & !is.na(res\$log2FoldChange), ]
@@ -191,6 +191,11 @@ $com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetect
 $com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
 $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
 $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
+$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/rscript_$type.R\" >> $puboutdir/reports.tsv ";
+if (lc($heatmap) eq "yes")
+{
+  $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
+}
 `$com`;
 die "Error 21: Cannot run DESeq2 output files:" if ($?);
 }
