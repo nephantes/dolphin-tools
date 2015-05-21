@@ -44,17 +44,26 @@ def plaintext2html(text, tabstop=4):
 def checkAllJobsFinished(username, wkey, service_name):
     kw = {'url':url}
     b = NPBinding(**kw)
-    mesg=b.checkAllJobsFinished(a=username , c=wkey , b=service_name)
     
+    trials=0
+    while trials<5:
+       try:
+          mesg=b.checkAllJobsFinished(a=username , c=wkey , b=service_name)
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)
+       trials=trials+1
+
     data=json.dumps(mesg)
     wkey=json.loads(data)
 
     ret=str(wkey['return'])
     #print "JOBs checked:"+ret+"\n"
     if (ret.startswith("ERROR")):
-                print service_name + ":" + ret + "\n"
-                print "Check the service:"+service_name+"\n"
-                sys.exit(2);
+        print service_name + ":" + ret + "\n"
+        print "Check the service:"+service_name+"\n"
+        sys.exit(2);
 
 def insertJob( username, wkey, com, jobname, service_name, jobnum, result):
     
@@ -62,7 +71,15 @@ def insertJob( username, wkey, com, jobname, service_name, jobnum, result):
     #kw = {'url':url, 'tracefile':sys.stdout}
     kw = {'url':url}
     b = NPBinding(**kw)
-    mesg=b.insertJob(a=username , c=wkey , b=com , e=jobname, d=service_name , f=jobnum, h=result)
+    trials=0
+    while trials<5:
+       try:
+          mesg=b.insertJob(a=username , c=wkey , b=com , e=jobname, d=service_name , f=jobnum, h=result)
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)
+       trials=trials+1
     
     data=json.dumps(mesg)
     wkey=json.loads(data)
@@ -78,8 +95,18 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result):
     #print "username="+str(username)+", wkey="+str(wkey)+", jobname="+str(jobname)+", ser="+str(service_name)+", field="+str(field)+", jobnum="+str(jobnum)+", res="+str(result) 
     kw = {'url':url}
     b = NPBinding(**kw)
-    mesg=b.updateJob(a=username , c=wkey , b=jobname, e=service_name , d=field, g=jobnum, f=result)
-    
+
+    trials=0
+    while trials<5:
+       try:
+          mesg=b.updateJob(a=username , c=wkey , b=jobname, e=service_name , d=field, g=jobnum, f=result)
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)         
+       trials=trials+1
+
+       
     data=json.dumps(mesg)
     wkey=json.loads(data)
 
@@ -98,30 +125,39 @@ def insertJobOut(username, wkey, jobnum, outdir, edir):
    err = child.close()
 
    if err:
-	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
+        raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
    jobout=plaintext2html(re.sub('\'', "\"", jobout))
    kw = {'url':url}
    b = NPBinding(**kw)
-   mesg=b.insertJobOut(a=username , c=wkey , b=jobnum, f=jobout)
+  
+   trials=0
+   while trials<5:
+       try:
+          mesg=b.insertJobOut(a=username , c=wkey , b=jobnum, f=jobout)
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)         
+       trials=trials+1
 
 def main():
    try:
-	#python finishJob.py -u kucukura -k nVy1THnthvrRWfXcj187KeDDQrNAkY -s splitFastQ
+        #python finishJob.py -u kucukura -k nVy1THnthvrRWfXcj187KeDDQrNAkY -s splitFastQ
         parser = OptionParser()
         parser.add_option('-u', '--username', help='defined user in the cluster', dest='username')
         parser.add_option('-k', '--key', help='defined key for the workflow', dest='wkey')
         parser.add_option('-c', '--com', help='bash script of the command', dest='com')
         parser.add_option('-j', '--jobname', help='name of of the job', dest='jobname')
         parser.add_option('-s', '--servicename', help='service name', dest='servicename')
-	parser.add_option('-t', '--type', help='type of the operation', dest='type')
-	parser.add_option('-n', '--jobnum', help='submitted job number', dest='jobnum')
-	parser.add_option('-m', '--message', help='resulting message of the job', dest='message')
-	parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
+        parser.add_option('-t', '--type', help='type of the operation', dest='type')
+        parser.add_option('-n', '--jobnum', help='submitted job number', dest='jobnum')
+        parser.add_option('-m', '--message', help='resulting message of the job', dest='message')
+        parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
 
 
         (options, args) = parser.parse_args()
    except:
-	#parser.print_help()
+        #parser.print_help()
         print "for help use --help"
         sys.exit(2)
 
@@ -132,7 +168,7 @@ def main():
    COM                     = options.com
    JOBNAME                 = options.jobname
    SERVICENAME             = options.servicename
-   TYPE			   = options.type
+   TYPE			           = options.type
    JOBNUM                  = options.jobnum
    MESSAGE                 = options.message
    OUTDIR                  = options.outdir
@@ -140,7 +176,7 @@ def main():
         
 
    if (TYPE == "dbSubmitJob"):
-	insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, MESSAGE) # MESSAGE has jobnum here
+        insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, MESSAGE) # MESSAGE has jobnum here
    elif (TYPE == "dbSetStartTime"):
         updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "start_time", JOBNUM, MESSAGE)  	
    elif (TYPE == "dbSetEndTime"):
