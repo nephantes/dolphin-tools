@@ -189,12 +189,12 @@ $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
 $com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetected &&";
 $com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
-$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv &&";
-$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv ";
+$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv && ";
+$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv && ";
 $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/rscript_$type.R\" >> $puboutdir/reports.tsv ";
 if (lc($heatmap) eq "yes")
 {
-  $com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
+  $com.="&& echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
 }
 `$com`;
 die "Error 21: Cannot run DESeq2 output files:" if ($?);
