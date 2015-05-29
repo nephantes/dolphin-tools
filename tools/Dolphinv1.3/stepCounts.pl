@@ -162,8 +162,8 @@ sub countCov
   $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv && ";
   $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header && ";
   $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv && ";
-  $com.= "echo \"$wkey\\t$version\\tsummary\\tcounts/$name.summary.tsv\" >> $puboutdir/reports.tsv && ";
-  $com.= "echo \"$wkey\\t$version\\tcounts\\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
+  $com.= "echo \"$wkey\t$version\tsummary\tcounts/$name.summary.tsv\" >> $puboutdir/reports.tsv && ";
+  $com.= "echo \"$wkey\t$version\tcounts\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
   print $com."\n"; 
   `$com`;
   die "Error 18: Cannot add to the reports!" if ($?);

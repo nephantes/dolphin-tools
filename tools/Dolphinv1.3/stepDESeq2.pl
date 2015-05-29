@@ -30,6 +30,7 @@
  my $heatmap          = "";
  my $fitType          = "";
  my $foldChange       = "";
+ my $dataset          = "";
  my $padj             = "";
  my $rscriptCMD       = "";
  my $pubdir           = "";
@@ -45,21 +46,22 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'cols=s'         => \$cols,
-	'dconds=s'       => \$conds,
-	'num=s'          => \$num,
+    'cols=s'         => \$cols,
+    'dconds=s'       => \$conds,
+    'dataset=s'      => \$dataset,
+    'num=s'          => \$num,
     'eheatmap=s'     => \$heatmap,
     'tfitType=s'     => \$fitType,
     'padj=s'         => \$padj,
     'foldChange=s'   => \$foldChange,
     'rscriptCMD=s'   => \$rscriptCMD,
-	'outdir=s'       => \$outdir,
+    'outdir=s'       => \$outdir,
     'pubdir=s'       => \$pubdir,
     'wkey=s'         => \$wkey,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -79,10 +81,15 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($cols eq "") or ($conds e
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-my $inputdir="";
+my $inputdir = "$outdir/rsem";
+my $input_file_suffix = "_expression_expected_count.tsv";
+if (lc($dataset)!~/rsem/)
+{
+   $inputdir="$outdir/counts";
+   $input_file_suffix = ".counts.tsv";
+}
 
-$inputdir = "$outdir/rsem";
-$outdir   = "$outdir/DESeq2p$num";
+$outdir   = "$outdir/DESeq2".$dataset.$num;
 `mkdir -p $outdir`;
 $cols=~s/,/\",\"/g;
 $cols="c(\"$cols\")";
@@ -91,22 +98,28 @@ $conds="c(\"$conds\")";
 
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
-
-makePlot( "genes", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
-makePlot( "isoforms", $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+if (lc($dataset) =~/rsem/ )
+{
+   makePlot( "genes", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+   makePlot( "isoforms", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+}
+else
+{
+   makePlot( $dataset, $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+}
 
 `cp -R $outdir $puboutdir/.`;
 
 sub makePlot
 {
-my ($type,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff, $puboutdir, $deseqdir, $wkey)=@_;
+my ($type,$input_file_suffix,$inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj_cutoff, $foldChange_cutoff, $puboutdir, $deseqdir, $wkey)=@_;
 my $output = "$outdir/rscript_$type.R";
 my $table = "$outdir/deseq2_$type.tsv";
 my $pdfname = "$outdir/heatmap_$type.pdf";
 my $alldetected = "$outdir/alldetected_$type.tsv";
 my $selected_log2fc = "$outdir/selected_log2fc_$type.tsv";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-my $inputfile=$inputdir."/".$type."_expression_expected_count.tsv";
+my $inputfile=$inputdir."/".$type.$input_file_suffix;
 my $col=1;
 $col=2 if ($type eq "isoforms");
 
@@ -189,12 +202,12 @@ $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
 $com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetected &&";
 $com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
-$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv && ";
-$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv && ";
-$com.="echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/rscript_$type.R\" >> $puboutdir/reports.tsv ";
+$com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv && ";
+$com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv && ";
+$com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/rscript_$type.R\" >> $puboutdir/reports.tsv ";
 if (lc($heatmap) eq "yes")
 {
-  $com.="&& echo \"$wkey\\t$deseq_ver\\tdeseq\\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
+  $com.="&& echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
 }
 `$com`;
 die "Error 21: Cannot run DESeq2 output files:" if ($?);
