@@ -206,9 +206,11 @@ def main():
     
     amazon = getAmazonCredentials(USERNAME)
 
-    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):   
+    if (amazon!=()):   
        conn = S3Connection(amazon[0][1], amazon[0][2])
        pb = conn.get_bucket(amazon[0][3])
+    else:
+       sys.exit(0)
 
     samplelist=getSampleList(RUNPARAMSID, BARCODE)
 

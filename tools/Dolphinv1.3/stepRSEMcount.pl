@@ -142,7 +142,7 @@ close OUT;
 `cp $outfile $puboutdir/.`;
 die "Error 17: Cannot copy the directory:$puboutdir" if ($?);
 
-my $com= "echo \"$wkey\\t$rsem_version\\trsem\\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/../reports.tsv ";
+my $com= "echo \"$wkey\t$rsem_version\trsem\trsem/".$gene_iso."_expression_".$tpm_fpkm.".tsv\" >> $puboutdir/../reports.tsv ";
 `$com`;
 die "Error 18: Cannot add to the reports!" if ($?);
 

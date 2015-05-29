@@ -111,8 +111,9 @@ print "O:$outdir\n";
 die "Error 15: Cannot create the directory:".$outdir  if ($?);
 my $com="";
 
-if ($spaired eq "single")
+if (lc($spaired) eq "none")
 {
+ print "Here";
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
@@ -128,22 +129,20 @@ foreach my $file (@files)
 {
   $file=~/.*\/(.*).fastq/;
   my $bname=$1;
-  if ($spaired eq "single")
+  if (lc($spaired) eq "none")
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
 
-       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
-       $com="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
-	   $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
-	   $com.="if [[ \\\$(tail -n 1 $outdir/$bname.bow| cut -d \\\"%\\\" -f1) != 0.00 ]];then ";
-       
-       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum && ";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam 2>/dev/null && "; 
-       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted 2> /dev/null && ";
-       $com.="$samtoolscmd index $outdir/$bname.sorted.bam 2> /dev/null; fi && ";
-       $com.="rm -rf $outdir/$bname.sam && ";
-       $com.="rm -rf $outdir/$bname.bam && ";
-       $com.="rm -rf $outdir/$bname.fastq.mapped";
+       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
+       $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/$bname.fastq.mapped;";
        # $com.="rm -rf $file";
   }
   else
@@ -154,18 +153,16 @@ foreach my $file (@files)
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
 
-       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
-       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
-       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
-	   $com.="if [[ \\\$(tail -n 1 $outdir/$bname.bow| cut -d \\\"%\\\" -f1) != 0.00 ]];then ";
-	   
-       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum && ";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam 2>/dev/null && "; 
-       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted 2> /dev/null && ";
-       $com.="samtools index $outdir/$bname.sorted.bam 2> /dev/null; fi && ";
-       $com.="rm -rf $outdir/$bname.sam && ";
-       $com.="rm -rf $outdir/$bname.bam && ";
-       $com.="rm -rf $outdir/$bname*.mapped";
+       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
+       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
+       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
+       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum;";
+       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
+       $com.="samtools index $outdir/$bname.sorted.bam;";
+       $com.="rm -rf $outdir/$bname.sam;";
+       $com.="rm -rf $outdir/$bname.bam;";
+       $com.="rm -rf $outdir/$bname*.mapped;";
  #      $com.="rm -rf $inputdir/$bname.1.fastq";
  #      $com.="rm -rf $inputdir/$bname.2.fastq";
   }

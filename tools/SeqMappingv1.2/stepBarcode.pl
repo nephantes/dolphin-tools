@@ -155,7 +155,7 @@ sub getFileName
   my ($inputdir, $i)= @_;
   
   my  $pairstr="";
-  $pairstr="_R$i" if ($i>0);
+  $pairstr=".$i" if ($i>0);
   my $filename="$inputdir/data$pairstr.fastq";
   die "Error 64: please check the file or check if you chose single and paired end library right!".$filename unless (checkFile($filename));
   return $filename;

@@ -110,8 +110,16 @@ def main():
     kw = {'url':url}
     b = NPBinding(**kw)
     wfname = os.path.splitext(basename(WORKFLOWFILE))[0]
-    mesg=b.startWorkflow(a=INPUTPARAM , c=DEFAULTPARAM , b=USERNAME , e=wfname, d=WKEY , f=OUTDIR, h=slen)
-    
+    trials=0
+    while trials<5:
+       try:
+          mesg=b.startWorkflow(a=INPUTPARAM , c=DEFAULTPARAM , b=USERNAME , e=wfname, d=WKEY , f=OUTDIR, h=slen)
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)
+       trials=trials+1
+       
     data=json.dumps(mesg)
     wkey=json.loads(data)
 
@@ -126,7 +134,17 @@ def main():
         br=1
         while ( br==1):
             print service.servicename #+ ":" + wkey['return'] + ":" + service.command
-            res=json.loads(json.dumps(b.startService(a=service.servicename, c=wkey['return'], b=service.command)))
+            trials=0
+            while trials<5:
+              try:
+                 resp=b.startService(a=service.servicename, c=wkey['return'], b=service.command)
+                 trials=10
+              except:
+                 print "Couldn't connect to dolphin server"
+                 time.sleep(15)
+              trials=trials+1
+
+            res=json.loads(json.dumps(resp))
             ret=str(res['return'])
             print ret + "\n"
             if (ret.startswith("RUNNING") and float(service.waittime)>0):
@@ -142,7 +160,17 @@ def main():
     br=1
     print "All the services Ended"    
     while ( br==1):
-        res=json.loads(json.dumps(b.endWorkflow(a=wkey['return'])))
+        trials=0
+        while trials<5:
+           try:
+              resp=b.endWorkflow(a=wkey['return'])
+              trials=10
+           except:
+              print "Couldn't connect to dolphin server"
+              time.sleep(15)
+           trials=trials+1
+
+        res=json.loads(json.dumps(resp))
         ret=str(res['return'])
         #print ret + "\n"
         if (ret.startswith("WRUNNING")):
