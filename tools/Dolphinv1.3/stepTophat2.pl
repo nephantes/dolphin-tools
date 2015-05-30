@@ -93,7 +93,7 @@ die "Error 15: Cannot create the directory:".$outdir if ($?);
 $params_tophat =~s/,/ /g;
 $params_tophat=~s/_/-/g;
 my $com="";
-if ($spaired eq "single")
+if (lc($spaired) eq "none")
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -124,7 +124,7 @@ foreach my $file (@files)
  my $bname=$1;
  my $str_files=$file;
  die "Error 64: please check the file:".$file unless (checkFile($file));
- if ($spaired ne "single")
+ if (lc($spaired) ne "none")
  {
     $file=~/(.*\/(.*)).1.fastq/;
     $bname=$2;
