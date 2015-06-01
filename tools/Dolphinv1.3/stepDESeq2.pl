@@ -100,12 +100,12 @@ my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 if (lc($dataset) =~/rsem/ )
 {
-   makePlot( "genes", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
-   makePlot( "isoforms", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+   makePlot( "genes", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2".$dataset.$num, $wkey);
+   makePlot( "isoforms", $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2".$dataset.$num, $wkey);
 }
 else
 {
-   makePlot( $dataset, $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2p$num", $wkey);
+   makePlot( $dataset, $input_file_suffix, $inputdir, $outdir, $cols, $conds, $fitType, $heatmap, $padj, $foldChange, $puboutdir, "DESeq2".$dataset.$num, $wkey);
 }
 
 `cp -R $outdir $puboutdir/.`;
@@ -182,9 +182,9 @@ analyseDE <-  function(data,cond, fitType, tablefile )
 }
 
 file<-"$inputfile"
-rsem<- data.frame(read.table(file,sep="\\t", header=TRUE, row.names=$col, quote = "\\"", dec = "."), stringsAsFactors=TRUE);
+dat<- data.frame(read.table(file,sep="\\t", header=TRUE, row.names=$col, quote = "\\"", dec = "."), stringsAsFactors=TRUE);
 
-data <- rsem[, $cols]
+data <- dat[, $cols]
 cond <- factor( $conds )
 analyseDE(data, cond, "$fitType","$table")
 /;
