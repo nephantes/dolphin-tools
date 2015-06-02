@@ -104,7 +104,14 @@ def main():
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
     #print "slen"+slen
-    url="http://galaxyweb.umassmed.edu/pipeline/service.php"
+    params_section="Default"
+    if (os.environ.has_key('DOLPHIN_PARAMS_SECTION')):
+       params_section=os.environ['DOLPHIN_PARAMS_SECTION']
+
+    if (params_section=="Default"):
+       url="http://galaxyweb.umassmed.edu/pipeline/service.php"
+    else:
+       url="http://localhost/dolphin_webservice/service.php"
    
     #kw = {'url':url, 'tracefile':sys.stdout}
     kw = {'url':url}
