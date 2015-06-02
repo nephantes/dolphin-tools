@@ -91,7 +91,7 @@ $params_rsem=~s/:+/ /g;
 $params_rsem=~s/[\s\t]+/ /g;
 $params_rsem=~s/_/-/g;
 my $com="";
-if ($spaired eq "single")
+if (lc($spaired) eq "none")
 {
   $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -119,7 +119,7 @@ foreach my $file (@files)
   die "Error 64: please check the file:".$file unless (checkFile($file));
   print "spaired = $spaired\n";
   
-  if ($spaired eq "paired")
+  if (lc($spaired) ne "none")
   {
     $file=~/(.*\/(.*)).1.fastq/;
     $bname=$2;

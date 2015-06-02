@@ -104,7 +104,7 @@ def main():
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
     #print "slen"+slen
-    url="http://localhost/dolphin_webservice/service.php"
+    url="http://galaxyweb.umassmed.edu/pipeline/service.php"
    
     #kw = {'url':url, 'tracefile':sys.stdout}
     kw = {'url':url}
