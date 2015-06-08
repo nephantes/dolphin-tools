@@ -24,6 +24,7 @@
 #################### VARIABLES ######################
  my $refflat          = "";
  my $outdir           = "";
+ my $type             = "";
  my $picardCmd        = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -36,10 +37,11 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions(
 	'outdir=s'        => \$outdir,
-        'refflat=s'       => \$refflat,
-        'picardCmd=s'     => \$picardCmd,
-        'jobsubmit=s'     => \$jobsubmit,
-        'servicename=s'   => \$servicename,
+    'refflat=s'       => \$refflat,
+    'type=s'          => \$type,
+    'picardCmd=s'     => \$picardCmd,
+    'jobsubmit=s'     => \$jobsubmit,
+    'servicename=s'   => \$servicename,
 	'help'            => \$help, 
 	'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -61,28 +63,44 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outd
 ################### MAIN PROGRAM ####################
 # runs the picard program
 
-my $indir   = "$outdir/tophat";
-$outdir  = "$outdir/picard";
+$outdir  = "$outdir/picard_$type";
+
 mkdir $outdir if (! -e $outdir);
 
-opendir D, $indir or die "Could not open $indir\n";
-my @alndirs = grep /^[^.]/, readdir(D);
-closedir D;
+my @files=();
+print $type."\n";
+if ($type eq "RSEM")
+{ 
+   my $indir   = "$outdir/rsem";
+   @files = <$indir/pipe*/*.genome.sorted.bam>;
+}
+elsif ($type eq "chip")
+{ 
+   my $indir   = "$outdir/seqmapping/chip";
+   @files = <$indir/*.sorted.bam>;
+}
+elsif ($type eq "mergechip")
+{ 
+   my $indir   = "$outdir/seqmapping/mergechip";
+   @files = <$indir/*.bam>;
+}
+else
+{
+   my $indir   = "$outdir/tophat";
+   print $indir."\n";
+   @files = <$indir/pipe*/*.sorted.bam>;
+}
 
-foreach my $d (@alndirs){ #pipe.tophat*
-  my $dir = "${indir}/$d";
-  next if(! (-d $dir));
+foreach my $d (@files){ 
 
-  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outdir/$d.out INPUT=$dir/accepted_hits.bam\n";
-  if(@alndirs>1 && $jobsubmit!~/^$/)
-  {
-    my $job=$jobsubmit." -n ".$servicename."_".$d." -c \"$com\"";
-    `$job`;
-  }
-  else
-  { 
-    `$com`;
-  }
+  my $dirname=dirname($d);
+  my $libname=basename($d, ".sorted.bam");
+	 
+  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outdir/$libname.out INPUT=$d\n";
+
+  my $job=$jobsubmit." -n ".$servicename."_".$d." -c \"$com\"";
+  `$job`;
+  die "Error 25: Cannot run the job:".$job if ($?);
 }
 __END__
 
