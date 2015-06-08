@@ -26,6 +26,8 @@
  my $outdir           = "";
  my $type             = "";
  my $picardCmd        = "";
+ my $pubdir           = "";
+ my $wkey             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -36,14 +38,16 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions(
-	'outdir=s'        => \$outdir,
+    'outdir=s'        => \$outdir,
     'refflat=s'       => \$refflat,
     'type=s'          => \$type,
     'picardCmd=s'     => \$picardCmd,
+    'pubdir=s'        => \$pubdir,
+    'wkey=s'          => \$wkey,
     'jobsubmit=s'     => \$jobsubmit,
     'servicename=s'   => \$servicename,
-	'help'            => \$help, 
-	'version'         => \$print_version,
+    'help'            => \$help, 
+    'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -63,9 +67,9 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outd
 ################### MAIN PROGRAM ####################
 # runs the picard program
 
-$outdir  = "$outdir/picard_$type";
+my $outd  = "$outdir/picard_$type";
 
-mkdir $outdir if (! -e $outdir);
+`mkdir -p $outd`;
 
 my @files=();
 print $type."\n";
@@ -92,13 +96,12 @@ else
 }
 
 foreach my $d (@files){ 
-
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
 	 
-  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outdir/$libname.out INPUT=$d\n";
-
-  my $job=$jobsubmit." -n ".$servicename."_".$d." -c \"$com\"";
+  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outd/$libname.out INPUT=$d";
+  print $com."\n\n";
+  my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }

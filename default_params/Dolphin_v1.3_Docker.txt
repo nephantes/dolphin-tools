@@ -111,6 +111,11 @@
 @RUNCOVERAGE        = "@BIN/genomeCoverageBed" 
 @WIGTOBIGWIG        = @BIN/wigToBigWig
 @JBAM2BW            = "@JOB -p 1 -m 4096 -t 60"
+
+#Step picard 
+@RUNPICARD          = @DOLPHIN/stepPicard.pl
+@PICARDCMD          = "@JAVA -jar @BIN/picard-tools-1.131/picard.jar CollectRnaSeqMetrics STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ASSUME_SORTED=false"
+@REFFLAT           = @GDB/ref_flat
  
 #RunAggregation
 @RUNAGGREGATION   = @PERL @DOLPHIN/stepAGG.pl
