@@ -24,7 +24,10 @@
 #################### VARIABLES ######################
  my $refflat          = "";
  my $outdir           = "";
+ my $type             = "";
  my $picardCmd        = "";
+ my $pubdir           = "";
+ my $wkey             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -35,13 +38,16 @@
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions(
-	'outdir=s'        => \$outdir,
-        'refflat=s'       => \$refflat,
-        'picardCmd=s'     => \$picardCmd,
-        'jobsubmit=s'     => \$jobsubmit,
-        'servicename=s'   => \$servicename,
-	'help'            => \$help, 
-	'version'         => \$print_version,
+    'outdir=s'        => \$outdir,
+    'refflat=s'       => \$refflat,
+    'type=s'          => \$type,
+    'picardCmd=s'     => \$picardCmd,
+    'pubdir=s'        => \$pubdir,
+    'wkey=s'          => \$wkey,
+    'jobsubmit=s'     => \$jobsubmit,
+    'servicename=s'   => \$servicename,
+    'help'            => \$help, 
+    'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -61,28 +67,43 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outd
 ################### MAIN PROGRAM ####################
 # runs the picard program
 
-my $indir   = "$outdir/tophat";
-$outdir  = "$outdir/picard";
-mkdir $outdir if (! -e $outdir);
+my $outd  = "$outdir/picard_$type";
 
-opendir D, $indir or die "Could not open $indir\n";
-my @alndirs = grep /^[^.]/, readdir(D);
-closedir D;
+`mkdir -p $outd`;
 
-foreach my $d (@alndirs){ #pipe.tophat*
-  my $dir = "${indir}/$d";
-  next if(! (-d $dir));
+my @files=();
+print $type."\n";
+if ($type eq "RSEM")
+{ 
+   my $indir   = "$outdir/rsem";
+   @files = <$indir/pipe*/*.genome.sorted.bam>;
+}
+elsif ($type eq "chip")
+{ 
+   my $indir   = "$outdir/seqmapping/chip";
+   @files = <$indir/*.sorted.bam>;
+}
+elsif ($type eq "mergechip")
+{ 
+   my $indir   = "$outdir/seqmapping/mergechip";
+   @files = <$indir/*.bam>;
+}
+else
+{
+   my $indir   = "$outdir/tophat";
+   print $indir."\n";
+   @files = <$indir/pipe*/*.sorted.bam>;
+}
 
-  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outdir/$d.out INPUT=$dir/accepted_hits.bam\n";
-  if(@alndirs>1 && $jobsubmit!~/^$/)
-  {
-    my $job=$jobsubmit." -n ".$servicename."_".$d." -c \"$com\"";
-    `$job`;
-  }
-  else
-  { 
-    `$com`;
-  }
+foreach my $d (@files){ 
+  my $dirname=dirname($d);
+  my $libname=basename($d, ".sorted.bam");
+	 
+  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outd/$libname.out INPUT=$d";
+  print $com."\n\n";
+  my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  `$job`;
+  die "Error 25: Cannot run the job:".$job if ($?);
 }
 __END__
 
