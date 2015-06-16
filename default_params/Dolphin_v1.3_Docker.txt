@@ -114,7 +114,7 @@
 
 #Step picard 
 @RUNPICARD          = @DOLPHIN/stepPicard.pl
-@PICARDCMD          = "@JAVA -jar @BIN/tophap_cuffdiff/CollectRnaSeqMetrics.jar STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ASSUME_SORTED=false"
+@PICARDCMD          = "@JAVA -jar @BIN/picard-tools-1.131/picard.jar CollectRnaSeqMetrics STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ASSUME_SORTED=false"
 @REFFLAT           = @GDB/ref_flat
  
 #RunAggregation
