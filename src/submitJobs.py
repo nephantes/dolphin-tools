@@ -119,16 +119,29 @@ def main():
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
+     f.write("a=$( module list 2>&1)\n")
+     f.write("echo $a\n")
+
+     f.write("if [[ $a != *python/2.7.5* ]];\n")
+     f.write("then\n")
+     f.write("  module load python/2.7.5\n")
+     f.write("fi\n")
+
+     f.write("if [[ $a != *openssl/1.0.1g* ]];\n")
+     f.write("then\n")
+     f.write("  module load openssl/1.0.1g\n")
+     f.write("fi\n")
+
      f.write("cd " + exec_dir + "\n")
      #f.write("echo '"+str(COM)+"'\n")
-     f.write("python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\n")
-     #f.write("echo \"python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\"\n")
+     f.write("python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\n")
+     #f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\"\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
      if (str(NAME) != str(SERVICENAME)):
        f.write("touch "+success_file+"\n")
-     #f.write("echo \"python " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\"\n")
+     #f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\"\n")
      f.write("  python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\n")
      f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  echo success\nelse\n  echo failed\n")
@@ -165,7 +178,7 @@ def main():
      #         time.sleep( 5 )
      #         break
      
-     command = python+" " + sdir + "/src/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -n "+ str(num) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
+     command = python+" " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -o "+str(OUTDIR)+" -n "+ str(num) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
      #print command
      f.write("RUN COMMAND:\n" + str(command) + "\n")
      #f.write("NUM:[" + str(num) + "]\n")

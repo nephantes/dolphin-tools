@@ -106,7 +106,7 @@ def main():
      f.write("sleep 1\n")
      f.write("cd " + exec_dir + "\n")
      f.write("echo '"+str(COM)+"'\n")
-     f.write("python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $JOB_NUM -j "+ str(NAME)+ " -m 2\n")
+     f.write("python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -o "+str(OUTDIR)+" -n $JOB_NUM -j "+ str(NAME)+ " -m 2\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
@@ -133,7 +133,7 @@ def main():
      pid = subprocess.Popen(command, shell=True).pid
      print "\n\n\nPID:"+str(pid)+"\n\n\n"
 
-     command = python+" " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -n "+ str(pid) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
+     command = python+" " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -o "+str(OUTDIR)+" -n "+ str(pid) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
      #print command
      #PUT TRY CATCH HERE 
      if pid>0:
