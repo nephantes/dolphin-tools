@@ -1,5 +1,5 @@
-DBHOST = 'galaxyweb.umassmed.edu'
-DBUSER = 'biocore'
-DBPASS = 'biocore2013'
+DBHOST = 'localhost'
+DBUSER = 'bioinfo'
+DBPASS = 'bioinfo2013'
 DB = 'biocore'
 DBPORT = 3306
