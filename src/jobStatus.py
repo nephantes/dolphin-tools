@@ -10,7 +10,7 @@ import warnings
 import sys
 import time
    
-url="http://galaxyweb.umassmed.edu/pipeline/service.php"
+url="http://localhost/dolphin_webservice/service.php"
 
 re_string = re.compile(r'(?P<htmlchars>[<&>])|(?P<space>^[ \t]+)|(?P<lineend>\r\n|\r|\n)|(?P<protocal>(^|\s)((http|ftp)://.*?))(\s|$)', re.S|re.M|re.I)
 
