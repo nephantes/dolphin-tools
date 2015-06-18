@@ -209,8 +209,6 @@ def main():
     if (amazon!=()):   
        conn = S3Connection(amazon[0][1], amazon[0][2])
        pb = conn.get_bucket(amazon[0][3])
-    else:
-       sys.exit(0)
 
     samplelist=getSampleList(RUNPARAMSID, BARCODE)
 
@@ -235,7 +233,7 @@ def main():
             processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
-    if (amazon!=() and AMAZONUPLOAD.lower()=='yes'):
+    if (amazon!=()):
       amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
       for libname, sample_id in processedLibs:
         if (checkReadCounts(sample_id, tablename)):
