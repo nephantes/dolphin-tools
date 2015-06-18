@@ -79,7 +79,6 @@ print $com."\n\n";
 die "Error 20: Cannot connect to the database:" if ($?);
 
 
-
  
 __END__
 
