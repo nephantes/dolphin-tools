@@ -44,12 +44,12 @@ def updateRunParams(runparamsid, wkey):
     return runSQL(sql)
 
 def insertReportTable(reportfile):
-   
-  with open(reportfile,'r') as source:
-     for line in source:
+  
+  if os.path.isfile(reportfile): 
+    with open(reportfile,'r') as source:
+      for line in source:
          wkey, version, type, file=re.split(r'\t+', line.rstrip())
          sql = "INSERT INTO report_list(wkey, version, type, file) VALUES ('%s', '%s','%s','%s')"%(wkey, version, type, file)
-         print sql
          runSQL(sql)
 
 

@@ -81,7 +81,7 @@ my @nms=split(/\n/,$barcode);
 foreach my $n(@nms)
 {
   $n=~/(.*)\t(.*)/;
-  if ($1!~/^Distance/ || $1!~/^Format/)
+  if ($1!~/^Distance/ && $1!~/^Format/)
   {
     push(@names, $1);
     push(@barcodes, $2);
