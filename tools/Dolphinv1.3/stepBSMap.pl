@@ -69,7 +69,9 @@ if ( exists $args{version} ) {
 ################### VALIDATE ARGS ####################
 
 #outfile must be foo.bam
-unless ( $args{outfile} =~ /*\.bam$/ ) { die ( "Invalid output file $args{output}" ); }
+unless ( $args{outfile} =~ /*\.bam$/ ) {
+	die ( "Invalid output file $args{output}" );
+}
 
 #alpha must exist and be .fastq
 unless ( -e $args{alpha} and ( $args{alpha} =~ /*\.(fq|fastq)/ )) {
@@ -108,7 +110,7 @@ my $inputdir = "$outdir/input";
 # specify the full outdir in arguments
 # $outdir = "$outdir/seqmapping/barcode";
 
-make_path($outdir) or die "Error 15: Cannot create the directory $outdir: $?";
+make_path($outdir) or die "Error 15: Cannot create the directory $outdir: $!";
 
 #construct the move command
 #not implemented
@@ -131,7 +133,7 @@ print "command: $com\n" if $args{verbose}
 my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
 print "job: $job\n" if $args{verbose};
 
-system ($job) or die "Error 25: Cannot run the job $job: $?";
+system ($job) or die "Error 25: Cannot run the job $job: $!";
 
 __END__
 
