@@ -24,6 +24,7 @@ require  5.008;    ## requires this Perl version or later
 ############## LIBRARIES AND PRAGMAS ################
 
 use File::Path qw(make_path);
+use File::Basename;
 use Getopt::Long;
 use Pod::Usage; 
 use Data::Dumper;  $Data::Dumper::Indent = 1;
@@ -40,16 +41,20 @@ my %args = (
 ################### PARAMETER PARSING ####################
 
 GetOptions( \%args,
+#TODO single or paired end foreach file[pair]
+#TODO 
 	'alpha=s',
 	'beta:s',
-	'binary=s',
+	'binpath=s',
 	'digestion:s', #TODO we might want to support WGBS, in which case the argument checking should allow null here
 	'help',
 	'jobsubmit=s',
 	'outdir=s',
-	'outfile=s',
 	'params:s',
+	#TODO previous (lc(previous)) to use as inputdir
+	#if previous eq "NONE" then inputdir == outdir/input/
 	'ref=s',
+	'samtools=s',
 	'servicename=s',
 	'verbose',
 	'version',
@@ -69,15 +74,15 @@ if ( exists $args{version} ) {
 	exit 0;
 }
 
+
 ################### VALIDATE ARGS ####################
 
-#TODO verify outdir
-
-#outfile must be foo.bam
-unless ( $args{outfile} =~ /.*\.bam$/ ) {
-	die ( "Invalid output file $args{output}" );
+#outdir must already exist
+unless ( -d $args{outdir} ) {
+	die ( "Invalid output directory $args{outdir}: Directory must already exist" );
 }
 
+#TODO check the input files and remove these
 #alpha must exist and be .fastq
 unless ( -e $args{alpha} and ( $args{alpha} =~ /.*\.(fq|fastq)/ )) {
 	die ( "Invalid input file alpha $args{alpha}" );
@@ -95,57 +100,127 @@ unless ( -e $args{ref} and ( $args{ref} =~ /.*\.(fa|fasta)/ )) {
 	die ( "Invalid ref file $args{ref}" );
 }
 
-#binary must exist and be executable
-unless ( -e $args{binary} and -x $args{binary} ) {
-	die ( "Invalid binary location $args{binary}" );
+#binpath must exist and be executable
+unless ( -e $args{binpath} and -x $args{binpath} ) {
+	die ( "Invalid option binpath: location $args{binpath}" );
 }
 
 #digestion must be valid
 unless ( $args{digestion} =~ /[CGAT-]+/ ) {
-	die ( "Invalid digestion site $args{digestion}" );
+	die ( "Invalid option digestion: site $args{digestion}" );
 }
 
+#samtools must exist and be executable
+unless ( -e $args{samtools} and -x $args{samtools} ) {
+	die ( "Invalid option samtools: location $args{samtools}" );
+}
 
+unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
+  die ( "Invalid option dspaired [no|none|yes|paired]: $args{dspaired}" );
+}
+  
+  
 ################### MAIN PROGRAM ####################
 # run bsmap in RRBS mode
 
-# TODO not sure about this
-# my $inputdir = "$args{outdir}/input";
-
-# specify the full outdir in arguments
-# $outdir = "$outdir/seqmapping/barcode";
-
+# Setup the output directory
+my $binname = basename( $args{binpath} ); #the name of the binary we execute (bsmap here)
+my $outdir = "$args{outdir}/".lc($binname);
 make_path($args{outdir}) or die "Error 15: Cannot create the directory $args{outdir}: $!";
 
-#construct the move command
-#not implemented
-my $mvcom = '';
-#$mvcom .= "&& mv x y";
+# Setup the input directory
+# if this is the first step, it will be path/input/
+# otherwise it will be path/previous/
+my $inputdir;
+if ($args{previous} =~ /NONE/) {
+	$inputdir = "$outdir/input";
+}
+else {
+	$inputdir = "$outdir/".lc( $args{previous} );
+}
+
+# Expecting paired or single end libraries?
+my $spaired;
+$spaired = 1 if ( $args{dspaired} =~ /yes|paired/i );
+$spaired = 0 if ( $args{dspaired} =~ /no|none/i );
+die "Bad option dspaired: $args{dspaired}" unless ( defined $spaired );
+
+### Construct the file list ###
+my %files;
+opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
+my @file_list = grep { /\.fastq/ } readdir($dh);
+closedir $dh;
+if ( $spaired ) {
+  #create a hash of arrays { s1 => [s1.1.fq, s1.2.fq], s2 => [s2.1.fq],[s2.2.fq] ]
+  foreach my $file ( @file_list ) {
+    #DO NOT include .1 or .2 in the hash key
+    m/(.*)\.([12])\.fastq/; #get the "bname" as $1 and use it as the hash key
+    #order matters, so unshift if it's .1 and push if it's .2
+    unshift @{ $files{$1} }, "$inputdir/$file" if ($2 == 1); #unshift the filename into the array $files{bname} => [filename.1.fastq ?,file2?]
+    push @{ $files{$1} }, "$inputdir/$file" if ($2 == 2); #push the filename into the array $files{bname} => [?file1,? filename.2.fastq]
+  }
+}
+else {
+  #create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq} 
+  foreach my $file ( @file_list ) {
+    #DO INCLUDE .1 or .2 in the hash key, if present
+    m/(.*)\.fastq/; #get the "bname" as $1 and use it as the hash key
+    push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
+  }
+}
+
+### Run the jobs ###
+foreach my $bname ( keys %files ) {
+  if ( $spaired and ( scalar @{ $files{$bname} } != 2 ) ) {
+    die "Expected paired files for $bname but found " . Dumper($files{$bname});
+  }
+  if ( ! $spaired and ( scalar @{ $files{$bname} } != 1 ) ) {
+    die "Expected single file for $bname but found " . Dumper($files{$bname});
+  }
+  do_job( $bname, $files{$bname} );
+}
+
+sub do_job {
+  my ($bname, $file1, $file2) = @_;
+
+  #$file2 will be undef if not paired
+  die "Invalid file (must be a regular file): $file1" if ( ! -f $file1 );
+  die "Invalid file (must be a regular file): $file2" if ( $file2 and ! -f $file2 );
+
+
+# construct the move command
+# not implemented
+# TODO this can be used to copy files to web dir
+  my $mvcom = '';
+# $mvcom .= "&& mv x y";
+
 
 #construct the command
-my $com = $args{binary};
-$com .= " -a $args{alpha}";
-$com .= " -b $args{beta}" if ( exists $args{beta} );
-my $out = $args{outdir}."/".$args{outfile};
-$com .= " -o $out";
-$com .= " -d $args{digestion}";
-$com .= " $args{params}" if ( exists $args{params} );
-$com .= " > /dev/null";
-$com .= " $mvcom";
+  my $logfile = "$bname.$binname.log";
+  my $outfile = "$outdir/$bname.bam";
+  my $com = $args{binpath};
+  $com .= " -a $file1";
+  $com .= " -b $file2" if ( $file2 ); #only for paired end libs
+  $com .= " -o $outfile";
+  $com .= " -d $args{digestion}";
+  $com .= " $args{params}" if ( exists $args{params} );
+  $com .= " > $logfile 2>&1";
+  $com .= " $mvcom";
+#TODO sort and index using samtools
 
-print "command: $com\n" if $args{verbose};
+  print "command: $com\n" if $args{verbose};
 
 # construct the job submission command
-# jobname = servicename_alpha[_beta]
-my $jobname = "$args{servicename}_$args{alpha}";
-$jobname .= "_$args{beta}" if ( exists $args{beta} );
+# jobname = servicename_bname
+  my $jobname = "$args{servicename}_$bname";
 
-my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
-print "job: $job\n" if $args{verbose};
+  my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
+  print "job: $job\n" if $args{verbose};
 
 # run the job
-unless ( system ($job) == 0 ) {
-	die "Error 25: Cannot run the job $job: $!";
+  unless ( system ($job) == 0 ) {
+    die "Error 25: Cannot run the job $job: $!";
+  }
 }
 
 __END__
@@ -159,13 +234,14 @@ stepBSMap.pl
 
   stepBSMap.pl -alpha       input file <s1_r1_1.fq> 
                -beta        optional paired end input file [s1_r1_2.fq]
-               -binary      bsmap binary path </path/to/bsmap>
+               -binpath     bsmap binary path </path/to/bsmap>
                -digestion   restriction enzyme digestion site <C-CGG>
+               -dspaired    paired end or single end <none|yes|paired>
                -jobsubmit   command to execute to submit job
-               -outfile     output filename <wt_r1.bam>
                -outdir      output directory </output/directory/> 
                -params      additional optional bsmap params [bsmap params]
                -ref         reference sequences file <fasta>
+               -samtools    samtools binary location
                -servicename service name to use in job name
                -verbose     print extra debugging output [boolean]
   
@@ -186,7 +262,7 @@ input file <s1_r1_1.fq>
 
 optional paired end input file [s1_r1_2.fq]
 
-=head2 -binary
+=head2 -binpath
 
 bsmap binary path </path/to/bsmap>
 
@@ -203,10 +279,6 @@ Display this documentation.
 =head2 -jobsubmit
 
 command to execute to submit job
-
-=head2 -outfile
-
-output filename <wt_r1.bam>
 
 =head2 -outdir
 
