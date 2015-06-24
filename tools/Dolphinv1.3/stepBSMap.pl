@@ -41,8 +41,6 @@ my %args = (
 ################### PARAMETER PARSING ####################
 
 GetOptions( \%args,
-#TODO single or paired end foreach file[pair]
-#TODO 
 	'alpha=s',
 	'beta:s',
 	'binpath=s',
@@ -51,8 +49,7 @@ GetOptions( \%args,
 	'jobsubmit=s',
 	'outdir=s',
 	'params:s',
-	#TODO previous (lc(previous)) to use as inputdir
-	#if previous eq "NONE" then inputdir == outdir/input/
+  'previous=s',
 	'ref=s',
 	'samtools=s',
 	'servicename=s',
@@ -80,19 +77,6 @@ if ( exists $args{version} ) {
 #outdir must already exist
 unless ( -d $args{outdir} ) {
 	die ( "Invalid output directory $args{outdir}: Directory must already exist" );
-}
-
-#TODO check the input files and remove these
-#alpha must exist and be .fastq
-unless ( -e $args{alpha} and ( $args{alpha} =~ /.*\.(fq|fastq)/ )) {
-	die ( "Invalid input file alpha $args{alpha}" );
-}
-
-#if beta is specified, it must exist and be .fastq
-if ( exists $args{beta} ) {
-	unless ( -e $args{beta} and ( $args{beta} =~ /.*\.(fq|fastq)/ )) {
-		die ( "Invalid input file beta $args{beta}" );
-	}
 }
 
 #ref must exist and be .fasta
@@ -232,14 +216,13 @@ stepBSMap.pl
 
 =head1 SYNOPSIS  
 
-  stepBSMap.pl -alpha       input file <s1_r1_1.fq> 
-               -beta        optional paired end input file [s1_r1_2.fq]
-               -binpath     bsmap binary path </path/to/bsmap>
+  stepBSMap.pl -binpath     bsmap binary path </path/to/bsmap>
                -digestion   restriction enzyme digestion site <C-CGG>
                -dspaired    paired end or single end <none|yes|paired>
                -jobsubmit   command to execute to submit job
                -outdir      output directory </output/directory/> 
                -params      additional optional bsmap params [bsmap params]
+               -previous    previous step in pipeline
                -ref         reference sequences file <fasta>
                -samtools    samtools binary location
                -servicename service name to use in job name
