@@ -71,6 +71,8 @@ if ( exists $args{version} ) {
 
 ################### VALIDATE ARGS ####################
 
+#TODO verify outdir
+
 #outfile must be foo.bam
 unless ( $args{outfile} =~ /.*\.bam$/ ) {
 	die ( "Invalid output file $args{output}" );
