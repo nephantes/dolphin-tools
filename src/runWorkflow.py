@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import logging
 from optparse import OptionParser
 from ZSI.client import NamedParamBinding as NPBinding, Binding
 import json
@@ -55,6 +55,7 @@ def import_param(input_file=None):
     return whole_input
         
 def main():
+
     try:
         parser = OptionParser()
         parser.add_option('-i', '--inputparam', help='input parameters for the workflow', dest='inputparam')
@@ -77,13 +78,13 @@ def main():
     DBHOST          = options.dbhost
     OUTDIR          = options.outdir
 
+
     if (DBHOST==None):
-      DBHOST="localhost"
+      DBHOST="galaxyweb"
     if (USERNAME==None):
       USERNAME=getpass.getuser()
-    
-    USERNAME='galaxy'
-
+    com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
+    USERNAME=str(os.popen(com).readline().rstrip())
     if (len(USERNAME)<3): 
         print "Error:Username doesn't exist"
         sys.exit(2)
@@ -93,25 +94,16 @@ def main():
     if (OUTDIR==None):
       OUTDIR="~/out"
     if (OUTDIR.find("/")==-1):
-      OUTDIR="/home/"+USERNAME+"/"+OUTDIR
+      OUTDIR="~/"+OUTDIR
     if (INPUTPARAM!=None):
         if path.isfile(INPUTPARAM) and access(INPUTPARAM, R_OK):
             INPUTPARAM = import_param(INPUTPARAM)
         else:
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
-    print INPUTPARAM
-    #sys.exit()
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
     #print "slen"+slen
-    params_section="Default"
-    if (os.environ.has_key('DOLPHIN_PARAMS_SECTION')):
-       params_section=os.environ['DOLPHIN_PARAMS_SECTION']
-
-    if (params_section=="Default"):
-       url="http://galaxyweb.umassmed.edu/pipeline/service.php"
-    else:
-       url="http://localhost/dolphin_webservice/service.php"
+    url="http://"+str(DBHOST)+".umassmed.edu/pipeline/service.php"
    
     #kw = {'url':url, 'tracefile':sys.stdout}
     kw = {'url':url}
@@ -125,14 +117,18 @@ def main():
        except:
           print "Couldn't connect to dolphin server"
           time.sleep(15)
-       trials=trials+1
-       
+       trials=trials+1   
     data=json.dumps(mesg)
     wkey=json.loads(data)
 
     ret=str(wkey['return'])
     print "WORKFLOW STARTED:"+ret+"\n"
+    logging.basicConfig(filename='/project/umw_biocore/bin/tmp/'+ret+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(INPUTPARAM)
+    logging.info('WORKFLOW STARTED')
     if (ret.startswith("ERROR")):
+                logging.warning("ERROR:"+wfname + ":" + ret)
                 print wfname + ":" + ret + "\n"
                 print "Check the parameter files:\n"
                 sys.exit(2);
@@ -140,7 +136,7 @@ def main():
     for service in services:
         br=1
         while ( br==1):
-            print service.servicename #+ ":" + wkey['return'] + ":" + service.command
+            print service.servicename + ":" + wkey['return'] + ":" + service.command
             trials=0
             while trials<5:
               try:
@@ -158,7 +154,9 @@ def main():
                 #print service.waittime+"\n"
                 time.sleep(float(service.waittime))
             elif (ret.startswith("ERROR")):
-                #print service.servicename + ":" + ret + "\n"
+                print service.servicename + ":" + ret + "\n"
+                logging.warning("ERROR:"+ret)
+                logging.warning("ERROR:"+service.command)
                 print "Check the command:\n"
                 print service.command + "\n"
                 sys.exit(2);

@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import logging
 from optparse import OptionParser
 import sys
 import os
@@ -27,7 +27,7 @@ def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR):
     with open(path, 'r') as fo:
       for line in fo.readlines():
         line = re.sub('\r', "\n", line)
-        if (len(line) < 3 or re.match('^#', line)): continue
+        if (len(line) < 5 or re.match('^#', line)): continue
         
         line=RemoveComments(line)
  
@@ -62,8 +62,6 @@ def main():
     except:
         print "OptionParser Error:for help use --help"
         sys.exit(2)
-    edir=os.path.dirname(sys.argv[0])
-
     INPUTPARAM  = options.inputparam
     PARAMFILE   = options.paramfile
     DBHOSTNAME  = options.dbhostname
@@ -74,40 +72,45 @@ def main():
     NAME        = options.name
     CPU         = options.cpu
     OUTDIR      = options.outdir
- 
+   
+    edir        = "/project/umw_biocore/bin/workflow/dolphin-tools"
     python      = "python ";
     
+    com="module list 2>&1 |grep python"
+    pythonload=str(os.popen(com).readline().rstrip())
+    if (len(pythonload)<5):
+       com      = "module load python/2.7.5";
+       pythonload=str(os.popen(com).readline().rstrip())
+
     if (DBHOSTNAME == None):
-        DBHOSTNAME="localhost"
+        DBHOSTNAME="biocore.umassmed.edu"
     if (USERNAME==None):
         USERNAME=getpass.getuser()
-    
+
     OUTDIR = OUTDIR.replace("@USERNAME", USERNAME)
     os.system("mkdir -p " + OUTDIR + "/scripts")
-    
-    print("OUTDIR:"+OUTDIR)   
-  
+   
+    bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
 
     comstr=""
     COM = re.sub('\n', "\n", COM)
     params={}
     if (INPUTPARAM != None): 
        params = InputParams(INPUTPARAM)
-       print params
 
     if (PARAMFILE != None and path.isfile(PARAMFILE) and access(PARAMFILE, R_OK)):
        params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR)
-     
+
    
     if (len(params)>0):
      for param in params:
-       print params[param]+":"+param+"\n"
+       #print params[param]+":"+param+"\n"
        regex=re.compile(param+"([\s\t\=\\\/\r\n]+)")
        COM=re.sub(regex, params[param]+'\\1', COM)
      for param in params:
        COM = COM.replace(param, params[param])
-    print "["+COM+"]\n"
- 
+    #print "["+COM+"]\n"
+
     COM = COM.replace("@USERNAME", USERNAME)
     COM = COM.replace("@DBHOSTNAME",DBHOSTNAME)
     COM = COM.replace("@WKEY", WKEY)
@@ -132,16 +135,20 @@ def main():
     else:
       comstr=COM
 
-    print "\n\n\n\n\n"+comstr+"\n"
+    #print "\n\n\n\n\n"+comstr+"\n"
+    logging.basicConfig(filename='/project/umw_biocore/bin/tmp/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(comstr)
 
-    bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
     f=open(bash_script_file, 'w')
    
     f.write(comstr + "\n")
+    #f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
+    #f.write("  echo success\n  exit 0\nelse\n  echo failed\n  exit 1\nfi")
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/runJobs.py -d "+DBHOSTNAME+" -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + edir  + "/src/submitJobs.py -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command 
     ## PUT TRY CATCH HERE
     child = os.popen(command)

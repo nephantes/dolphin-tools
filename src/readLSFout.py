@@ -63,7 +63,7 @@ def simplecount(fname):
    result = child.read()
    err = child.close()
    if err:
-	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
+        RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
   
 
    return int(result.strip().split()[0])

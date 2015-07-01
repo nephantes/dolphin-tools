@@ -29,6 +29,7 @@
  my $pubdir           = "";
  my $wkey             = "";
  my $dbcommcmd        = "";
+ my $username         = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -39,9 +40,10 @@ my $command=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'outdir=s'       => \$outdir,
 	'level=s'        => \$level,
-    'pubdir=s'       => \$pubdir,
-    'wkey=s'         => \$wkey,
-    'dbcommcmd=s'    => \$dbcommcmd,
+        'pubdir=s'       => \$pubdir,
+        'wkey=s'         => \$wkey,
+        'dbcommcmd=s'    => \$dbcommcmd,
+        'username=s'     => \$username,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -63,20 +65,26 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") );
 ################### MAIN PROGRAM ####################
 # cleans intermediate files
 
-$outdir   = "$outdir/seqmapping";
+my $outd   = "$outdir/seqmapping";
 my $reportfile   = "$pubdir/$wkey/reports.tsv";
 
 if ($level==1) {
-  my $com="rm -rf $outdir";
+  my $com="rm -rf $outd";
   print $com."\n\n";
   `$com`;
-  die "Error 19: Cannot remove the directory:".$outdir if ($?);
+  die "Error 19: Cannot remove the directory:".$outd if ($?);
 }
 
-my $com="$dbcommcmd -i $reportfile -f insertreport -w $wkey";
+my $com="$dbcommcmd -u $username -i $reportfile -f insertreport -w $wkey";
 print $com."\n\n";
 `$com`;
 die "Error 20: Cannot connect to the database:" if ($?);
+
+$com="$dbcommcmd -u $username -o $outdir -f insertJobStats -w $wkey";
+print $com."\n\n";
+`$com`;
+die "Error 20: Cannot connect to the database:" if ($?);
+
 
 
  
