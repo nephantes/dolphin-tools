@@ -39,9 +39,9 @@ def runSQL(sql):
 
 def getFileList(runparamsid, barcode):
     if (barcode != "NONE"):
-        sql = "SELECT DISTINCT ns.id, ns.name, sf.file_name, d.fastq_dir, d.backup_dir FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
+        sql = "SELECT DISTINCT ns.id, ns.samplename, sf.file_name, d.fastq_dir, d.backup_dir FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
     else:
-        sql = "SELECT DISTINCT ns.id, ns.name, sf.file_name, d.fastq_dir, d.backup_dir FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
+        sql = "SELECT DISTINCT ns.id, ns.samplename, sf.file_name, d.fastq_dir, d.backup_dir FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
     print sql
     return runSQL(sql)
 

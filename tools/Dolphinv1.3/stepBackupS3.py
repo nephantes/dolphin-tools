@@ -49,9 +49,9 @@ def getSQLval(sql):
 
 def getSampleList(runparams_id, barcode):
     if (barcode != "NONE"):
-        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.name, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
+        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
     else:
-        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.name, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
+        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
 
     return runSQL(sql)
 
@@ -227,6 +227,8 @@ def main():
         backup_dir=sample[6]
         amazon_bucket=sample[7]
 
+        if (filename.find(',')!=-1):
+           PAIRED="Yes"
 
         updateInitialFileCounts(file_id, tablename, inputdir, filename, PAIRED)
         if (not [libname, sample_id] in processedLibs):

@@ -10,7 +10,7 @@ import warnings
 import sys
 import time
    
-url="http://localhost/dolphin_webservice/service.php"
+url="http://biocore.umassmed.edu/pipeline/service.php"
 
 re_string = re.compile(r'(?P<htmlchars>[<&>])|(?P<space>^[ \t]+)|(?P<lineend>\r\n|\r|\n)|(?P<protocal>(^|\s)((http|ftp)://.*?))(\s|$)', re.S|re.M|re.I)
 
@@ -111,7 +111,7 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result, log
           logging.info("Couldn't connect to dolphin server (%s)"%trials)
           time.sleep(15)         
        trials=trials+1
-    
+    logging.info(mesg)
     data=json.dumps(mesg)
     wkey=json.loads(data)
 
@@ -125,30 +125,31 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result, log
           sys.exit(2);
 
 def insertJobOut(username, wkey, jobnum, outdir, edir, logging):
-   file=str(outdir)+"/tmp/lsf/"+str(jobnum)
-   command="python " + edir  + "/readLSFout.py -f "+file
-   child = os.popen(command)
-   jobout = child.read().rstrip()
-   err = child.close()
-
-   if err:
-        logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
-        raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
-   jobout=plaintext2html(re.sub('\'', "\"", jobout))
-   kw = {'url':url}
-   b = NPBinding(**kw)
-
-   trials=0
-   while trials<5:
-       try:
-          mesg=b.insertJobOut(a=username , c=wkey , b=jobnum, f=jobout)
-          trials=10
-       except:
-          print "Couldn't connect to dolphin server (%s)"%trials
-          logging.info("Couldn't connect to dolphin server (%s)"%trials)
-          time.sleep(15)         
-       trials=trials+1
-
+    file=str(outdir)+"/tmp/lsf/"+str(jobnum)
+    if os.path.isfile(file) and os.access(file, os.R_OK):
+        command="python " + edir  + "/readLSFout.py -f "+file
+        child = os.popen(command)
+        jobout = child.read().rstrip()
+        err = child.close()
+     
+        if err:
+             logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
+             raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
+        jobout=plaintext2html(re.sub('\'', "\"", jobout))
+        kw = {'url':url}
+        b = NPBinding(**kw)
+     
+        trials=0
+        while trials<5:
+            try:
+               mesg=b.insertJobOut(a=username , c=wkey , b=jobnum, f=jobout)
+               trials=10
+            except:
+               print "Couldn't connect to dolphin server (%s)"%trials
+               logging.info("Couldn't connect to dolphin server (%s)"%trials)
+               time.sleep(15)         
+            trials=trials+1
+       
 def main():
    try:
         #python finishJob.py -u kucukura -k nVy1THnthvrRWfXcj187KeDDQrNAkY -s splitFastQ
@@ -177,7 +178,7 @@ def main():
    COM                     = options.com
    JOBNAME                 = options.jobname
    SERVICENAME             = options.servicename
-   TYPE			   = options.type
+   TYPE			           = options.type
    JOBNUM                  = options.jobnum
    MESSAGE                 = options.message
    OUTDIR                  = options.outdir

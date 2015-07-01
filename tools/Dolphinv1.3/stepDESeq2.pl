@@ -91,6 +91,9 @@ if (lc($dataset)!~/rsem/)
 
 $outdir   = "$outdir/DESeq2".$dataset.$num;
 `mkdir -p $outdir`;
+$cols=~s/[\s\t]+//g;
+$conds=~s/[\s\t]+//g;
+$cols = checkCols($cols);
 $cols=~s/,/\",\"/g;
 $cols="c(\"$cols\")";
 $conds=~s/,/\",\"/g;
@@ -211,6 +214,21 @@ if (lc($heatmap) eq "yes")
 }
 `$com`;
 die "Error 21: Cannot run DESeq2 output files:" if ($?);
+}
+
+sub checkCols
+{
+ my $cols=$_[0];
+ my @arr = split(/,/, $cols);
+ print $cols."\n";
+ foreach my $val (@arr)
+ {
+    if ($val=~/[\d]+/){
+      $cols=~s/$val/X$val/g;
+    }
+ }
+  
+ return $cols;
 }
 
 __END__

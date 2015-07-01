@@ -95,7 +95,7 @@ def main():
         MEMORY="4096";
   
    if (DBHOSTNAME == None):
-        DBHOSTNAME="galaxy.umassmed.edu"
+        DBHOSTNAME="biocore.umassmed.edu"
         
    COM.replace('\"{','\'{')
    COM.replace('}\"','}\'')
@@ -106,7 +106,7 @@ def main():
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    #print "EXECDIR" + exec_dir
-   sdir="/project/umw_biocore/bin/workflow/scripts"
+   sdir="/project/umw_biocore/bin/workflow/dolphin-tools/src"
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
    lsf=OUTDIR + "/tmp/lsf"
@@ -135,13 +135,13 @@ def main():
      f.write("cd " + exec_dir + "\n")
      #f.write("echo '"+str(COM)+"'\n")
      f.write("python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\n")
-     #f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\"\n")
+     f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetStartTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 2\"\n")
      f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
      if (str(NAME) != str(SERVICENAME)):
        f.write("touch "+success_file+"\n")
-     #f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\"\n")
+     f.write("echo \"python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\"\n")
      f.write("  python " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSetEndTime -o "+str(OUTDIR)+" -n $LSB_JOBID -j "+ str(NAME)+ " -m 3\n")
      f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  echo success\nelse\n  echo failed\n")
@@ -177,6 +177,7 @@ def main():
      #     if num>0:
      #         time.sleep( 5 )
      #         break
+     
      
      command = python+" " + sdir + "/jobStatus.py -u " + str(USERNAME) + " -k " + str(WKEY) + " -s " + str(SERVICENAME) + " -t dbSubmitJob -o "+str(OUTDIR)+" -n "+ str(num) + " -j "+ str(NAME) + " -m 1 -c \"" + src+"/"+NAME+".submit.bash\"" 
      #print command
