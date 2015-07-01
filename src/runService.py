@@ -9,6 +9,8 @@ import re
 #import random 
 import string
 import subprocess
+sys.path.insert(0, sys.path[0])
+from config import *
 
 def RemoveComments(text):
   return text.split("#", 1)[0]
@@ -72,8 +74,10 @@ def main():
     NAME        = options.name
     CPU         = options.cpu
     OUTDIR      = options.outdir
+
+    config=getConfig()
    
-    edir        = "/project/umw_biocore/bin/workflow/dolphin-tools"
+    edir        = config['tooldir']
     python      = "python ";
     
     com="module list 2>&1 |grep python"
@@ -83,7 +87,7 @@ def main():
        pythonload=str(os.popen(com).readline().rstrip())
 
     if (DBHOSTNAME == None):
-        DBHOSTNAME="biocore.umassmed.edu"
+        DBHOSTNAME=config['dbhost']
     if (USERNAME==None):
         USERNAME=getpass.getuser()
 
@@ -136,7 +140,7 @@ def main():
       comstr=COM
 
     #print "\n\n\n\n\n"+comstr+"\n"
-    logging.basicConfig(filename='/project/umw_biocore/bin/tmp/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.basicConfig(filename=config['logpath']+'/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info(USERNAME+":"+OUTDIR)
     logging.info(comstr)
 
@@ -148,7 +152,7 @@ def main():
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/src/submitJobs.py -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command 
     ## PUT TRY CATCH HERE
     child = os.popen(command)

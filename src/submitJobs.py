@@ -6,11 +6,10 @@ import os
 import re
 import string
 import subprocess
-#import time
 
-#def getKey(num):
-#       return ''.join(random.choice(string.ascii_letters) for x in range(num))
-   
+sys.path.insert(0, sys.path[0])
+from config import *
+
 def runcmd(command): 
     print command
     child = os.popen(command)
@@ -41,7 +40,7 @@ def main():
         print "OptionParser Error:for help use --help"
         sys.exit(2)
    USERNAME    = options.username
-   DBHOSTNAME  = options.dbhostname
+   DBHOST      = options.dbhostname
    WKEY        = options.wkey 
    OUTDIR      = options.outdir 
    SERVICENAME = options.servicename
@@ -53,23 +52,21 @@ def main():
    QUEUE       = options.queue
    python      = "python"
 
+   config=getConfig()
+
    com="module list 2>&1 |grep python/2.7.5"
    pythonload=str(os.popen(com).readline().rstrip())
    if (len(pythonload)<5):
        com     = "module load python/2.7.5;";
        pythonload=str(os.popen(com).readline().rstrip())
        python      = "module load python/2.7.5;" + python;
-       #python      = "module load python/2.7.5;" + python;
 
    com="module list 2>&1 |grep openssl/1.0.1g"
    sslload=str(os.popen(com).readline().rstrip())
    if (len(sslload)<5):
        com = "module load openssl/1.0.1g;"
        sslload=str(os.popen(com).readline().rstrip())
-       #python      = "module load openssl/1.0.1g;" + python;
    
-   #if (WKEY==None):
-   #     WKEY=getKey(30);
    if (USERNAME==None):
         USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
    
@@ -94,9 +91,6 @@ def main():
    if (MEMORY == None):
         MEMORY="4096";
   
-   if (DBHOSTNAME == None):
-        DBHOSTNAME="biocore.umassmed.edu"
-        
    COM.replace('\"{','\'{')
    COM.replace('}\"','}\'')
    print "COMMAND: [" + COM + "]\n"
@@ -105,8 +99,8 @@ def main():
 
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
-   #print "EXECDIR" + exec_dir
-   sdir="/project/umw_biocore/bin/workflow/dolphin-tools/src"
+   print "EXECDIR" + exec_dir
+   sdir=config['tooldir']+"/src"
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
    lsf=OUTDIR + "/tmp/lsf"

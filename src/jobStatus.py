@@ -9,8 +9,12 @@ import cgi
 import warnings
 import sys
 import time
+sys.path.insert(0, sys.path[0])
+from config import *
+
+config=getConfig()
    
-url="http://biocore.umassmed.edu/pipeline/service.php"
+url=config['url']
 
 re_string = re.compile(r'(?P<htmlchars>[<&>])|(?P<space>^[ \t]+)|(?P<lineend>\r\n|\r|\n)|(?P<protocal>(^|\s)((http|ftp)://.*?))(\s|$)', re.S|re.M|re.I)
 
@@ -125,7 +129,8 @@ def updateJob( username, wkey, jobname, service_name, field, jobnum, result, log
           sys.exit(2);
 
 def insertJobOut(username, wkey, jobnum, outdir, edir, logging):
-    file=str(outdir)+"/tmp/lsf/"+str(jobnum)
+    file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".std"
+    print "insertJobOut file:"+file
     if os.path.isfile(file) and os.access(file, os.R_OK):
         command="python " + edir  + "/readLSFout.py -f "+file
         child = os.popen(command)
@@ -163,8 +168,6 @@ def main():
         parser.add_option('-n', '--jobnum', help='submitted job number', dest='jobnum')
         parser.add_option('-m', '--message', help='resulting message of the job', dest='message')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
-
-
 
         (options, args) = parser.parse_args()
    except:

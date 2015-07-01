@@ -3,7 +3,6 @@ import logging
 from optparse import OptionParser
 from ZSI.client import NamedParamBinding as NPBinding, Binding
 import json
-import sys
 import subprocess
 import os
 from os import path, access, R_OK
@@ -12,6 +11,9 @@ import re
 import random 
 import string
 import time
+import sys
+sys.path.insert(0, sys.path[0])
+from config import *
 from os.path import basename
 
 def remove_comments(line, sep):
@@ -78,13 +80,17 @@ def main():
     DBHOST          = options.dbhost
     OUTDIR          = options.outdir
 
+    config=getConfig()
+    url=config['url']
+    DBHOST=config['dbhost']
+    LOGPATH=config['logpath']
 
-    if (DBHOST==None):
-      DBHOST="galaxyweb"
-    if (USERNAME==None):
-      USERNAME=getpass.getuser()
-    com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
-    USERNAME=str(os.popen(com).readline().rstrip())
+    if (config['params_section'] != "Docker"):
+       com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
+       USERNAME=str(os.popen(com).readline().rstrip())
+    else:
+       USERNAME='dolphin'
+
     if (len(USERNAME)<3): 
         print "Error:Username doesn't exist"
         sys.exit(2)
@@ -95,6 +101,7 @@ def main():
       OUTDIR="~/out"
     if (OUTDIR.find("/")==-1):
       OUTDIR="~/"+OUTDIR
+
     if (INPUTPARAM!=None):
         if path.isfile(INPUTPARAM) and access(INPUTPARAM, R_OK):
             INPUTPARAM = import_param(INPUTPARAM)
@@ -102,8 +109,7 @@ def main():
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
-    #print "slen"+slen
-    url="http://"+str(DBHOST)+".umassmed.edu/pipeline/service.php"
+    #print "slen"+len
    
     #kw = {'url':url, 'tracefile':sys.stdout}
     kw = {'url':url}
@@ -123,7 +129,7 @@ def main():
 
     ret=str(wkey['return'])
     print "WORKFLOW STARTED:"+ret+"\n"
-    logging.basicConfig(filename='/project/umw_biocore/bin/tmp/'+ret+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.basicConfig(filename=LOGPATH+'/'+ret+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info(USERNAME+":"+OUTDIR)
     logging.info(INPUTPARAM)
     logging.info('WORKFLOW STARTED')
