@@ -6,6 +6,7 @@ import MySQLdb
 from parameters import *
 from ZSI.client import NamedParamBinding as NPBinding, Binding
 import json
+import time
 
 from sys import argv, exit, stderr
 from optparse import OptionParser
@@ -13,7 +14,7 @@ from optparse import OptionParser
 warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
                         DeprecationWarning, 'MySQLdb')
 
-url="http://biocore.umassmed.edu/pipeline/service.php"
+url="http://localhost/dolphin_webservice/service.php"
 
 def runSQL(sql):
 
@@ -26,7 +27,7 @@ def runSQL(sql):
     try:
         cursor = db.cursor()
         cursor.execute(sql)
-        #print sql
+        print sql
         results = cursor.fetchall()
         cursor.close()
         del cursor
