@@ -1,0 +1,20 @@
+# Config file for automatic testing at travis-ci.org
+
+language: python
+
+python:
+  - "2.7"
+
+# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+install: 
+  - pip install -r .travis-requirements.txt --use-mirrors  
+
+# command to run tests, e.g. python setup.py test
+script:
+  - coverage run --source=src runtests.py
+  - coverage run --source=tests runtests.py
+  - py.test --cov=src --cov-report=term --cov-report=html
+  - py.test --cov=tests --cov-report=term --cov-report=html
+
+after_success:
+  - coveralls
