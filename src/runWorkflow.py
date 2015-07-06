@@ -88,8 +88,6 @@ def main():
     if (config['params_section'] != "Docker"):
        com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
        USERNAME=str(os.popen(com).readline().rstrip())
-    else:
-       USERNAME='dolphin'
 
     if (len(USERNAME)<3): 
         print "Error:Username doesn't exist"
