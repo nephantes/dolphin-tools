@@ -7,21 +7,27 @@ import itertools
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from parameters import *
 from sys import argv, exit, stderr
 from optparse import OptionParser
 
 warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
                         DeprecationWarning, 'MySQLdb')
 
+sys.path.insert(0, sys.path[0]+"/../../src")
+from config import *
+
+config=getConfig()
+
+url=config['url']
+
 def runSQL(sql):
 
     db = MySQLdb.connect(
-      host = DBHOST,
-      user = DBUSER,
-      passwd = DBPASS,
-      db = DB,
-      port = DBPORT)
+      host = config['dbhost'],
+      user = config['dbuser'],
+      passwd = config['dbpass'],
+      db = config['db'],
+      port = int(config['dbport']))
     try:
         cursor = db.cursor()
         cursor.execute(sql)
