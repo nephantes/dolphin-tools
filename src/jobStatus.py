@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import logging
 from optparse import OptionParser
-from ZSI.client import NamedParamBinding as NPBinding, Binding
+import urllib,urllib2
 import json
 import os
 import re
@@ -44,89 +44,46 @@ def plaintext2html(text, tabstop=4):
             return '%s<a href="%s">%s</a>%s' % (prefix, url, url, last)
     return re.sub(re_string, do_sub, text)
 
-
-
-def checkAllJobsFinished(username, wkey, service_name, logging):
-    kw = {'url':url}
-    b = NPBinding(**kw)
+def queryAPI(data, name, logging):
+    opener = urllib2.build_opener(urllib2.HTTPHandler())
     trials=0
     while trials<5:
        try:
-          mesg=b.checkAllJobsFinished(a=username , c=wkey , b=service_name)
+          mesg = opener.open(url, data=data).read()
           trials=10
        except:
           print "Couldn't connect to dolphin server (%s)"%trials
           logging.info("Couldn't connect to dolphin server (%s)"%trials)
           time.sleep(15)
        trials=trials+1
-    
-    data=json.dumps(mesg)
-    wkey=json.loads(data)
+    ret=str(json.loads(mesg))
+    logging.info("%s:%s"%(name,ret))
 
-    ret=str(wkey['return'])
-    #print "JOBs checked:"+ret+"\n"
     if (ret.startswith("ERROR")):
-          logging.info("%s:%s"%(jobname,ret))
-          logging.info("Check the job#:%s"%jobnum)
-          print service_name + ":" + ret + "\n"
-          print "Check the service:"+service_name+"\n"
+          logging.info("%s:%s"%(name,ret))
+          print name + ":" + ret + "\n"
           sys.exit(2);
-
-def insertJob( username, wkey, com, jobname, service_name, jobnum, result, logging):
     
-    #print "username="+username+", wkey="+wkey+", com="+com+", jobname="+jobname+", ser="+service_name+", jobnum="+jobnum+", res="+result 
-    #kw = {'url':url, 'tracefile':sys.stdout}
-    kw = {'url':url}
-    b = NPBinding(**kw)
-    trials=0
-    while trials<5:
-       try:
-          mesg=b.insertJob(a=username , c=wkey , b=com , e=jobname, d=service_name , f=jobnum, h=result)
-          trials=10
-       except:
-          print "Couldn't connect to dolphin server (%s)"%trials
-          logging.info("Couldn't connect to dolphin server (%s)"%trials)
-          time.sleep(15)
-       trials=trials+1
+
+def checkAllJobsFinished(username, wkey, servicename, logging):
+    data = urllib.urlencode({'func':'checkAllJobsFinished', 'username':username, 
+                             'wkey':wkey, 'servicename':servicename})
     
-    data=json.dumps(mesg)
-    wkey=json.loads(data)
+    queryAPI(data, servicename, logging) 
 
-    ret=str(wkey['return'])
-    #print "JOB inserted:"+ret+"\n"
-    if (ret.startswith("ERROR")):
-          logging.info("%s:%s"%(jobname,ret))
-          logging.info("Check the job#:%s"%jobnum)
-          print jobname + ":" + ret + "\n"
-          print "Check the job#:"+jobnum+"\n"
-          sys.exit(2);
+def insertJob( username, wkey, com, jobname, servicename, jobnum, result, logging):
+    data = urllib.urlencode({'func':'insertJob', 'username':username, 
+                             'wkey':wkey, 'servicename':servicename, 
+                             'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
+                             'result':str(result)})
+    queryAPI(data, "INSERT"+jobname, logging) 
 
-def updateJob( username, wkey, jobname, service_name, field, jobnum, result, logging):
-    #print "username="+str(username)+", wkey="+str(wkey)+", jobname="+str(jobname)+", ser="+str(service_name)+", field="+str(field)+", jobnum="+str(jobnum)+", res="+str(result) 
-    kw = {'url':url}
-    b = NPBinding(**kw)
-    trials=0
-    while trials<5:
-       try:
-          mesg=b.updateJob(a=username , c=wkey , b=jobname, e=service_name , d=field, g=jobnum, f=result)
-          trials=10
-       except:
-          print "Couldn't connect to dolphin server (%s)"%trials
-          logging.info("Couldn't connect to dolphin server (%s)"%trials)
-          time.sleep(15)         
-       trials=trials+1
-    logging.info(mesg)
-    data=json.dumps(mesg)
-    wkey=json.loads(data)
-
-    ret=str(wkey['return'])
-    #print "JOB updated:"+ret+"\n"
-    if (ret.startswith("ERROR")):
-          logging.info("%s:%s"%(jobname,ret))
-          logging.info("Check the job#:%s"%jobnum)
-          print jobname + ":" + ret + "\n"
-          print "Check the job#:"+jobnum+"\n"
-          sys.exit(2);
+def updateJob( username, wkey, jobname, servicename, field, jobnum, result, logging):
+    data = urllib.urlencode({'func':'updateJob', 'username':username, 
+                             'wkey':wkey, 'servicename':servicename, 
+                             'field':field , 'jobname':jobname, 'jobnum':str(jobnum), 
+                             'result':str(result)})
+    queryAPI(data, "UPDATE"+jobname, logging) 
 
 def insertJobOut(username, wkey, jobnum, outdir, edir, logging):
     file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".std"
@@ -141,19 +98,11 @@ def insertJobOut(username, wkey, jobnum, outdir, edir, logging):
              logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
              raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
         jobout=plaintext2html(re.sub('\'', "\"", jobout))
-        kw = {'url':url}
-        b = NPBinding(**kw)
-     
-        trials=0
-        while trials<5:
-            try:
-               mesg=b.insertJobOut(a=username , c=wkey , b=jobnum, f=jobout)
-               trials=10
-            except:
-               print "Couldn't connect to dolphin server (%s)"%trials
-               logging.info("Couldn't connect to dolphin server (%s)"%trials)
-               time.sleep(15)         
-            trials=trials+1
+       
+        data = urllib.urlencode({'func':'insertJobOut', 'username':username, 
+                             'wkey':wkey, 'jobnum':str(jobnum), 'jobout':jobout})
+        queryAPI(data, "jobnum:"+str(jobnum), logging) 
+
        
 def main():
    try:
@@ -181,7 +130,7 @@ def main():
    COM                     = options.com
    JOBNAME                 = options.jobname
    SERVICENAME             = options.servicename
-   TYPE			           = options.type
+   TYPE                    = options.type
    JOBNUM                  = options.jobnum
    MESSAGE                 = options.message
    OUTDIR                  = options.outdir
