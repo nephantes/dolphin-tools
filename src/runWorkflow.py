@@ -1,9 +1,9 @@
 #!/bin/env python
 import logging
 from optparse import OptionParser
-from ZSI.client import NamedParamBinding as NPBinding, Binding
 import json
 import subprocess
+import urllib,urllib2
 import os
 from os import path, access, R_OK
 import getpass
@@ -107,52 +107,54 @@ def main():
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
-    #print "slen"+len
    
-    #kw = {'url':url, 'tracefile':sys.stdout}
-    kw = {'url':url}
-    b = NPBinding(**kw)
     wfname = os.path.splitext(basename(WORKFLOWFILE))[0]
+
+    opener = urllib2.build_opener(urllib2.HTTPHandler())
+    data = urllib.urlencode({'func':'startWorkflow', 'inputparam':INPUTPARAM, 
+                       'defaultparam':DEFAULTPARAM, 'username':USERNAME, 
+                       'workflow':wfname, 'wkey':WKEY, 'outdir':OUTDIR, 'services':slen})
     trials=0
     while trials<5:
        try:
-          mesg=b.startWorkflow(a=INPUTPARAM , c=DEFAULTPARAM , b=USERNAME , e=wfname, d=WKEY , f=OUTDIR, h=slen)
+          mesg = opener.open(url, data=data).read()
           trials=10
        except:
           print "Couldn't connect to dolphin server"
           time.sleep(15)
        trials=trials+1   
-    data=json.dumps(mesg)
-    wkey=json.loads(data)
+    ret=str(json.loads(mesg))
+    wkey = ret
 
-    ret=str(wkey['return'])
-    print "WORKFLOW STARTED:"+ret+"\n"
-    logging.basicConfig(filename=LOGPATH+'/'+ret+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    if (ret.startswith("ERROR")):
+                logging.warning("ERROR:"+wfname + ":" + wkey)
+                print wfname + ":" + wkey + "\n"
+                print "Check the parameter files:\n"
+                sys.exit(2);
+    print "WORKFLOW STARTED:"+wkey+"\n"
+
+    logging.basicConfig(filename=LOGPATH+'/'+wkey+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info(USERNAME+":"+OUTDIR)
     logging.info(INPUTPARAM)
     logging.info('WORKFLOW STARTED')
-    if (ret.startswith("ERROR")):
-                logging.warning("ERROR:"+wfname + ":" + ret)
-                print wfname + ":" + ret + "\n"
-                print "Check the parameter files:\n"
-                sys.exit(2);
 
     for service in services:
         br=1
         while ( br==1):
-            print service.servicename + ":" + wkey['return'] + ":" + service.command
+            print service.servicename + ":" + wkey + ":" + service.command
             trials=0
             while trials<5:
               try:
-                 resp=b.startService(a=service.servicename, c=wkey['return'], b=service.command)
+                 data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
+                        'wkey':wkey, 'command':service.command})
+                 resp = opener.open(url, data=data).read()
                  trials=10
               except:
                  print "Couldn't connect to dolphin server"
                  time.sleep(15)
               trials=trials+1
 
-            res=json.loads(json.dumps(resp))
-            ret=str(res['return'])
+            ret=str(json.loads(resp))
             print ret + "\n"
             if (ret.startswith("RUNNING") and float(service.waittime)>0):
                 #print service.waittime+"\n"
@@ -172,15 +174,15 @@ def main():
         trials=0
         while trials<5:
            try:
-              resp=b.endWorkflow(a=wkey['return'])
+              data = urllib.urlencode({'func':'endWorkflow',  'wkey':wkey})
+              resp = opener.open(url, data=data).read()
               trials=10
            except:
               print "Couldn't connect to dolphin server"
               time.sleep(15)
            trials=trials+1
 
-        res=json.loads(json.dumps(resp))
-        ret=str(res['return'])
+        res=str(json.loads(resp))
         #print ret + "\n"
         if (ret.startswith("WRUNNING")):
             time.sleep(5)
