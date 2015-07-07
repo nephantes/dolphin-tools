@@ -80,11 +80,12 @@ def main():
     edir        = config['tooldir']
     python      = "python ";
     
-    com="module list 2>&1 |grep python"
-    pythonload=str(os.popen(com).readline().rstrip())
-    if (len(pythonload)<5):
-       com      = "module load python/2.7.5";
+    if (config['params_section'] != "Docker"):
+       com="module list 2>&1 |grep python"
        pythonload=str(os.popen(com).readline().rstrip())
+       if (len(pythonload)<5):
+          com = "module load python/2.7.5";
+          pythonload=str(os.popen(com).readline().rstrip())
 
     if (DBHOSTNAME == None):
         DBHOSTNAME=config['dbhost']
