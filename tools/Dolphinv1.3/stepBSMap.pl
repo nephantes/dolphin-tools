@@ -238,14 +238,6 @@ stepBSMap.pl
 
 =head1 OPTIONS
 
-=head2 -alpha
-
-input file <s1_r1_1.fq> 
-
-=head2 -beta
-
-optional paired end input file [s1_r1_2.fq]
-
 =head2 -binpath
 
 bsmap binary path </path/to/bsmap>
