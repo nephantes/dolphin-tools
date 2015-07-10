@@ -7,7 +7,7 @@ require  5.008;    ## requires this Perl version or later
 #########################################################################################
 #                                       stepBSMap.pl
 #########################################################################################
-# 
+#
 #  This program runs BSMAP in RRBS mode
 #
 #
@@ -16,7 +16,7 @@ require  5.008;    ## requires this Perl version or later
 #
 # Alastair Firth
 # Jun 18, 2015
-# Alper Kucukural, PhD 
+# Alper Kucukural, PhD
 # Jul 4, 2014
 #########################################################################################
 
@@ -26,7 +26,7 @@ require  5.008;    ## requires this Perl version or later
 use File::Path qw(make_path);
 use File::Basename;
 use Getopt::Long;
-use Pod::Usage; 
+use Pod::Usage;
 use Data::Dumper;  $Data::Dumper::Indent = 1;
 
 #################### VARIABLES ######################
@@ -49,7 +49,7 @@ GetOptions( \%args,
 	'jobsubmit=s',
 	'outdir=s',
 	'params:s',
-  'previous=s',
+	'previous=s',
 	'ref=s',
 	'samtools=s',
 	'servicename=s',
@@ -61,7 +61,7 @@ print "Arguments:\n" . Dumper(\%args) if ( $args{verbose} );
 
 if ( exists $args{help} ) {
 	pod2usage( {
-			'-verbose' => 2, 
+			'-verbose' => 2,
 			'-exitval' => 1,
 		} );
 }
@@ -102,8 +102,8 @@ unless ( -e $args{samtools} and -x $args{samtools} ) {
 unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
   die ( "Invalid option dspaired [no|none|yes|paired]: $args{dspaired}" );
 }
-  
-  
+
+
 ################### MAIN PROGRAM ####################
 # run bsmap in RRBS mode
 
@@ -145,7 +145,7 @@ if ( $spaired ) {
   }
 }
 else {
-  #create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq} 
+  #create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq}
   foreach my $file ( @file_list ) {
     #DO INCLUDE .1 or .2 in the hash key, if present
     m/(.*)\.fastq/; #get the "bname" as $1 and use it as the hash key
@@ -186,7 +186,8 @@ sub do_job {
   $com .= " -a $file1";
   $com .= " -b $file2" if ( $file2 ); #only for paired end libs
   $com .= " -o $outfile";
-  $com .= " -d $args{digestion}";
+  $com .= " -d $args{ref}";
+  $com .= " -D $args{digestion}";
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
   $com .= " $mvcom";

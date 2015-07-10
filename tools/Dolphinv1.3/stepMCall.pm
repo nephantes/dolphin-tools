@@ -3,22 +3,22 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.0.1';  ## Current version of tis file
+$VERSION = '0.0.1';  ## Current version of this file
 require  5.008;    ## requires this Perl version or later
 
 #########################################################################################
-#                                       stepBSMap.pl
+#                                       stepMCall.pl
 #########################################################################################
-# 
-#  This program runs BSMAP in RRBS mode
+#
+#  This program runs MCall
 #
 #
 #########################################################################################
 # AUTHORS:
 #
 # Alastair Firth
-# Jun 18, 2015
-# Alper Kucukural, PhD 
+# Jul 6, 2015
+# Alper Kucukural, PhD
 # Jul 4, 2014
 #########################################################################################
 
@@ -28,7 +28,7 @@ require  5.008;    ## requires this Perl version or later
 use File::Path qw(make_path);
 use File::Basename;
 use Getopt::Long;
-use Pod::Usage; 
+use Pod::Usage;
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
@@ -48,12 +48,11 @@ my %args = (
 #
 GetOptions( \%args,
 	'binpath=s',
-	'digestion:s', #TODO we might want to support WGBS, in which case the argument checking should allow null here
 	'help',
 	'jobsubmit=s',
 	'outdir=s',
 	'params:s',
-  'previous=s',
+	'previous=s',
 	'ref=s',
 	'samtools=s',
 	'servicename=s',
@@ -65,7 +64,7 @@ print "Arguments:\n" . Dumper(\%args) if ( $args{verbose} );
 
 if ( exists $args{help} ) {
 	pod2usage( {
-			'-verbose' => 2, 
+			'-verbose' => 2,
 			'-exitval' => 1,
 		} );
 }
@@ -83,9 +82,11 @@ unless ( -d $args{outdir} ) {
 	die ( "Invalid output directory $args{outdir}: Directory must already exist" );
 }
 
-#ref must exist and be .fasta
-unless ( -e $args{ref} and ( $args{ref} =~ /.*\.(fa|fasta)/ )) {
-	die ( "Invalid ref file $args{ref}" );
+#if ref exists, must be .fasta
+if ( exists $args{ref} ) {
+	unless ( -e $args{ref} and ( $args{ref} =~ /.*\.(fa|fasta)/ )) {
+		die ( "Invalid ref file $args{ref}" );
+	}
 }
 
 #binpath must exist and be executable
@@ -93,26 +94,15 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 	die ( "Invalid option binpath: location $args{binpath}" );
 }
 
-#digestion must be valid
-unless ( $args{digestion} =~ /[CGAT-]+/ ) {
-	die ( "Invalid option digestion: site $args{digestion}" );
-}
-
 #samtools must exist and be executable
 unless ( -e $args{samtools} and -x $args{samtools} ) {
 	die ( "Invalid option samtools: location $args{samtools}" );
 }
 
-unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
-  die ( "Invalid option dspaired [no|none|yes|paired]: $args{dspaired}" );
-}
-  
-  
 ################### MAIN PROGRAM ####################
-# run bsmap in RRBS mode
 
 # Setup the output directory
-my $binname = basename( $args{binpath} ); #the name of the binary we execute (bsmap here)
+my $binname = basename( $args{binpath} ); #the name of the binary we execute
 my $outdir = "$args{outdir}/".lc($binname);
 make_path($args{outdir}) or die "Error 15: Cannot create the directory $args{outdir}: $!";
 
@@ -127,53 +117,32 @@ else {
 	$inputdir = "$outdir/".lc( $args{previous} );
 }
 
-# Expecting paired or single end libraries?
-my $spaired;
-$spaired = 1 if ( $args{dspaired} =~ /yes|paired/i );
-$spaired = 0 if ( $args{dspaired} =~ /no|none/i );
-die "Bad option dspaired: $args{dspaired}" unless ( defined $spaired );
-
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
 my @file_list = grep { /\.fastq/ } readdir($dh);
 closedir $dh;
-if ( $spaired ) {
-  #create a hash of arrays { s1 => [s1.1.fq, s1.2.fq], s2 => [s2.1.fq],[s2.2.fq] ]
-  foreach my $file ( @file_list ) {
-    #DO NOT include .1 or .2 in the hash key
-    m/(.*)\.([12])\.fastq/; #get the "bname" as $1 and use it as the hash key
-    #order matters, so unshift if it's .1 and push if it's .2
-    unshift @{ $files{$1} }, "$inputdir/$file" if ($2 == 1); #unshift the filename into the array $files{bname} => [filename.1.fastq ?,file2?]
-    push @{ $files{$1} }, "$inputdir/$file" if ($2 == 2); #push the filename into the array $files{bname} => [?file1,? filename.2.fastq]
-  }
-}
-else {
-  #create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq} 
-  foreach my $file ( @file_list ) {
-    #DO INCLUDE .1 or .2 in the hash key, if present
-    m/(.*)\.fastq/; #get the "bname" as $1 and use it as the hash key
-    push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
-  }
+#create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq}
+foreach my $file ( @file_list ) {
+	m/(.*)\.bam/; #get the "bname" as $1 and use it as the hash key
+	# each array should contain all files for that condition
+	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
 }
 
 ### Run the jobs ###
 foreach my $bname ( keys %files ) {
-  if ( $spaired and ( scalar @{ $files{$bname} } != 2 ) ) {
-    die "Expected paired files for $bname but found " . Dumper($files{$bname});
-  }
-  if ( ! $spaired and ( scalar @{ $files{$bname} } != 1 ) ) {
-    die "Expected single file for $bname but found " . Dumper($files{$bname});
-  }
   do_job( $bname, $files{$bname} );
 }
 
 sub do_job {
-  my ($bname, $file1, $file2) = @_;
-
-  #$file2 will be undef if not paired
-  die "Invalid file (must be a regular file): $file1" if ( ! -f $file1 );
-  die "Invalid file (must be a regular file): $file2" if ( $file2 and ! -f $file2 );
+  my ($bname, @files) = @_;
+	
+	#construct and check the file list
+	my $filelist = '';
+	foreach my $file ( @files ) {
+		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
+		$filelist .= " -m $file";
+	}
 
 
 # construct the move command
@@ -185,12 +154,9 @@ sub do_job {
 
 #construct the command
   my $logfile = "$bname.$binname.log";
-  my $outfile = "$outdir/$bname.bam";
   my $com = $args{binpath};
-  $com .= " -a $file1";
-  $com .= " -b $file2" if ( $file2 ); #only for paired end libs
-  $com .= " -o $outfile";
-  $com .= " -d $args{digestion}";
+  $com .= " $filelist"
+  $com .= " -r $args{ref}";
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
   $com .= " $mvcom";
@@ -216,25 +182,23 @@ __END__
 
 =head1 NAME
 
-stepBSMap.pl
+stepMCall.pl
 
 =head1 SYNOPSIS  
 
-  stepBSMap.pl -binpath     bsmap binary path </path/to/bsmap>
-               -digestion   restriction enzyme digestion site <C-CGG>
-               -dspaired    paired end or single end <none|yes|paired>
+  stepMCall.pl -binpath     binary path </path/to/mcall>
                -jobsubmit   command to execute to submit job
                -outdir      output directory </output/directory/> 
-               -params      additional optional bsmap params [bsmap params]
+               -params      additional optional mcall params [mcall params]
                -previous    previous step in pipeline
                -ref         reference sequences file <fasta>
                -samtools    samtools binary location
                -servicename service name to use in job name
                -verbose     print extra debugging output [boolean]
   
-  stepBSMap.pl -help
+  stepMCall.pl -help
   
-  stepBSMap.pl -version
+  stepMCall.pl -version
   
   For help, run this script with -help option.
 
@@ -243,13 +207,7 @@ stepBSMap.pl
 
 =head2 -binpath
 
-bsmap binary path </path/to/bsmap>
-
-=head2 -digestion
-
-	restriction enzyme digestion site
-	The argument to -D of bsmap. If multiple digestion sites are used, must specify more in -params
-	e.g -D="C-CAA" -params="-D C-CGG"
+mcall binary path </path/to/mcall>
 
 =head2 -help
 
@@ -265,7 +223,7 @@ output directory </output/directory/>
 
 =head2 -params
 
-additional optional bsmap params [bsmap params]
+additional optional mcall params [mcall params]
 
 =head2 -ref
 
@@ -290,69 +248,39 @@ This program maps the reads from RRBS
 
 =head1 EXAMPLE
 
-stepBSMap.pl TODO
+stepMCall.pl TODO
 
 
 =head1 ARGUMENTS
 
-BSMAP arguments included for reference.
+MCall arguments included for reference.
 
-  -a  <str>   query file, FASTA/FASTQ/BAM format.  The input format will be auto-detected. (required)
-  -b  <str>   query file b for pair end data, FASTA/FASTQ/BAM format.  The input format will be auto-detected. 
-              if the input format is in BAM format, it should be the same as the file specified by "-a" option.
-              BSMAP will read the two sets of reads w.r.t to the 0x40/0x80 flag in the input BAM file. 
-              (required for pair-end mapping)
-  -d  <str>   reference sequences file, FASTA format. (required)
-  -o  <str>   output alignment file, if filename has .sam suffix, the output
-              will be in SAM format, if the filename has .bam suffix, the output file
-              be in sorted BAM file, and a filename.bai index file will be generated, 
-              for other filename suffix the output is in BSP format. (required)
-  -2  <str>   output alignment file for unpaired reads in pair end mapping, only used for BSP format output. 
-              If the output format is specified in BAM/SAM format, this option will be ignored, all alignments will be 
-              writen to one BAM/SAM output file specified by the "-o" option. 
-              (required for pair-end mapping with BSP format output)
-  -s  <int>   seed size, default=16, min=8, max=16. (WGBS mode)
-              For RRBS mode, seed length is fixed to 12 and this command line option is neglected.
-              longer seed size is faster, ~1.5 times faster with each additional nt
-  -v  <int>   max number of mismatches allowed on a read, default=2, max=15, 
-              usually this number should be around 10% of the read length.
-  -w  <int>   max number of equal best hits to count, smaller will be faster, default=MAXHITS in makefile
-  -q  <int>   quality threshold in trimming 3'end of reads, 0-40, default=0. (no trim)
-  -z  <int>   base quality, default=33 [Illumina is using 64, Sanger Institute is using 33]
-  -f  <int>   filter low-quality reads containing >n Ns, default=5
-  -p  <int>   number of processors to use, default=1. The parallel performance scales well with 8 threads or less.
-              For more than 8 threads, there might be no significant overall speed gain.
-  -x  <int>   max insertion size for pair end mapping, default=500
-  -m  <int>   min insertion size for pair end mapping, default=28
-  -L  <int>   mapping the first N nucleotide of the read, default: 0 (map the whole read).
-  -I  <int>   index interval (1~16), meaning the reference genome will be indexed every Nbp, default=4. (WGBS mode)
-              For RRBS mode, index_interval is fixed to 1bp and this command line option is neglected.
-              larger index interval uses memory, and slightly reduces mapping sensitivity. (~0.5% difference) 
-              for human genome, -I 16 uses ~5GB, compared with ~9GB at the default -I 4.
-  -A  <str>   set the adapter sequence(s) and trim from 3'end of reads, default=none, requires at least 4nt matched, no mismatch allowed.
-              Multiple -A options could be specified to set more than one adapter sequences, i.e. in pair-end sequencing case. 
-              default: none (no adapter trimming)
-  -R          include the reference sequences as the XR:Z:<string> field in SAM output. default=do not include.
-  -B  <int>   start from the Nth read or read pair, default: 1.
-  -E  <int>   end at the Nth read or read pair, default: 4,294,967,295.
-              Using -B and -E options user can specify part of the input file to be mapped, so that the input file 
-              could be divided into several parts and mapped parallely over distributed system, without creating temporary files. 
-  -D  <str>   set restriction enzyme digestion site and activate reduced representation bisulfite mapping mode (RRBS mode), 
-              i.e. reads must be mapped to digestion sites, the digestion site must be palindromic, digestion position is marked by '-', 
-              for example: '-D C-CGG' for MspI digestion.
-              default: none, meaning whole genome shot gun mapping (WGBS mode).
-  -S  <int>   seed for random number generation in selecting multiple hits.  default: 0 (seed set from system clock).
-              other seed values generate pseudo random number based on read index number, so that mapping results are reproducible. 
-  -n  [0,1]   set mapping strand information:
-              -n 0: only map to 2 forward strands, i.e. BSW(++) and BSC(-+)    (i.e. the "Lister protocol")
-              for PE sequencing, map read#1 to ++ and -+, read#2 to +- and --. 
-              -n 1: map SE or PE reads to all 4 strands, i.e. ++, +-, -+, --    (i.e. the "Cokus protocol")
-              default: -n 0. Most bisulfite sequencing data is generated only from forward strands.
-  -M  <str>   set the alignment information for the additional nucleotide transition. <str> is in the form of two different nucleotides, 
-              the first one in the reads could be mapped to the second one in the reference sequences.
-              default: -M TC, corresponds to C=>U(T) transition in bisulfite conversion.
-              example: -M GA could be used to detect to A=>I(G) transition in RNA editing. 
-  -h          help
+	help,h		Produce help message. Common options are provided with single letter format. Parameter defaults are in brackts. Ex- ample command: mCall -m Ko.bam; mCall -m wt_r1.bam -m wt_r2.bam -sampleName Wt; See doc for more details.)
+	mappedFiles,m		Specify the names of RRBS/WGBS alignment files for methylation calling. Multiple files can be provided to com- bine them(eg. lanes or replicates) into a single track;
+	sampleName		If two or more mappedFiles are specifed, this option gener- ates a merged result; Ignored for one input file;
+	outputDir		The name of the output directory;
+	webOutputDir		The name of the web-accessible output directory for UCSC Genome Browser tracks;
+	genome,g		The UCSC Genome Browser identifier of source genome as- sembly; mm9 for example;
+	reference,r		Reference DNA fasta file; It’s required if CHG methylation is wanted;
+	cytosineMinScore		Threshold for cytosine quality score (default: 20). Discard the base if threshold is not reached;
+	nextBaseMinScore		Threshold for the next base quality score(default: 3,ie, bet- ter than B or #); Possible values: -1 makes the program not to check if next base matches reference; any positive integer or zero makes the program to check if next base matches reference and reaches this score threshold;
+	reportSkippedBase		Specify if bases that are not accepted for methylation anal- ysis should be written to an extra output file;
+	qualityScoreBase		Specify quality score system: 0 means autodetec- tion; Sanger=>33;Solexa=>59;Illumina=>64; See wiki FASTQ_format for details;
+	trimWGBSEndRepairPE2Seq		How to trim end-repair sequence from begin of +-/-- reads from Pair End WGBS Sequencing; 0: no trim; n(positive in- teger): trim n bases from begin of +-/-- reads; -2: model de- termined n; -1: trim from beginning to before 1st methylated C; Suggest 3; n>readLen is equivalent to use PE1 reads;
+	trimWGBSEndRepairPE1Seq		How to trim end-repair sequence from end of ++/-+ reads from Pair End WGBS Sequencing; 0: no trim; n(positive integer): trim n + NM bases from end of ++/-+ reads if fragSize <= maxReadLen; -2: model determined n; Suggest 3;
+	processPEOverlapSeq		1/0 makes the program count once/twice the overlap seq of two pairs;
+	trimRRBSEndRepairSeq		How to trim end-repair sequence for RRBS reads; RRBS or WGBS protocol can be automatically detected; 0: no trim; 2: trim the last CG at exactly end of ++/-+ reads and trim the first CG at exactly begin of +-/-- reads like the WGBS situation;
+	skipRandomChrom		Specify whether to skip random and hadrop chrom;
+	requiredFlag,f		Requiring samtools flag; 0x2(properly paried), 0x40(PE1), 0x80(PE2), 0x100(not unique), r=0x10(reverse); Examples: -f 0x10 <=> +-/-+ (Right) reads; -f 0x40 <=> ++/-+ (PE1) reads; -f 0x50 <=> -+ read; -f 0x90 <=> +- read;
+	excludedFlag,F		Excluding samtools flag; Examples: -f 0x2 -F 0x100 <=> uniquely mapped pairs; -F 0x10 <=> ++/-- (Left) reads; -F 0x40 <=> -f 0x80 +-/-- (PE2) reads; -f 0x40 -F 0x10 <=> ++ read; -f 0x80 -F 0x10 <=> -- read;
+	minFragSize		Requiring min fragment size, the 9th field in sam file; Since non-properly-paired read has 0 at 9th field, setting this op- tion is requiring properly paired and large enough fragment size;
+	minMMFragSize		Requiring min fragment size for multiply matched read; Same as option above but only this option is only applicable to reads with flag 0x100 set as 1;
+	reportCpX		po::value<char>()->default_value(’G’), "X=G generates a file for CpG methylation; A/C/T generates file for CpA/CpC/CpT meth;
+	reportCHX		po::value<char>()->default_value(’X’), "X=G generates a file for CHG methylation; A/C/T generates file for CHA/CHC/CHT meth; This file is large;
+	fullMode,a		Specify whether to turn on full mode. Off(0): only *.G.bed, *.HG.bed and *_stat.txt are allowed to be generated. On(1): file *.HG.bed, *.bed, *_skip.bed, and *_strand.bed are forced to be generated. Extremely large files will be generated at fullMode.
+	statsOnly		Off(0): no effect. On(1): only *_stat.txt is generated.
+	keepTemp		Specify whether to keep temp files;
+	threads,p		Number of threads on all mapped file. Suggest 1sim8 on EACH input file depending RAM size and disk speed.
 
 
 =head1 AUTHORS
