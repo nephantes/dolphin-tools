@@ -104,7 +104,7 @@ unless ( -e $args{samtools} and -x $args{samtools} ) {
 # Setup the output directory
 my $binname = basename( $args{binpath} ); #the name of the binary we execute
 my $outdir = "$args{outdir}/".lc($binname);
-make_path($args{outdir}) or die "Error 15: Cannot create the directory $args{outdir}: $!";
+make_path($args{outdir});
 
 # Setup the input directory
 # if this is the first step, it will be path/input/

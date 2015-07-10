@@ -41,10 +41,9 @@ my %args = (
 ################### PARAMETER PARSING ####################
 
 GetOptions( \%args,
-	'alpha=s',
-	'beta:s',
 	'binpath=s',
 	'digestion:s', #TODO we might want to support WGBS, in which case the argument checking should allow null here
+	'dspaired=s',
 	'help',
 	'jobsubmit=s',
 	'outdir=s',
@@ -110,7 +109,7 @@ unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
 # Setup the output directory
 my $binname = basename( $args{binpath} ); #the name of the binary we execute (bsmap here)
 my $outdir = "$args{outdir}/".lc($binname);
-make_path($args{outdir}) or die "Error 15: Cannot create the directory $args{outdir}: $!";
+make_path($args{outdir});
 
 # Setup the input directory
 # if this is the first step, it will be path/input/
@@ -148,7 +147,7 @@ else {
   #create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq}
   foreach my $file ( @file_list ) {
     #DO INCLUDE .1 or .2 in the hash key, if present
-    m/(.*)\.fastq/; #get the "bname" as $1 and use it as the hash key
+    $file =~ m/(.*)\.fastq/; #get the "bname" as $1 and use it as the hash key
     push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
   }
 }
@@ -161,7 +160,7 @@ foreach my $bname ( keys %files ) {
   if ( ! $spaired and ( scalar @{ $files{$bname} } != 1 ) ) {
     die "Expected single file for $bname but found " . Dumper($files{$bname});
   }
-  do_job( $bname, $files{$bname} );
+  do_job( $bname, @{ $files{$bname} } );
 }
 
 sub do_job {
