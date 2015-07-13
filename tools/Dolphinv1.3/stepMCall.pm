@@ -48,6 +48,7 @@ my %args = (
 #
 GetOptions( \%args,
 	'binpath=s',
+	'condition=s',
 	'help',
 	'jobsubmit=s',
 	'outdir=s',
@@ -153,9 +154,11 @@ sub do_job {
 
 
 #construct the command
+	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
   my $logfile = "$bname.$binname.log";
   my $com = $args{binpath};
-  $com .= " $filelist"
+  $com .= " $filelist";
+	$com .= " --sampleName $bname";
   $com .= " -r $args{ref}";
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
