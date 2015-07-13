@@ -121,9 +121,9 @@ else {
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
-my @file_list = grep { /\.fastq/ } readdir($dh);
+my @file_list = grep { /\.bam/ } readdir($dh);
 closedir $dh;
-#create a hash of filenames {s1.1 => inputdir/s1.1.fq, s1.2 => inputdir/s1.2.fq}
+#create a hash of filenames {s1.1 => inputdir/s1.1.bam, s1.2 => inputdir/s1.2.bam}
 foreach my $file ( @file_list ) {
 	m/(.*)\.bam/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
