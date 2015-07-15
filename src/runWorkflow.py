@@ -67,6 +67,8 @@ def main():
         parser.add_option('-w', '--workflowfile', help='workflow filename', dest='workflowfile')
         parser.add_option('-d', '--dbhost', help='dbhost name', dest='dbhost')
         parser.add_option('-o', '--outdir', help='output directory in the cluster', dest='outdir')
+        parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
+                
         (options, args) = parser.parse_args()
     except:
         print "OptionParser Error:for help use --help"
@@ -79,15 +81,23 @@ def main():
     WORKFLOWFILE    = options.workflowfile
     DBHOST          = options.dbhost
     OUTDIR          = options.outdir
-
-    config=getConfig()
+    CONFIG          = options.config
+    
+    print CONFIG
+    config=getConfig(CONFIG)
     url=config['url']
     DBHOST=config['dbhost']
     LOGPATH=config['logpath']
 
-    if (config['params_section'] != "Docker"):
+    print url
+    print DBHOST
+    print LOGPATH
+
+    #This section is just for username conversion in the cluster can be removed in the future
+    if (CONFIG != "Docker"):
        com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
        USERNAME=str(os.popen(com).readline().rstrip())
+    ########
 
     if (len(USERNAME)<3): 
         print "Error:Username doesn't exist"
@@ -148,9 +158,12 @@ def main():
                  data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
                         'wkey':wkey, 'command':service.command})
                  resp = opener.open(url, data=data).read()
+                 print resp
                  trials=10
               except:
                  print "Couldn't connect to dolphin server"
+                 print "wkey:"+wkey
+                 print "service:"+service.servicename
                  time.sleep(15)
               trials=trials+1
 
