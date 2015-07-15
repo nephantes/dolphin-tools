@@ -130,7 +130,7 @@ def main():
      MESSAGE="2"
      TYPE="dbSetStartTime"
      f.write(jobstatus_cmd % locals() + " -n $LSB_JOBID")
-     f.write("   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
+     f.write("\n   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
      if (str(NAME) != str(SERVICENAME)):
@@ -138,11 +138,11 @@ def main():
      MESSAGE="3"
      TYPE="dbSetEndTime"
      f.write(jobstatus_cmd % locals() + " -n $LSB_JOBID")     
-     f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
+     f.write("\n    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  echo success\nelse\n  echo failed\n")
      MESSAGE="0"
      f.write(jobstatus_cmd % locals() + " -n $LSB_JOBID")
-     f.write("    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
+     f.write("\n    retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
      f.write("  exit 127\nfi\ndate\n")
 
      f.write("#END-OF-FILE\n")

@@ -16,18 +16,18 @@ warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
 sys.path.insert(0, sys.path[0]+"/../../src")
 from config import *
 
-config=getConfig()
+class stepBackup:
+  config=""
+  url=""
 
-url=config['url']
-
-def runSQL(sql):
+  def runSQL(self, sql):
 
     db = MySQLdb.connect(
-      host = config['dbhost'],
-      user = config['dbuser'],
-      passwd = config['dbpass'],
-      db = config['db'],
-      port = int(config['dbport']))
+      host = self.config['dbhost'],
+      user = self.config['dbuser'],
+      passwd = self.config['dbpass'],
+      db = self.config['db'],
+      port = int(self.config['dbport']))
     try:
         cursor = db.cursor()
         cursor.execute(sql)
@@ -46,22 +46,22 @@ def runSQL(sql):
         db.close()
     return results
 
-def getSQLval(sql):
-    results = runSQL(sql)
+  def getSQLval(self, sql):
+    results = self.runSQL(sql)
     for row in results:
         return row[0]
 
   
 
-def getSampleList(runparams_id, barcode):
+  def getSampleList(self, runparams_id, barcode):
     if (barcode != "NONE"):
         sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
     else:
         sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
 
-    return runSQL(sql)
+    return self.runSQL(sql)
 
-def uploadFile(pb, amazon_bucket, fastq_dir, filename ):
+  def uploadFile(self, pb, amazon_bucket, fastq_dir, filename ):
     k = Key(pb)
     inputfile = "%s/%s"%(fastq_dir.strip(), filename.strip())
     s3file = "%s/%s"%(amazon_bucket.strip(), filename.strip())
@@ -78,18 +78,18 @@ def uploadFile(pb, amazon_bucket, fastq_dir, filename ):
         k.set_contents_from_filename(inputfile)
 
 
-def getAmazonCredentials(clusteruser):
+  def getAmazonCredentials(self, clusteruser):
     sql = 'SELECT DISTINCT ac.* FROM biocore.amazon_credentials ac, biocore.group_amazon ga, biocore.users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
-    results = runSQL(sql)
+    results = self.runSQL(sql)
 
     return results
 
-def updateInitialFileCounts(file_id, tablename, inputdir, filename, paired):
+  def updateInitialFileCounts(self, file_id, tablename, inputdir, filename, paired):
     count=-1
     if (paired != "None"):
     	files=filename.split(',')
-    	firstCount=getValfromFile(inputdir+'/tmp/'+files[0]+'.count')
-    	secondCount=getValfromFile(inputdir+'/tmp/'+files[1]+'.count')
+    	firstCount=self.getValfromFile(inputdir+'/tmp/'+files[0]+'.count')
+    	secondCount=self.getValfromFile(inputdir+'/tmp/'+files[1]+'.count')
 
         #print "f:[%s]:s:[%s]"%(firstCount, secondCount)
     	if (firstCount == secondCount):
@@ -100,12 +100,12 @@ def updateInitialFileCounts(file_id, tablename, inputdir, filename, paired):
     	    print "%s"%(inputdir+'/tmp/'+files[1]+'.count')
     	    sys.exit(85)
     else:
-    	count=getValfromFile(inputdir+'/tmp/'+filename+'.count')
+    	count=self.getValfromFile(inputdir+'/tmp/'+filename+'.count')
     sql = "UPDATE "+tablename+" set total_reads='"+count+"' where id="+str(file_id)
-    runSQL(sql)
+    self.runSQL(sql)
 
 
-def getValfromFile(filename):
+  def getValfromFile(self,filename):
     val=''
     if (os.path.isfile(filename)):
     	infile = open(filename)
@@ -114,29 +114,28 @@ def getValfromFile(filename):
     	sys.exit(84)
     return val
 
-def getFastqFileId(sample):
+  def getFastqFileId(self, sample):
     sample_id=sample[0]
     sql="select id from ngs_fastq_files where sample_id="+str(sample_id)
-    return getSQLval(sql)
+    return self.getSQLval(sql)
 
-def upadateFastqFile(fastq_id, md5sum, count, filename, sample):
+  def upadateFastqFile(self, fastq_id, md5sum, count, filename, sample):
     sample_id=sample[0]
     owner_id=sample[8]
     sql="update ngs_fastq_files set checksum='"+md5sum+"', total_reads='"+count+"', date_modified=now(), last_modified_user="+str(owner_id)+" where sample_id="+str(sample_id)+" and id="+str(fastq_id)
-    runSQL(sql)
+    self.runSQL(sql)
     
-def insertFastqFile(checksum, total_reads, filename, sample):
+  def insertFastqFile(self, checksum, total_reads, filename, sample):
     (sample_id, sf_id, dir_id, lane_id, libname, org_file_name, backup_dir, amazon_bucket, owner_id, group_id, perms) = sample
     sql="INSERT INTO `biocore`.`ngs_fastq_files` ( `file_name`, `total_reads`, `checksum`, `sample_id`, `lane_id`,`dir_id`,`owner_id`,`group_id`,`perms`,`date_created`,`date_modified`,`last_modified_user`) VALUES('"+filename+"','"+total_reads+"','"+checksum+"','"+str(sample_id)+"','"+str(lane_id)+"','"+str(dir_id)+"','"+str(owner_id)+"', '"+str(group_id)+"', '"+str(perms)+"', now(), now(), '"+str(owner_id)+"');"
-    runSQL(sql)
+    self.runSQL(sql)
     
-def checkReadCounts(sample_id, tablename):
+  def checkReadCounts(self, sample_id, tablename):
     sql='SELECT sum(total_reads) FROM biocore.ngs_temp_sample_files where sample_id='+str(sample_id)
-    print sql
-    temp_count=getSQLval(sql)
+    temp_count=self.getSQLval(sql)
     print temp_count
     sql='SELECT total_reads FROM biocore.ngs_fastq_files where sample_id='+str(sample_id)
-    merged_count=getSQLval(sql)
+    merged_count=self.getSQLval(sql)
     print merged_count
     if (temp_count==merged_count):
     	return 1
@@ -144,7 +143,7 @@ def checkReadCounts(sample_id, tablename):
         return 0
 
     
-def processFastqFiles(sample, paired):
+  def processFastqFiles(self, sample, paired):
     md5sum=''
     count=''
     libname=sample[4]
@@ -152,13 +151,13 @@ def processFastqFiles(sample, paired):
     filename=''
  
     if (paired != 'None'):
-        firstCount=getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.count')
-        secondCount=getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.count')
+        firstCount=self.getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.count')
+        secondCount=self.getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.count')
         if (firstCount == secondCount):
             count=firstCount
             filename= libname+'.1.fastq.gz,'+libname+'.2.fastq.gz'
-            firstmd5sum=getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.md5sum').split(' ')[0]
-            secondmd5sum=getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.md5sum').split(' ')[0]
+            firstmd5sum=self.getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.md5sum').split(' ')[0]
+            secondmd5sum=self.getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.md5sum').split(' ')[0]
             md5sum=firstmd5sum+','+secondmd5sum
         else:
             print "ERROR 85: The # of reads in paired end libary not equal"
@@ -166,13 +165,13 @@ def processFastqFiles(sample, paired):
             sys.exit(85)
     else:
         filename= libname+'.fastq.gz'
-        count=getValfromFile(backup_dir+'/'+libname+'.fastq.gz.count')
-        md5sum=getValfromFile(backup_dir+'/'+libname+'.fastq.gz.md5sum')
-    fastq_id=getFastqFileId(sample)
+        count=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.count')
+        md5sum=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.md5sum')
+    fastq_id=self.getFastqFileId(sample)
     if (fastq_id>0):
-    	upadateFastqFile(fastq_id, md5sum, count, filename, sample)
+    	self.upadateFastqFile(fastq_id, md5sum, count, filename, sample)
     else:
-    	insertFastqFile(md5sum, count, filename, sample)
+    	self.insertFastqFile(md5sum, count, filename, sample)
 
 def main():
     try:
@@ -184,6 +183,7 @@ def main():
         parser.add_option('-p', '--pairedend', help='pairedend', dest='paired')
         parser.add_option('-a', '--amazonupload', help='amazonupload', dest='amazonupload')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
+        parser.add_option('-c', '--config', help='config parameters section', dest='config')
 
         (options, args) = parser.parse_args()
     except:
@@ -198,7 +198,10 @@ def main():
     JOBSUBMIT               = options.jobsubmit
     OUTDIR                  = options.outdir
     AMAZONUPLOAD            = options.amazonupload
+    CONFIG                  = options.config
 
+    backup = stepBackup()
+    backup.config = getConfig(CONFIG)
 
     if (OUTDIR == None or JOBSUBMIT == None):
         print "for help use --help"
@@ -210,13 +213,13 @@ def main():
     print OUTDIR
     print USERNAME
     
-    amazon = getAmazonCredentials(USERNAME)
+    amazon = backup.getAmazonCredentials(USERNAME)
 
     if (amazon!=()):   
        conn = S3Connection(amazon[0][1], amazon[0][2])
        pb = conn.get_bucket(amazon[0][3])
 
-    samplelist=getSampleList(RUNPARAMSID, BARCODE)
+    samplelist=backup.getSampleList(RUNPARAMSID, BARCODE)
 
     inputdir=OUTDIR+"/input"
     tablename="ngs_temp_sample_files"
@@ -236,22 +239,22 @@ def main():
         if (filename.find(',')!=-1):
            PAIRED="Yes"
 
-        updateInitialFileCounts(file_id, tablename, inputdir, filename, PAIRED)
+        backup.updateInitialFileCounts(file_id, tablename, inputdir, filename, PAIRED)
         if (not [libname, sample_id] in processedLibs):
-            processFastqFiles(sample, PAIRED)
+            backup.processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
     if (amazon!=()):
       amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
       for libname, sample_id in processedLibs:
-        if (checkReadCounts(sample_id, tablename)):
+        if (backup.checkReadCounts(sample_id, tablename)):
 
             if (filename.find(',')!=-1):
                 files=filename.split(',')
-                uploadFile(pb, amazon_bucket, backup_dir, libname+'.1.fastq.gz' )
-                uploadFile(pb, amazon_bucket, backup_dir, libname+'.2.fastq.gz' )
+                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.1.fastq.gz' )
+                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.2.fastq.gz' )
             else:
-                uploadFile(pb, amazon_bucket, backup_dir, libname+'.fastq.gz' )
+                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.fastq.gz' )
         else:
             print "ERROR 86: The # of read counts doesn't match: %s",libname
             sys.exit(86)

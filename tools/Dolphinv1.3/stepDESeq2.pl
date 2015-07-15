@@ -223,7 +223,7 @@ sub checkCols
  print $cols."\n";
  foreach my $val (@arr)
  {
-    if ($val=~/[\d]+/){
+    if ($val=~/^[\d]+/){
       $cols=~s/$val/X$val/g;
     }
  }

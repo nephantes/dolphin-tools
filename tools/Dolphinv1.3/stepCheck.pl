@@ -36,6 +36,7 @@
  my $trim             = "";
  my $dbcommcmd        = ""; 
  my $username         = "";
+ my $config           = "";
  my $wkey             = "";
  my $runparamsid      = "";
  my $servicename      = "";
@@ -56,6 +57,7 @@ GetOptions(
     'adapter=s'      => \$adapter,
     'trim=s'         => \$trim,
     'wkey=s'         => \$wkey,
+    'config=s'       => \$config,
     'dbcommcmd=s'    => \$dbcommcmd,
     'paramsid=s'     => \$runparamsid,
     'servicename=s'  => \$servicename,
@@ -96,7 +98,7 @@ $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
 
-my $cmd="$dbcommcmd -f running -u $username -r $runparamsid -w $wkey -o $outdir";
+my $cmd="$dbcommcmd -c $config -f running -u $username -r $runparamsid -w $wkey -o $outdir";
 print $cmd."\n";
 `$cmd`;
 die "Error 20: Cannot connect to the database:" if ($?);
@@ -178,7 +180,7 @@ if(lc($barcode) ne "none")
     if (length($line)>1)
     {
       my @defs=split(/[,\s\t]+/,$line);
-      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)==2);
+      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)>1);
     }
   }
 }

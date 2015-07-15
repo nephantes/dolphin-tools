@@ -75,7 +75,6 @@ class jobStatus:
                                  'wkey':wkey, 'servicename':servicename, 
                                  'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        print data
         self.queryAPI(data, "INSERT"+jobname, logging) 
     
     def updateJob(self,  username, wkey, jobname, servicename, field, jobnum, result, logging):
