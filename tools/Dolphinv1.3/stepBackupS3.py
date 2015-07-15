@@ -80,7 +80,7 @@ class stepBackup:
 
   def getAmazonCredentials(self, clusteruser):
     sql = 'SELECT DISTINCT ac.* FROM biocore.amazon_credentials ac, biocore.group_amazon ga, biocore.users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
-    results = runSQL(sql)
+    results = self.runSQL(sql)
 
     return results
 
@@ -135,7 +135,7 @@ class stepBackup:
     temp_count=self.getSQLval(sql)
     print temp_count
     sql='SELECT total_reads FROM biocore.ngs_fastq_files where sample_id='+str(sample_id)
-    merged_count=iself.getSQLval(sql)
+    merged_count=self.getSQLval(sql)
     print merged_count
     if (temp_count==merged_count):
     	return 1
