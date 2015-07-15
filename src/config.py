@@ -3,9 +3,12 @@ import os,sys
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
 
-def getConfig(params_section="Biocore"):
+def getConfig(params_section):
    parser = SafeConfigParser()
    filename = sys.path[0]+"/../default_params/config.ini"
+   
+   if (not params_section):
+      params_section = "Biocore"
 
    parser.read(filename)
    if (os.environ.has_key('DOLPHIN_PARAMS_SECTION')):
