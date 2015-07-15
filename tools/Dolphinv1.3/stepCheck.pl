@@ -180,7 +180,7 @@ if(lc($barcode) ne "none")
     if (length($line)>1)
     {
       my @defs=split(/[,\s\t]+/,$line);
-      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)==2);
+      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)>1);
     }
   }
 }
