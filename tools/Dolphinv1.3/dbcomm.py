@@ -11,16 +11,15 @@ from config import *
 from sys import argv, exit, stderr
 from optparse import OptionParser
  
-config=getConfig()
-   
-url=config['url']
 
-def queryAPI(data, name):
+class dbcomm:
+  url=""
+  def queryAPI(self, data, name):
     opener = urllib2.build_opener(urllib2.HTTPHandler())
     trials=0
     while trials<5:
        try:
-          mesg = opener.open(url, data=data).read()
+          mesg = opener.open(self.url, data=data).read()
           trials=10
        except:
           print "Couldn't connect to dolphin server (%s)"%trials
@@ -33,12 +32,12 @@ def queryAPI(data, name):
           sys.exit(2);
     return ret
 
-def getJobNums(wkey):
+  def getJobNums(self, wkey):
     data = urllib.urlencode({'func':'getJobNums', 'wkey':wkey})
-    ret=eval(queryAPI(data, wkey))
+    ret=eval(self.queryAPI(data, wkey))
     return ret
 
-def insertJobStats(username, wkey, jobnum, outdir):
+  def insertJobStats(self, username, wkey, jobnum, outdir):
     file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".out"
     if os.path.isfile(file) and os.access(file, os.R_OK):
         lines = [line.rstrip('\n') for line in open(file)]
@@ -58,24 +57,21 @@ def insertJobStats(username, wkey, jobnum, outdir):
               stats[m.groups()[0]] = m.groups()[1]
             
         data = urllib.urlencode({'func':'insertJobStats', 'username':username, 'wkey':wkey, 'jobnum':jobnum, 'stats':str(json.dumps(stats)) })
-        queryAPI(data, wkey) 
+        self.queryAPI(data, wkey) 
 
-def updateRunParams(runparamsid, wkey):
+  def updateRunParams(self, runparamsid, wkey):
 
     data = urllib.urlencode({'func':'updateRunParams', 'wkey':wkey, 'runparamsid':str(runparamsid)})
-    queryAPI(data, "runparamsid:"+str(runparamsid))
-   
-    #sql = "UPDATE biocore.ngs_runparams set run_status=2, wkey='"+str(wkey)+"' where id="+str(runparamsid)
+    self.queryAPI(data, "runparamsid:"+str(runparamsid))
  
-def insertReportTable(reportfile):
+  def insertReportTable(self, reportfile):
   
-  if os.path.isfile(reportfile): 
-    with open(reportfile,'r') as source:
-      for line in source:
-         wkey, version, type, file=re.split(r'\t+', line.rstrip())
-         data = urllib.urlencode({'func':'insertReportTable', 'wkey':wkey, 'version':version, 'type':type, 'file':file})
-         queryAPI(data, wkey)
-         #sql = "INSERT INTO report_list(wkey, version, type, file) VALUES ('%s', '%s','%s','%s')"%(wkey, version, type, file)
+    if os.path.isfile(reportfile): 
+      with open(reportfile,'r') as source:
+        for line in source:
+          wkey, version, type, file=re.split(r'\t+', line.rstrip())
+          data = urllib.urlencode({'func':'insertReportTable', 'wkey':wkey, 'version':version, 'type':type, 'file':file})
+          self.queryAPI(data, wkey)
 
 def main():
     try:
@@ -86,6 +82,7 @@ def main():
         parser.add_option('-f', '--func', help='function', dest='func')
         parser.add_option('-u', '--username', help='username', dest='username')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
+        parser.add_option('-c', '--config', help='config', dest='config')
 
         (options, args) = parser.parse_args()
     except:
@@ -99,18 +96,20 @@ def main():
     WKEY                    = options.wkey
     OUTDIR                  = options.outdir
     USERNAME                = options.username
+    CONFIG                  = options.config
+   
+    dbcon = dbcomm()
+    config=getConfig(CONFIG)
+    dbcon.url=config['url']
 
     if (FUNC == "running"):
-       updateRunParams(RUNPARAMSID, WKEY)
+       dbcon.updateRunParams(RUNPARAMSID, WKEY)
     elif (FUNC == "insertreport"):
-       insertReportTable(INSERTREPORT)
+       dbcon.insertReportTable(INSERTREPORT)
     elif (FUNC == "insertJobStats"):
-         jobnums = getJobNums(WKEY)
+         jobnums = dbcon.getJobNums(WKEY)
          for job in jobnums:
-            print job
-            insertJobStats(USERNAME, WKEY, job['job_num'], OUTDIR)
-       
-       
+            dbcon.insertJobStats(USERNAME, WKEY, job['job_num'], OUTDIR)
     sys.exit(0)
 
 if __name__ == "__main__":

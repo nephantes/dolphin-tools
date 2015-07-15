@@ -4,11 +4,11 @@
 @JAVA             = module load java/1.7.0_25; java
 @SAMTOOLS         = "module load  samtools/0.0.19; samtools"
 @BIN              = /project/umw_biocore/bin
-@TOOLSDIR         = @BIN/workflow/dolphin-tools
+@TOOLSDIR         = @BIN/workflow/dolphin-tools_galaxy
 @DOLPHIN          = @TOOLSDIR/tools/Dolphinv1.3
 @GDB              = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GDB/commondb
-@JOB              = @PYTHON @TOOLSDIR/src/submitJobs.py -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
+@JOB              = @PYTHON @TOOLSDIR/src/submitJobs.py -f @CONFIG -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
 @JGEN             = "@JOB -p 1 -m 16096 -t 230 -q short"
 @PUBDIR           = /project/umw_biocore/pub/ngstrack_pub/
 

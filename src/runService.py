@@ -60,6 +60,7 @@ def main():
         parser.add_option('-n', '--name', help='name of the run', dest='name')
         parser.add_option('-t', '--cpu', help='the # of cpu', dest='cpu')
         parser.add_option('-o', '--outdir', help='oupur directory', dest='outdir')
+        parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
         (options, args) = parser.parse_args()
     except:
         print "OptionParser Error:for help use --help"
@@ -74,8 +75,9 @@ def main():
     NAME        = options.name
     CPU         = options.cpu
     OUTDIR      = options.outdir
+    CONFIG      = options.config
 
-    config=getConfig()
+    config=getConfig(CONFIG)
    
     edir        = config['tooldir']
     python      = "python ";
@@ -153,7 +155,7 @@ def main():
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command 
     ## PUT TRY CATCH HERE
     child = os.popen(command)
@@ -164,7 +166,7 @@ def main():
     #print "\n\nERR"+str(err)
 
     if err:
-	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)
+       raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)
     return data
     
 if __name__ == "__main__":

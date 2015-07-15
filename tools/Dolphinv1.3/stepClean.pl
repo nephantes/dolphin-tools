@@ -30,6 +30,7 @@
  my $wkey             = "";
  my $dbcommcmd        = "";
  my $username         = "";
+ my $config           = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -43,6 +44,7 @@ GetOptions(
         'pubdir=s'       => \$pubdir,
         'wkey=s'         => \$wkey,
         'dbcommcmd=s'    => \$dbcommcmd,
+        'config=s'       => \$config,
         'username=s'     => \$username,
 	'help'           => \$help, 
 	'version'        => \$print_version,
@@ -75,12 +77,12 @@ if ($level==1) {
   die "Error 19: Cannot remove the directory:".$outd if ($?);
 }
 
-my $com="$dbcommcmd -u $username -i $reportfile -f insertreport -w $wkey";
+my $com="$dbcommcmd -c $config -u $username -i $reportfile -f insertreport -w $wkey";
 print $com."\n\n";
 `$com`;
 die "Error 20: Cannot connect to the database:" if ($?);
 
-$com="$dbcommcmd -u $username -o $outdir -f insertJobStats -w $wkey";
+$com="$dbcommcmd -c $config -u $username -o $outdir -f insertJobStats -w $wkey";
 print $com."\n\n";
 `$com`;
 die "Error 20: Cannot connect to the database:" if ($?);
