@@ -71,31 +71,53 @@ die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 
 my @files=();
 print $type."\n";
+my @outtypes = ("CollectRnaSeqMetrics", "alignment_summary_metrics", "base_distribution_by_cycle_metrics", "insert_size_metrics", "quality_by_cycle_metrics", "quality_distribution_metrics" );
 
-@files = <$indir/*.out>;
+my $c=0;
+foreach my $outtype (@outtypes)
+{
+my $ext="_multiple.out.$outtype";
+print $ext."\n";
+@files = <$indir/*$ext>;
 
 my @rowheaders=();
 my @libs=();
 my %metricvals=();
 my %histvals=();
+$version="picard_tools_1.131";
 
-foreach my $d (@files){ 
-  my $libname=basename($d, ".out");
+my $pdffiles="";
+foreach my $d (@files){
+  my $libname=basename($d, $ext);
+  print $libname."\n";
   push(@libs, $libname); 
   getMetricVals($d, $libname, \%metricvals, \%histvals,\@rowheaders);
+  my $pdfext=$ext;
+  $pdfext=~s/_metrics/.pdf/;
+  $pdffiles.= "&& echo \"$wkey\t$version\t$libname$pdfext\tpicard_$type/$libname$pdfext\" >> $puboutdir/reports.tsv " if ($c>1); 
+
 }
 
-write_results("$outd/picard.stats.tsv", \@libs,\%metricvals, \@rowheaders, "metric");
-write_results("$outd/picard.hist.tsv", \@libs,\%histvals, "none", "nt");
+my $sizemetrics = keys %metricvals;
+write_results("$outd/picard.$outtype.stats.tsv", \@libs,\%metricvals, \@rowheaders, "metric") if ($sizemetrics>0);
+
+my $sizehist = keys %histvals;
+write_results("$outd/picard.$outtype.hist.tsv", \@libs,\%histvals, "none", "nt") if ($sizehist>0);
+
+
 
 #Copy count directory to its web accessible area
 
-my $com="rm -rf $outd/*.out && cp -R $outd $puboutdir && ";  
-$version="picard_tools_1.131";
-$com.= "echo \"$wkey\t$version\tpicard.stats\tpicard_$type/picard.stats.tsv\" >> $puboutdir/reports.tsv &&"; 
-$com.= "echo \"$wkey\t$version\tpicard.hist\tpicard_$type/picard.hist.tsv\" >> $puboutdir/reports.tsv "; 
+#my $com="rm -rf $outd/*.$outtype.out && cp -R $outd $puboutdir && ";  
+my $com="cp -R $outd $puboutdir ";  
+
+$com.= "&& echo \"$wkey\t$version\tpicard.$outtype.stats\tpicard_$type/picard.$outtype.stats.tsv\" >> $puboutdir/reports.tsv " if ($sizemetrics>0); 
+$com.= "&& echo \"$wkey\t$version\tpicard.$outtype.hist\tpicard_$type/picard.$outtype.hist.tsv\" >> $puboutdir/reports.tsv " if ($sizehist>0); 
+$com.= $pdffiles;
 print $com."\n"; 
 `$com`;
+$c++;
+}
 
 sub write_results
 {
