@@ -26,6 +26,7 @@
  my $outdir           = "";
  my $type             = "";
  my $picardCmd        = "";
+ my $cmdname          = "";
  my $pubdir           = "";
  my $wkey             = "";
  my $jobsubmit        = "";
@@ -42,6 +43,7 @@ GetOptions(
     'refflat=s'       => \$refflat,
     'type=s'          => \$type,
     'picardCmd=s'     => \$picardCmd,
+    'name=s'          => \$cmdname,
     'pubdir=s'        => \$pubdir,
     'wkey=s'          => \$wkey,
     'jobsubmit=s'     => \$jobsubmit,
@@ -98,8 +100,13 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-	 
-  my $com="$picardCmd REF_FLAT=$refflat OUTPUT=$outd/$libname.out INPUT=$d";
+  my $com="$picardCmd $cmdname OUTPUT=$outd/".$libname."_multiple.out";
+  
+  if ($cmdname eq "CollectRnaSeqMetrics") {
+    $com.=".$cmdname REF_FLAT=$refflat STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ";
+  }
+  $com.=" INPUT=$d ";
+  
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   `$job`;

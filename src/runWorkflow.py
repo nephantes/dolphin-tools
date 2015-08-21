@@ -150,6 +150,7 @@ def main():
 
     for service in services:
         br=1
+        checkcount=0
         while ( br==1):
             print service.servicename + ":" + wkey + ":" + service.command
             trials=0
@@ -169,9 +170,11 @@ def main():
 
             ret=str(json.loads(resp))
             print ret + "\n"
-            if (ret.startswith("RUNNING") and float(service.waittime)>0):
+            if (ret.startswith("RUNNING") and float(service.waittime)>0 and checkcount>0):
                 #print service.waittime+"\n"
                 time.sleep(float(service.waittime))
+            elif ( checkcount==0 ):
+                time.sleep(5)
             elif (ret.startswith("ERROR")):
                 print service.servicename + ":" + ret + "\n"
                 logging.warning("ERROR:"+ret)
@@ -180,7 +183,9 @@ def main():
                 print service.command + "\n"
                 sys.exit(2);
             else:
+                checkcount=0
                 br=0
+            checkcount=checkcount+1
     br=1
     print "All the services Ended"    
     while ( br==1):

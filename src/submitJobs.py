@@ -159,7 +159,7 @@ def main():
 
      #CHANGE this submition script according to the system.
      #PUT TRY CATCH HERE 
-     command="bsub "+queue+" -m blades -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
+     command="bsub "+queue+" -R \"select[os=rh6.4 || os=rh6.5]\" -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
      print command
      f.write("SUBMIT SCRIPT[" + command +"]\n\n")
      output = runcmd(command)
