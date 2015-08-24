@@ -2,6 +2,7 @@
 @PERL             = module load perl/5.18.1; perl
 @PYTHON           = module load python/2.7.5; python 
 @JAVA             = module load java/1.7.0_25; java
+@RPROG            = module load R/3.0.1
 @SAMTOOLS         = "module load  samtools/0.0.19; samtools"
 @BIN              = /project/umw_biocore/bin
 @TOOLSDIR         = @BIN/workflow/dolphin-tools_galaxy
@@ -59,7 +60,7 @@
 
 #StepDESeq2
 @RUNDESEQ2          =  @PERL @DOLPHIN/stepDESeq2.pl
-@RSCRIPT            = "module load R/3.0.1; Rscript --no-save --no-restore --verbose"
+@RSCRIPT            = "@RPROG && Rscript --no-save --no-restore --verbose"
 
 #StepMakeReport 
 @RUNMAKEREPORT      = @PERL @DOLPHIN/stepMakeReport.pl
@@ -112,10 +113,10 @@
 @WIGTOBIGWIG        = @BIN/wigToBigWig
 @JBAM2BW            = "@JOB -p 1 -m 4096 -t 60"
 
-Step picard
+#Step picard
 @RUNPICARD          = @DOLPHIN/stepPicard.pl
 @RUNMERGEPICARD     = @DOLPHIN/stepMergePicard.pl
-@PICARDCMD          = "@JAVA -jar @BIN/picard-tools-1.131/picard.jar"
+@PICARDCMD          = "@RPROG && @JAVA -jar @BIN/picard-tools-1.131/picard.jar"
 @REFFLAT           = @GDB/ref_flat
 
 
@@ -124,7 +125,7 @@ Step picard
 @RUNAGGREGATION   = @PERL @DOLPHIN/stepAGG.pl
 @REFACT           = @GDB/refACT.tab
 @BTOOLSGENCOV     = @RUNCOVERAGE
-@INTOPDF          = "module load R/3.0.1; R --file=@BIN/ACT/intopdf.R"
+@INTOPDF          = "@RPROG && R --file=@BIN/ACT/intopdf.R"
 @ACT              = "@PYTHON @BIN/ACT/ACT.py --radius=5000 --nbins=50 --mbins=50 --region"
 @JAGG             = "@JOB -p 1 -m 16192 -t 640 -q long"
 
