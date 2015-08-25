@@ -100,11 +100,19 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-  my $com="$picardCmd $cmdname OUTPUT=$outd/".$libname."_multiple.out";
+  my $com="$picardCmd $cmdname"; 
   
   if ($cmdname eq "CollectRnaSeqMetrics") {
-    $com.=".$cmdname REF_FLAT=$refflat STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ";
+    $com.=" REF_FLAT=$refflat STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ";
+    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
   }
+  elsif ($cmdname eq "MarkDuplicates") {
+    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=PCR_duplicates REMOVE_DUPLICATES=true";
+  }
+  else {
+    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
+  }
+
   $com.=" INPUT=$d ";
   
   print $com."\n\n";

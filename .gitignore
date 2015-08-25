@@ -1,3 +1,4 @@
 tools/*/*.pyc
 src/*.pyc
 *.pyc
+src/PCR_duplicates
