@@ -55,7 +55,6 @@ GetOptions( \%args,
 	'params:s',
 	'previous=s',
 	'ref=s',
-	'samtools=s',
 	'servicename=s',
 	'verbose',
 	'version',
@@ -93,11 +92,6 @@ if ( exists $args{ref} ) {
 #binpath must exist and be executable
 unless ( -e $args{binpath} and -x $args{binpath} ) {
 	die ( "Invalid option binpath: location $args{binpath}" );
-}
-
-#samtools must exist and be executable
-unless ( -e $args{samtools} and -x $args{samtools} ) {
-	die ( "Invalid option samtools: location $args{samtools}" );
 }
 
 ################### MAIN PROGRAM ####################
@@ -163,7 +157,6 @@ sub do_job {
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
   $com .= " $mvcom";
-#TODO sort and index using samtools
 
   print "command: $com\n" if $args{verbose};
 
@@ -195,7 +188,6 @@ stepMCall.pl
                -params      additional optional mcall params [mcall params]
                -previous    previous step in pipeline
                -ref         reference sequences file <fasta>
-               -samtools    samtools binary location
                -servicename service name to use in job name
                -verbose     print extra debugging output [boolean]
   
