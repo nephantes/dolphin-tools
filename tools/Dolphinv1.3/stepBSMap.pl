@@ -143,7 +143,7 @@ if ( $spaired ) {
   #create a hash of arrays { s1 => [s1.1.fq, s1.2.fq], s2 => [s2.1.fq],[s2.2.fq] ]
   foreach my $file ( @file_list ) {
     #DO NOT include .1 or .2 in the hash key
-    m/(.*)\.([12])\.fastq/; #get the "bname" as $1 and use it as the hash key
+    $file =~ m/(.*)\.([12])\.fastq/; #get the "bname" as $1 and use it as the hash key
     #order matters, so unshift if it's .1 and push if it's .2
     unshift @{ $files{$1} }, "$inputdir/$file" if ($2 == 1); #unshift the filename into the array $files{bname} => [filename.1.fastq ?,file2?]
     push @{ $files{$1} }, "$inputdir/$file" if ($2 == 2); #push the filename into the array $files{bname} => [?file1,? filename.2.fastq]
