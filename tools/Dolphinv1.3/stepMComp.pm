@@ -162,7 +162,7 @@ sub do_job {
 
 #construct the command
 	# e.g. mcomp -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
-	my $logfile = "$bname.$binname.log";
+	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
 	my $com = $args{binpath};
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
@@ -192,21 +192,21 @@ __END__
 
 stepMComp.pl
 
-=head1 SYNOPSIS  
+=head1 SYNOPSIS 
 
   stepMComp.pl -binpath     binary path </path/to/mcomp>
                -jobsubmit   command to execute to submit job
-               -outdir      output directory </output/directory/> 
+               -outdir      output directory </output/directory/>
                -params      additional optional mcomp params [mcomp params]
                -previous    previous step in pipeline
                -ref         reference sequences file <fasta>
                -servicename service name to use in job name
                -verbose     print extra debugging output [boolean]
-  
+ 
   stepMComp.pl -help
-  
+ 
   stepMComp.pl -version
-  
+ 
   For help, run this script with -help option.
 
 
@@ -226,7 +226,7 @@ command to execute to submit job
 
 =head2 -outdir
 
-output directory </output/directory/> 
+output directory </output/directory/>
 
 =head2 -params
 

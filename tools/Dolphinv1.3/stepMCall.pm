@@ -47,17 +47,17 @@ my %args = (
 #ref
 #
 GetOptions( \%args,
-	'binpath=s',
-	'condition=s',
-	'help',
-	'jobsubmit=s',
-	'outdir=s',
-	'params:s',
-	'previous=s',
-	'ref=s',
-	'servicename=s',
-	'verbose',
-	'version',
+'binpath=s',
+'condition=s',
+'help',
+'jobsubmit=s',
+'outdir=s',
+'params:s',
+'previous=s',
+'ref=s',
+'servicename=s',
+'verbose',
+'version',
 ) or pod2usage();
 
 print "Arguments:\n" . Dumper(\%args) if ( $args{verbose} );
@@ -126,12 +126,12 @@ foreach my $file ( @file_list ) {
 
 ### Run the jobs ###
 foreach my $bname ( keys %files ) {
-  do_job( $bname, $files{$bname} );
+	do_job( $bname, $files{$bname} );
 }
 
 sub do_job {
-  my ($bname, @files) = @_;
-	
+	my ($bname, @files) = @_;
+
 	#construct and check the file list
 	my $filelist = '';
 	foreach my $file ( @files ) {
@@ -143,34 +143,34 @@ sub do_job {
 # construct the move command
 # not implemented
 # TODO this can be used to copy files to web dir
-  my $mvcom = '';
+	my $mvcom = '';
 # $mvcom .= "&& mv x y";
 
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
-  my $logfile = "$bname.$binname.log";
-  my $com = $args{binpath};
-  $com .= " $filelist";
+	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
+	my $com = $args{binpath};
+	$com .= " $filelist";
 	$com .= " --sampleName $bname";
-  $com .= " -r $args{ref}";
-  $com .= " $args{params}" if ( exists $args{params} );
-  $com .= " > $logfile 2>&1";
-  $com .= " $mvcom";
+	$com .= " -r $args{ref}";
+	$com .= " $args{params}" if ( exists $args{params} );
+	$com .= " > $logfile 2>&1";
+	$com .= " $mvcom";
 
-  print "command: $com\n" if $args{verbose};
+	print "command: $com\n" if $args{verbose};
 
 # construct the job submission command
 # jobname = servicename_bname
-  my $jobname = "$args{servicename}_$bname";
+	my $jobname = "$args{servicename}_$bname";
 
-  my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
-  print "job: $job\n" if $args{verbose};
+	my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
+	print "job: $job\n" if $args{verbose};
 
 # run the job
-  unless ( system ($job) == 0 ) {
-    die "Error 25: Cannot run the job $job: $!";
-  }
+	unless ( system ($job) == 0 ) {
+		die "Error 25: Cannot run the job $job: $!";
+	}
 }
 
 __END__
@@ -180,21 +180,21 @@ __END__
 
 stepMCall.pl
 
-=head1 SYNOPSIS  
+=head1 SYNOPSIS 
 
   stepMCall.pl -binpath     binary path </path/to/mcall>
                -jobsubmit   command to execute to submit job
-               -outdir      output directory </output/directory/> 
+               -outdir      output directory </output/directory/>
                -params      additional optional mcall params [mcall params]
                -previous    previous step in pipeline
                -ref         reference sequences file <fasta>
                -servicename service name to use in job name
                -verbose     print extra debugging output [boolean]
-  
+ 
   stepMCall.pl -help
-  
+ 
   stepMCall.pl -version
-  
+ 
   For help, run this script with -help option.
 
 
@@ -214,7 +214,7 @@ command to execute to submit job
 
 =head2 -outdir
 
-output directory </output/directory/> 
+output directory </output/directory/>
 
 =head2 -params
 
