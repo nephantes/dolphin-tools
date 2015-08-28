@@ -89,8 +89,12 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 }
 
 #digestion must be valid
-unless ( $args{digestion} =~ /[CGAT-]+/ ) {
-	die ( "Invalid option digestion: site $args{digestion}" );
+unless ( exists $args{digestion} ) {
+	warn ( "Warning, no digestion site specified, using WGBS mapping" );
+	next;
+	unless ( $args{digestion} =~ /[CGAT-]+/ ) {
+		die ( "Invalid option digestion: site $args{digestion}" );
+	}
 }
 
 #samtools must exist and be executable
@@ -108,8 +112,7 @@ unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
 
 # Setup the output directory
 my $binname = basename( $args{binpath} ); #the name of the binary we execute (bsmap here)
-my $outdir = "$args{outdir}/".lc($binname);
-make_path($args{outdir});
+my $outdir = "$args{outdir}/";
 
 # Setup the input directory
 # if this is the first step, it will be path/input/
@@ -119,8 +122,11 @@ if ($args{previous} =~ /NONE/) {
 	$inputdir = "$outdir/input";
 }
 else {
-	$inputdir = "$outdir/".lc( $args{previous} );
+	#TODO remove seqmapping from path
+	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
 }
+$outdir .= lc($binname);
+make_path($args{outdir});
 
 # Expecting paired or single end libraries?
 my $spaired;
@@ -186,11 +192,12 @@ sub do_job {
   $com .= " -b $file2" if ( $file2 ); #only for paired end libs
   $com .= " -o $outfile";
   $com .= " -d $args{ref}";
-  $com .= " -D $args{digestion}";
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} );
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
   $com .= " $mvcom";
 #TODO sort and index using samtools
+#BUG mcall will not function until data is sorted and indexed
 
   print "command: $com\n" if $args{verbose};
 
@@ -200,6 +207,8 @@ sub do_job {
 
   my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
   print "job: $job\n" if $args{verbose};
+
+# /share/pkg/moabs/1.3.2//bin/bsmap -a s1_r1.fq              -o wt_r1.bam   -d /share/data/umw_biocore/genome_data/mouse/mm10/mm10.fa  -R   -D C-CGG  -p 8  > moabs.bsmap.wt_r1.bam.log 2>&1
 
 # run the job
   unless ( system ($job) == 0 ) {
