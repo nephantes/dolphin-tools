@@ -187,7 +187,7 @@ sub do_job {
 # construct the move command
 	my $mvcom = "&& mv $outfile $unsortedfile";
 	my $sortcom = "&& $args{samtools} sort $unsortedfile $sortedfile";
-	my $indexcom = "&& $args{samtools} index $sortedfile";
+	my $indexcom = "&& $args{samtools} index $sortedfile.bam";
 	my $rmcom = "&& rm $unsortedfile";
 
 	my $com = $args{binpath};
