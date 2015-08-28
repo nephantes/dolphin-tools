@@ -126,7 +126,7 @@ else {
 	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
 }
 $outdir .= lc($binname);
-make_path($args{outdir});
+make_path($outdir);
 
 # Expecting paired or single end libraries?
 my $spaired;
@@ -187,7 +187,7 @@ sub do_job {
 # construct the move command
 	my $mvcom = "&& mv $outfile $unsortedfile";
 	my $sortcom = "&& $args{samtools} sort $unsortedfile $sortedfile";
-	my $indexcom = "&& $args{samtools} index $outfile";
+	my $indexcom = "&& $args{samtools} index $sortedfile";
 	my $rmcom = "&& rm $unsortedfile";
 
 	my $com = $args{binpath};
@@ -195,7 +195,7 @@ sub do_job {
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
 	$com .= " -o $outfile";
 	$com .= " -d $args{ref}";
-	$com .= " -D $args{digestion}" if ( exists $args{digestion} );
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} );
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
