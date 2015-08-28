@@ -137,6 +137,7 @@ foreach my $bname ( keys %files ) {
 
 # name of the comparision file for mcomp (--compFile)
 my $comparefile = join( '.', keys %files );
+my $bname = $comparefile; #used for naming logfile only
 $comparefile .= 'comp.txt';
 
 do_job( $comparefile, values %files );
