@@ -126,7 +126,7 @@ else {
 	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
 }
 $outdir .= lc($binname);
-make_path($args{outdir});
+make_path($outdir);
 
 # Expecting paired or single end libraries?
 my $spaired;
