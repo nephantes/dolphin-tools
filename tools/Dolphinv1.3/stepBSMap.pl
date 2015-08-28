@@ -98,7 +98,7 @@ unless ( exists $args{digestion} ) {
 }
 
 #samtools must exist and be executable
-unless ( -e $args{samtools} and -x $args{samtools} ) {
+unless ( exists $args{samtools} and $args{samtools} =~ /samtools/ ) {
 	die ( "Invalid option samtools: location $args{samtools}" );
 }
 
@@ -177,16 +177,17 @@ sub do_job {
   die "Invalid file (must be a regular file): $file2" if ( $file2 and ! -f $file2 );
 
 
-# construct the move command
-# not implemented
-# TODO this can be used to copy files to web dir
-  my $mvcom = '';
-# $mvcom .= "&& mv x y";
-
 
 #construct the command
   my $logfile = "$bname.$binname.log";
-  my $outfile = "$outdir/$bname.bam";
+  my $outfile = "$outdir/$bname.sorted.bam";
+	my $unsortedfile = "$outdir/$bname.unsorted";
+
+# construct the move command
+  my $mvcom = "&& mv $outfile $unsortedfile"; 
+	my $sortcom = "$args{samtools} sort $unsortedfile $outfile";
+  my $indexcom = "$args{samtools} index $outfile"; 
+
   my $com = $args{binpath};
   $com .= " -a $file1";
   $com .= " -b $file2" if ( $file2 ); #only for paired end libs
@@ -196,8 +197,8 @@ sub do_job {
   $com .= " $args{params}" if ( exists $args{params} );
   $com .= " > $logfile 2>&1";
   $com .= " $mvcom";
-#TODO sort and index using samtools
-#BUG mcall will not function until data is sorted and indexed
+  $com .= " $sortcom";
+  $com .= " $indexcom";
 
   print "command: $com\n" if $args{verbose};
 
