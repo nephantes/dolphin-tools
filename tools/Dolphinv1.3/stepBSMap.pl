@@ -195,7 +195,7 @@ sub do_job {
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
 	$com .= " -o $outfile";
 	$com .= " -d $args{ref}";
-	$com .= " -D $args{digestion}" if ( exists $args{digestion} );
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} );
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
