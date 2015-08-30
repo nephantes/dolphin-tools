@@ -96,7 +96,7 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 
 #sampleconditions must be of the form "samplename1,samplename2:condition1,conditon2"
 unless ( -e $args{sampleconditions} and $args{sampleconditions} =~ /[\w,]+:[\w,]+/ ) {
-	die ( "Invalid option sampleconditons [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+	die ( "Invalid option sampleconditons [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
 }
 
 ################### MAIN PROGRAM ####################
@@ -122,12 +122,12 @@ make_path($outdir);
 ### Parse the samplecondtions args ###
 my @presplit = split( /:/, $args{sampleconditions});
 unless ( 2 == scalar @presplit ) {
-	die ( "Invalid option sampleconditons (must have one colon) [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+	die ( "Invalid option sampleconditons (must have one colon) [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
 }
 my @samplenames = split( /,/, $presplit[0] );
 my @conditionnames = split( /,/, $presplit[1] );
 unless ( scalar @samplenames == scalar @conditionnames ) {
-	die ( "Invalid option sampleconditons (not same # of s and c) [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+	die ( "Invalid option sampleconditons (not same # of s and c) [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
 }
 
 ### Construct the file list ###
