@@ -98,19 +98,21 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 
 # Setup the output directory
 my $binname = basename( $args{binpath} ); #the name of the binary we execute
-my $outdir = "$args{outdir}/".lc($binname);
-make_path($args{outdir});
+my $outdir = "$args{outdir}/";
 
 # Setup the input directory
 # if this is the first step, it will be path/input/
-# otherwise it will be path/previous/
+# otherwise it will be path/seqmapping/previous/
 my $inputdir;
 if ($args{previous} =~ /NONE/) {
 	$inputdir = "$outdir/input";
 }
 else {
-	$inputdir = "$outdir/".lc( $args{previous} );
+	#TODO remove seqmapping from path (and comment above)
+	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
 }
+$outdir .= lc($binname);
+make_path($outdir);
 
 ### Construct the file list ###
 my %files;
