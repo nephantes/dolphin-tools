@@ -146,11 +146,11 @@ $comparefile .= 'comp.txt';
 do_job( $comparefile, values %files );
 
 sub do_job {
-	my ($comparefile, @files) = @_;
+	my ($comparefile, $files) = @_;
 	
 	#construct and check the file list
 	my $filelist = '';
-	foreach my $file ( @files ) {
+	foreach my $file ( @{$files} ) {
 		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
 		$filelist .= " -r $file";
 	}
@@ -166,6 +166,7 @@ sub do_job {
 #construct the command
 	# e.g. mcomp -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
+##outdir doesn't do anything in mcomp so we cd instead
 	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
