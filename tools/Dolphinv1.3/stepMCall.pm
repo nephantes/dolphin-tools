@@ -176,7 +176,7 @@ sub do_job {
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/lsf/$condition.$binname.log";
-	my $com = $args{binpath};
+	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
 	$com .= " --sampleName $condition";
 	$com .= " --outputDir $outdir";

@@ -120,7 +120,7 @@ my @file_list = grep { /^\w+\.G\.bed/ } readdir($dh); #N.B. Condition names cann
 closedir $dh;
 #create a hash of filenames {s1.1 => inputdir/s1.1.bed, s1.2 => inputdir/s1.2.bed}
 foreach my $file ( @file_list ) {
-	m/(.*)\.bed$/; #get the "bname" as $1 and use it as the hash key
+	$file =~ m/(.*)\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
 	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
 }
@@ -166,7 +166,7 @@ sub do_job {
 #construct the command
 	# e.g. mcomp -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
-	my $com = $args{binpath};
+	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
 	$com .= " --outputDir $outdir";
