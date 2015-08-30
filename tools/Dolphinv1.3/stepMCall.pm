@@ -95,7 +95,7 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 }
 
 #sampleconditions must be of the form "samplename1,samplename2:condition1,conditon2"
-unless ( -e $args{sampleconditions} and $args{sampleconditions} =~ /[\w,]+:[\w,]+/ ) {
+unless ( exists $args{sampleconditions} and $args{sampleconditions} =~ /[\w,]+:[\w,]+/ ) {
 	die ( "Invalid option sampleconditons [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
 }
 
@@ -133,7 +133,7 @@ unless ( scalar @samplenames == scalar @conditionnames ) {
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
-my @file_list = grep { /\.bam/ } readdir($dh);
+my @file_list = grep { /\.bam$/ } readdir($dh);
 closedir $dh;
 
 #find all the filenames matching samplename[n] (should be one) and add it to condition key
@@ -155,11 +155,11 @@ foreach my $condition ( keys %files ) {
 }
 
 sub do_job {
-	my ($condition, @files) = @_;
+	my ($condition, $files) = @_;
 
 	#construct and check the file list
 	my $filelist = '';
-	foreach my $file ( @files ) {
+	foreach my $file ( @{$files} ) {
 		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
 		$filelist .= " -m $file";
 	}
