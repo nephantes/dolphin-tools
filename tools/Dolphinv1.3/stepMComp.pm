@@ -120,7 +120,7 @@ my @file_list = grep { /^\w+\.G\.bed/ } readdir($dh); #N.B. Condition names cann
 closedir $dh;
 #create a hash of filenames {s1.1 => inputdir/s1.1.bed, s1.2 => inputdir/s1.2.bed}
 foreach my $file ( @file_list ) {
-	$file =~ m/(.*)\.bed$/; #get the "bname" as $1 and use it as the hash key
+	$file =~ m/(.*).G\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
 	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
 }
@@ -146,11 +146,11 @@ $comparefile .= 'comp.txt';
 do_job( $comparefile, values %files );
 
 sub do_job {
-	my ($comparefile, $files) = @_;
+	my ($comparefile, @files) = @_;
 	
 	#construct and check the file list
 	my $filelist = '';
-	foreach my $file ( @{$files} ) {
+	foreach my $file ( @files} ) {
 		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
 		$filelist .= " -r $file";
 	}
