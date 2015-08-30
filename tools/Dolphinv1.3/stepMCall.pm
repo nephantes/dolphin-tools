@@ -48,7 +48,7 @@ my %args = (
 #
 GetOptions( \%args,
 'binpath=s',
-'condition=s',
+'sampleconditions=s',
 'help',
 'jobsubmit=s',
 'outdir=s',
@@ -94,6 +94,11 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 	die ( "Invalid option binpath: location $args{binpath}" );
 }
 
+#sampleconditions must be of the form "samplename1,samplename2:condition1,conditon2"
+unless ( -e $args{sampleconditions} and $args{sampleconditions} =~ /[\w,]+:[\w,]+/ ) {
+	die ( "Invalid option sampleconditons [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+}
+
 ################### MAIN PROGRAM ####################
 
 # Setup the output directory
@@ -109,30 +114,48 @@ if ($args{previous} =~ /NONE/) {
 }
 else {
 	#TODO remove seqmapping from path (and comment above)
-	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
+	$inputdir = "$outdir/".lc( $args{previous} );
 }
 $outdir .= lc($binname);
 make_path($outdir);
+
+### Parse the samplecondtions args ###
+my @presplit = split( /:/, $args{sampleconditions});
+unless ( 2 == scalar @presplit ) {
+	die ( "Invalid option sampleconditons (must have one colon) [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+}
+my @samplenames = split( /,/, $presplit[0] );
+my @conditionnames = split( /,/, $presplit[1] );
+unless ( scalar @samplenames == scalar @conditionnames ) {
+	die ( "Invalid option sampleconditons (not same # of s and c) [s1,s2,...:c1,c2,...]: parsed $args{samplecondition}" );
+}
 
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
 my @file_list = grep { /\.bam/ } readdir($dh);
 closedir $dh;
-#create a hash of filenames {s1.1 => inputdir/s1.1.bam, s1.2 => inputdir/s1.2.bam}
-foreach my $file ( @file_list ) {
-	m/(.*)\.bam/; #get the "bname" as $1 and use it as the hash key
-	# each array should contain all files for that condition
-	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
+
+#find all the filenames matching samplename[n] (should be one) and add it to condition key
+for (my $i=0; $i<$#samplenames; $i++) {
+	my $condition = $conditionnames[$i];
+	my $sample = $samplenames[$i];
+	my @samples = grep { /^$sample/ } @file_list;
+	unless ( 1 == scalar @samples ) {
+		die ( "Multiple matching files found for $sample:$condition. This is probably not what you want." );
+	}
+	my $sample_file = pop( @samples );
+	push @{ $files{$condition} }, "$inputdir/$sample_file"; #push the filename into the array $files{condition} => [filename]
 }
 
+
 ### Run the jobs ###
-foreach my $bname ( keys %files ) {
-	do_job( $bname, $files{$bname} );
+foreach my $condition ( keys %files ) {
+	do_job( $condition, $files{$condition} );
 }
 
 sub do_job {
-	my ($bname, @files) = @_;
+	my ($condition, @files) = @_;
 
 	#construct and check the file list
 	my $filelist = '';
@@ -151,10 +174,10 @@ sub do_job {
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
-	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
+	my $logfile = "$args{outdir}/tmp/lsf/$condition.$binname.log";
 	my $com = $args{binpath};
 	$com .= " $filelist";
-	$com .= " --sampleName $bname";
+	$com .= " --sampleName $condition";
 	$com .= " -r $args{ref}";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
@@ -164,7 +187,7 @@ sub do_job {
 
 # construct the job submission command
 # jobname = servicename_bname
-	my $jobname = "$args{servicename}_$bname";
+	my $jobname = "$args{servicename}_$condition";
 
 	my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
 	print "job: $job\n" if $args{verbose};
@@ -184,14 +207,15 @@ stepMCall.pl
 
 =head1 SYNOPSIS 
 
-  stepMCall.pl -binpath     binary path </path/to/mcall>
-               -jobsubmit   command to execute to submit job
-               -outdir      output directory </output/directory/>
-               -params      additional optional mcall params [mcall params]
-               -previous    previous step in pipeline
-               -ref         reference sequences file <fasta>
-               -servicename service name to use in job name
-               -verbose     print extra debugging output [boolean]
+  stepMCall.pl -binpath           binary path </path/to/mcall>
+               -jobsubmit         command to execute to submit job
+               -sampleconditions  s1,s2[,...]:c1,c2[,...]
+               -outdir            output directory </output/directory/>
+               -params            additional optional mcall params [mcall params]
+               -previous          previous step in pipeline
+               -ref               reference sequences file <fasta>
+               -servicename       service name to use in job name
+               -verbose           print extra debugging output [boolean]
  
   stepMCall.pl -help
  
@@ -225,6 +249,10 @@ additional optional mcall params [mcall params]
 =head2 -ref
 
 reference sequences file <fasta>
+
+=head2 sampleconditions
+
+list of samples and associated conditions e.g. s1,s2[,...]:c1,c2[,...]
 
 =head2 -servicename
 
