@@ -179,6 +179,7 @@ sub do_job {
 	my $com = $args{binpath};
 	$com .= " $filelist";
 	$com .= " --sampleName $condition";
+	$com .= " --outputDir $outdir";
 	$com .= " -r $args{ref}";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
