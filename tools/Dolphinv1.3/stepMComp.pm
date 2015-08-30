@@ -121,7 +121,7 @@ my @file_list = grep { /\.bed/ } readdir($dh);
 closedir $dh;
 #create a hash of filenames {s1.1 => inputdir/s1.1.bed, s1.2 => inputdir/s1.2.bed}
 foreach my $file ( @file_list ) {
-	m/(.*)\.bed/; #get the "bname" as $1 and use it as the hash key
+	m/(.*)\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
 	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
 }
@@ -168,6 +168,7 @@ sub do_job {
 	my $com = $args{binpath};
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
+	$com .= " --outputDir $outdir";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
