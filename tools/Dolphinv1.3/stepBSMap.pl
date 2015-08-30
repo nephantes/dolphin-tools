@@ -97,7 +97,7 @@ unless ( exists $args{digestion} ) {
 	}
 }
 
-#samtools must exist and be executable
+#samtools must be specified (adjusted to allow "module load samtools/1.2; samtools"
 unless ( exists $args{samtools} and $args{samtools} =~ /samtools/ ) {
 	die ( "Invalid option samtools: location $args{samtools}" );
 }
@@ -116,13 +116,13 @@ my $outdir = "$args{outdir}/";
 
 # Setup the input directory
 # if this is the first step, it will be path/input/
-# otherwise it will be path/previous/
+# otherwise it will be path/seqmapping/previous/
 my $inputdir;
 if ($args{previous} =~ /NONE/) {
 	$inputdir = "$outdir/input";
 }
 else {
-	#TODO remove seqmapping from path
+	#TODO remove seqmapping from path (and comment above)
 	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
 }
 $outdir .= lc($binname);
@@ -195,6 +195,7 @@ sub do_job {
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
 	$com .= " -o $outfile";
 	$com .= " -d $args{ref}";
+	$com .= " -R"; #include strand info
 	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} );
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
