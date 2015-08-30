@@ -109,7 +109,7 @@ if ($args{previous} =~ /NONE/) {
 }
 else {
 	#TODO remove seqmapping from path (and comment above)
-	$inputdir = "$outdir/seqmapping/".lc( $args{previous} );
+	$inputdir = "$outdir/".lc( $args{previous} );
 }
 $outdir .= lc($binname);
 make_path($outdir);
