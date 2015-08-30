@@ -48,7 +48,6 @@ my %args = (
 #
 GetOptions( \%args,
 	'binpath=s',
-	'condition=s',
 	'help',
 	'jobsubmit=s',
 	'outdir=s',
