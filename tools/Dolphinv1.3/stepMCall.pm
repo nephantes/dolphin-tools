@@ -150,6 +150,7 @@ for (my $i=0; $i<$#samplenames; $i++) {
 
 
 ### Run the jobs ###
+print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
 foreach my $condition ( keys %files ) {
 	do_job( $condition, $files{$condition} );
 }
