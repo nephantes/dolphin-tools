@@ -137,7 +137,7 @@ my @file_list = grep { /\.bam$/ } readdir($dh);
 closedir $dh;
 
 #find all the filenames matching samplename[n] (should be one) and add it to condition key
-for (my $i=0; $i<$#samplenames; $i++) {
+for (my $i=0; $i < scalar($samplenames); $i++) {
 	my $condition = $conditionnames[$i];
 	my $sample = $samplenames[$i];
 	my @samples = grep { /^$sample/ } @file_list;
