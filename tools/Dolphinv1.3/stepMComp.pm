@@ -117,7 +117,7 @@ make_path($outdir);
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
-my @file_list = grep { /\.bed/ } readdir($dh);
+my @file_list = grep { /^\w+\.G\.bed/ } readdir($dh); #N.B. Condition names cannot contain special vars
 closedir $dh;
 #create a hash of filenames {s1.1 => inputdir/s1.1.bed, s1.2 => inputdir/s1.2.bed}
 foreach my $file ( @file_list ) {
@@ -125,6 +125,8 @@ foreach my $file ( @file_list ) {
 	# each array should contain all files for that condition
 	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
 }
+
+print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
 
 ### Run the jobs ###
 # only one job (one bed file from each condition)
