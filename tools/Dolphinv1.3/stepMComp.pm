@@ -166,6 +166,7 @@ sub do_job {
 #construct the command
 	# e.g. mcomp -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
+##outdir doesn't do anything in mcomp so we cd instead
 	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
