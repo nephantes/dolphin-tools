@@ -146,11 +146,11 @@ $comparefile .= 'comp.txt';
 do_job( $comparefile, values %files );
 
 sub do_job {
-	my ($comparefile, @files) = @_;
+	my ($comparefile, $files) = @_;
 	
 	#construct and check the file list
 	my $filelist = '';
-	foreach my $file ( @files ) {
+	foreach my $file ( @{$files} ) {
 		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
 		$filelist .= " -r $file";
 	}
