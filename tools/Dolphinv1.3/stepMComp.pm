@@ -122,7 +122,7 @@ closedir $dh;
 foreach my $file ( @file_list ) {
 	$file =~ m/(.*).G\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
-	$files{$1} = "$inputdir/$file"; #add the filename into the array $files{bname} => [filename]
+	$files{$1} = "$inputdir/$file"; # $files{condition} => filename
 }
 
 print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
