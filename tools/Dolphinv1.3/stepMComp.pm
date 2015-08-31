@@ -165,7 +165,6 @@ sub do_job {
 	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
-	$com .= " --outputDir $outdir";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
