@@ -122,7 +122,7 @@ closedir $dh;
 foreach my $file ( @file_list ) {
 	$file =~ m/(.*).G\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
-	push @{ $files{$1} }, "$inputdir/$file"; #push the filename into the array $files{bname} => [filename]
+	$files{$1} = "$inputdir/$file"; #add the filename into the array $files{bname} => [filename]
 }
 
 print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
@@ -131,11 +131,6 @@ print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
 # only one job (one bed file from each condition)
 if ( scalar ( keys %files ) != 2 ) {
        die "Expected exactly two files, but got ", Dumper( \%files );
-}
-foreach my $bname ( keys %files ) {
-	if ( scalar ( @{$files{$bname}} ) != 1 ) {
-		die "Expected exactly one file for condition $bname but got ", Dumper( $files{$bname} );
-	}
 }
 
 # name of the comparision file for mcomp (--compFile)
@@ -150,7 +145,7 @@ sub do_job {
 	
 	#construct and check the file list
 	my $filelist = '';
-	foreach my $file ( @files} ) {
+	foreach my $file ( @files ) {
 		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
 		$filelist .= " -r $file";
 	}

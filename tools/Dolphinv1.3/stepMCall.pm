@@ -145,7 +145,7 @@ for (my $i=0; $i < scalar(@samplenames); $i++) {
 		die ( "Multiple matching files found for $sample:$condition. This is probably not what you want." );
 	}
 	my $sample_file = pop( @samples );
-	push @{ $files{$condition} }, "$inputdir/$sample_file"; #push the filename into the array $files{condition} => [filename]
+	push @{ $files{$condition} }, "$inputdir/$sample_file"; #files{condition} => [filename]
 }
 
 
