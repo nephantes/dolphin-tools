@@ -163,7 +163,7 @@ sub do_job {
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
 ##outdir doesn't do anything in mcomp so we cd instead
 
-	my $com = "cd $outdir && cp $args{binpath} ./ && ./mcomp"; #because mcomp finds it's exec location and writes LUTs there
+	my $com = "cd $outdir && $args{binpath} "; #because mcomp finds it's exec location and writes LUTs there
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
 	$com .= " $args{params}" if ( exists $args{params} );
