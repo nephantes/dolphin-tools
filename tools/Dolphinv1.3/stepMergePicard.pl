@@ -94,7 +94,7 @@ foreach my $d (@files){
   getMetricVals($d, $libname, \%metricvals, \%histvals,\@rowheaders);
   my $pdfext=$ext;
   $pdfext=~s/_metrics/.pdf/;
-  $pdffiles.= "&& echo \"$wkey\t$version\t$libname$pdfext\tpicard_$type/$libname$pdfext\" >> $puboutdir/reports.tsv " if ($c>1); 
+  $pdffiles.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/$libname$pdfext\" >> $puboutdir/reports.tsv " if ($c>1); 
 
 }
 
@@ -111,8 +111,8 @@ write_results("$outd/picard.$outtype.hist.tsv", \@libs,\%histvals, "none", "nt")
 #my $com="rm -rf $outd/*.$outtype.out && cp -R $outd $puboutdir && ";  
 my $com="cp -R $outd $puboutdir ";  
 
-$com.= "&& echo \"$wkey\t$version\tpicard.$outtype.stats\tpicard_$type/picard.$outtype.stats.tsv\" >> $puboutdir/reports.tsv " if ($sizemetrics>0); 
-$com.= "&& echo \"$wkey\t$version\tpicard.$outtype.hist\tpicard_$type/picard.$outtype.hist.tsv\" >> $puboutdir/reports.tsv " if ($sizehist>0); 
+$com.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/picard.$outtype.stats.tsv\" >> $puboutdir/reports.tsv " if ($sizemetrics>0); 
+$com.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/picard.$outtype.hist.tsv\" >> $puboutdir/reports.tsv " if ($sizehist>0); 
 $com.= $pdffiles;
 print $com."\n"; 
 `$com`;
