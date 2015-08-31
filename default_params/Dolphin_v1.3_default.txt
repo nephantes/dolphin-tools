@@ -129,6 +129,14 @@
 @ACT              = "@PYTHON @BIN/ACT/ACT.py --radius=5000 --nbins=50 --mbins=50 --region"
 @JAGG             = "@JOB -p 1 -m 16192 -t 640 -q long"
 
+#BISULPHITE PIPELINE
+@RUNBSMAP         = @PERL @DOLPHIN/stepBSMap.pl
+@JBSMAP           = "@JOB -p 2 -m 16096 -t 900 -q long"
+@RUNMCALL         = @PERL @DOLPHIN/stepMCall.pm
+@JMCALL           = "@JOB -p 2 -m 16096 -t 900 -q long"
+@RUNMCOMP         = @PERL @DOLPHIN/stepMComp.pm
+@JMCOMP           = "@JOB -p 2 -m 16096 -t 900 -q long"
+
 #RunCleaning Step
 @RUNCLEAN         = @PERL @DOLPHIN/stepClean.pl
 
