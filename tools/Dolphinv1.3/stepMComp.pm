@@ -122,7 +122,7 @@ closedir $dh;
 foreach my $file ( @file_list ) {
 	$file =~ m/(.*).G\.bed$/; #get the "bname" as $1 and use it as the hash key
 	# each array should contain all files for that condition
-	$files{$1} = "$inputdir/$file"; #add the filename into the array $files{bname} => [filename]
+	$files{$1} = "$inputdir/$file"; # $files{condition} => filename
 }
 
 print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
@@ -162,10 +162,10 @@ sub do_job {
 	# e.g. mcomp -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
 ##outdir doesn't do anything in mcomp so we cd instead
-	my $com = "cd $outdir && $args{binpath}";
+
+	my $com = "cd $outdir && cp $args{binpath} ./ && ./mcomp"; #because mcomp finds it's exec location and writes LUTs there
 	$com .= " $filelist";
 	$com .= " -c $comparefile";
-	$com .= " --outputDir $outdir";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
