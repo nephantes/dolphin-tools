@@ -1,9 +1,9 @@
 #General parameters
-@PERL             = module load perl/5.18.1; perl
-@PYTHON           = module load python/2.7.5; python 
-@JAVA             = module load java/1.7.0_25; java
+@PERL             = module load perl/5.18.1 && perl
+@PYTHON           = module load python/2.7.5 && python 
+@JAVA             = module load java/1.7.0_25 && java
 @RPROG            = module load R/3.0.1
-@SAMTOOLS         = "module load  samtools/0.0.19; samtools"
+@SAMTOOLS         = "module load  samtools/0.0.19 && samtools"
 @BIN              = /project/umw_biocore/bin
 @TOOLSDIR         = @BIN/workflow/dolphin-tools_galaxy
 @DOLPHIN          = @TOOLSDIR/tools/Dolphinv1.3
@@ -67,7 +67,7 @@
 
 #StepFastQC
 @RUNFASTQC          = @DOLPHIN/stepFastQC.pl
-@FASTQCPROG         = "module load fastqc/0.10.1;fastqc" 
+@FASTQCPROG         = "module load fastqc/0.10.1 && fastqc" 
 @RUNFASTQCMERGE     = @DOLPHIN/stepAfterFastQC.pl
 @JFASTQC            = "@JOB -p 1 -m 1024 -t 60"
 
@@ -86,7 +86,7 @@
 @RUNTOPHAT2         = @DOLPHIN/stepTophat2.pl
 @BOWTIE2INDEX       = @GDB/@VERSION
 @GTF                = @GDB/ucsc.gtf#Required
-@TOPHAT2CMD         = "module load samtools/0.0.19; module load bowtie2/2-2.1.0; module load tophat/2.0.9; tophat2"
+@TOPHAT2CMD         = "module load samtools/0.0.19 && module load bowtie2/2-2.1.0 && module load tophat/2.0.9 && tophat2"
 @JTOPHAT            = "@JOB -p 4 -m 4096 -t 1200 -q long"
 
 #stepSplit Fastq
@@ -97,7 +97,7 @@
 
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl
-@MACSCMD            = "module load macs/1.4.2; macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
+@MACSCMD            = "module load macs/1.4.2 && macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
 @JMACS              = "@JOB -p 1 -m 16000 -t 230 -q short"
 
 #StepIGVTDF
