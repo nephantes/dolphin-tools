@@ -69,7 +69,7 @@
 @RUNFASTQC          = @DOLPHIN/stepFastQC.pl
 @FASTQCPROG         = "module load fastqc/0.10.1 && fastqc" 
 @RUNFASTQCMERGE     = @DOLPHIN/stepAfterFastQC.pl
-@JFASTQC            = "@JOB -p 1 -m 1024 -t 60"
+@JFASTQC            = "@JOB -p 1 -m 1024 -t 240"
 
 #StepRSEM
 @RUNRSEM            = @PERL @DOLPHIN/stepRSEM.pl
@@ -87,7 +87,7 @@
 @BOWTIE2INDEX       = @GDB/@VERSION
 @GTF                = @GDB/ucsc.gtf#Required
 @TOPHAT2CMD         = "module load samtools/0.0.19 && module load bowtie2/2-2.1.0 && module load tophat/2.0.9 && tophat2"
-@JTOPHAT            = "@JOB -p 4 -m 4096 -t 1200 -q long"
+@JTOPHAT            = "@JOB -p 4 -m 4096 -t 2400 -q long"
 
 #stepSplit Fastq
 @RUNSPLIT           = @DOLPHIN/stepSplit.pl
@@ -117,7 +117,8 @@
 @RUNPICARD          = @DOLPHIN/stepPicard.pl
 @RUNMERGEPICARD     = @DOLPHIN/stepMergePicard.pl
 @PICARDCMD          = "@RPROG && @JAVA -jar @BIN/picard-tools-1.131/picard.jar"
-@REFFLAT           = @GDB/ref_flat
+@REFFLAT            = @GDB/ref_flat
+@JPICARD            = "@JOB -p 2 -m 16192 -t 900 -q long" 
 
 
  
