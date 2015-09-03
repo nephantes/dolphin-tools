@@ -107,7 +107,7 @@ foreach my $d (@files){
     $com.=" OUTPUT=$outd/".$libname."_multiple.out";
   }
   elsif ($cmdname eq "MarkDuplicates") {
-    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=PCR_duplicates REMOVE_DUPLICATES=true";
+    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/PCR_duplicates REMOVE_DUPLICATES=true";
   }
   else {
     $com.=" OUTPUT=$outd/".$libname."_multiple.out";
