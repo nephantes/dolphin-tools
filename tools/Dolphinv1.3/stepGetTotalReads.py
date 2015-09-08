@@ -57,16 +57,15 @@ class stepGetTotalReads:
     return jobout
         
   def gzipFileAndGetCount(self, JOBSUBMIT, inputdir, filename, backupdir):
-    command = "mkdir -p "+backupdir+"; gzip -c "+inputdir+"/"+filename+" > "+backupdir+"/"+filename+".gz; s=\$(zcat "+backupdir+"/"+filename+".gz|wc -l); echo \$((\$s/4)) > "+backupdir+"/"+filename+".gz.count; md5sum "+backupdir+"/"+filename+".gz> "+backupdir+"/"+filename+".gz.md5sum"
-    self.submitJob(JOBSUBMIT, filename, command)
+    command = "mkdir -p "+backupdir+" && gzip -c "+inputdir+"/"+filename+" > "+backupdir+"/"+filename+".gz && s=\$(zcat "+backupdir+"/"+filename+".gz|wc -l) && echo \$((\$s/4)) > "+backupdir+"/"+filename+".gz.count && md5sum "+backupdir+"/"+filename+".gz> "+backupdir+"/"+filename+".gz.md5sum"
+    self.submitJob(JOBSUBMIT, "gzip_"+filename, command)
 
   def getCount(self, JOBSUBMIT, outputdir, inputdir, filename):
     cat = "cat"
     if ('.gz' in filename):
         cat = "zcat"
-    command = "mkdir -p "+outputdir+"; s=\$("+cat+" "+inputdir+"/"+filename+"|wc -l); echo \$((\$s/4))  > "+outputdir+"/"+filename+".count"
-    print command
-    self.submitJob(JOBSUBMIT, filename, command)
+    command = "mkdir -p "+outputdir+" && s=\$("+cat+" "+inputdir+"/"+filename+"|wc -l) && echo \$((\$s/4))  > "+outputdir+"/"+filename+".count"
+    self.submitJob(JOBSUBMIT, "count_"+filename, command)
     
 def main():
     try:
