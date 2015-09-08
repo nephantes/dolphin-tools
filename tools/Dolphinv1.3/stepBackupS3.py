@@ -55,9 +55,9 @@ class stepBackup:
 
   def getSampleList(self, runparams_id, barcode):
     if (barcode != "NONE"):
-        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
+        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
     else:
-        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM biocore.ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
+        sql = "SELECT DISTINCT ns.id, sf.id, d.id, ns.lane_id, ns.samplename, sf.file_name, d.backup_dir, d.amazon_bucket, ns.owner_id, ns.group_id, ns.perms FROM ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparams_id)+"';"
 
     return self.runSQL(sql)
 
@@ -79,7 +79,7 @@ class stepBackup:
 
 
   def getAmazonCredentials(self, clusteruser):
-    sql = 'SELECT DISTINCT ac.* FROM biocore.amazon_credentials ac, biocore.group_amazon ga, biocore.users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
+    sql = 'SELECT DISTINCT ac.* FROM amazon_credentials ac, group_amazon ga, users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
     results = self.runSQL(sql)
 
     return results
@@ -127,14 +127,14 @@ class stepBackup:
     
   def insertFastqFile(self, checksum, total_reads, filename, sample):
     (sample_id, sf_id, dir_id, lane_id, libname, org_file_name, backup_dir, amazon_bucket, owner_id, group_id, perms) = sample
-    sql="INSERT INTO `biocore`.`ngs_fastq_files` ( `file_name`, `total_reads`, `checksum`, `sample_id`, `lane_id`,`dir_id`,`owner_id`,`group_id`,`perms`,`date_created`,`date_modified`,`last_modified_user`) VALUES('"+filename+"','"+total_reads+"','"+checksum+"','"+str(sample_id)+"','"+str(lane_id)+"','"+str(dir_id)+"','"+str(owner_id)+"', '"+str(group_id)+"', '"+str(perms)+"', now(), now(), '"+str(owner_id)+"');"
+    sql="INSERT INTO ngs_fastq_files ( `file_name`, `total_reads`, `checksum`, `sample_id`, `lane_id`,`dir_id`,`owner_id`,`group_id`,`perms`,`date_created`,`date_modified`,`last_modified_user`) VALUES('"+filename+"','"+total_reads+"','"+checksum+"','"+str(sample_id)+"','"+str(lane_id)+"','"+str(dir_id)+"','"+str(owner_id)+"', '"+str(group_id)+"', '"+str(perms)+"', now(), now(), '"+str(owner_id)+"');"
     self.runSQL(sql)
     
   def checkReadCounts(self, sample_id, tablename):
-    sql='SELECT sum(total_reads) FROM biocore.ngs_temp_sample_files where sample_id='+str(sample_id)
+    sql='SELECT sum(total_reads) FROM ngs_temp_sample_files where sample_id='+str(sample_id)
     temp_count=self.getSQLval(sql)
     print temp_count
-    sql='SELECT total_reads FROM biocore.ngs_fastq_files where sample_id='+str(sample_id)
+    sql='SELECT total_reads FROM ngs_fastq_files where sample_id='+str(sample_id)
     merged_count=self.getSQLval(sql)
     print merged_count
     if (temp_count==merged_count):
