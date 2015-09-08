@@ -228,6 +228,7 @@ def main():
         tablename="ngs_temp_lane_files"
     
     processedLibs=[]
+    amazon_bucket=""
     for sample in samplelist:
         sample_id=sample[0]
         file_id=sample[1]
