@@ -244,7 +244,7 @@ def main():
             backup.processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
-    if (amazon!=()):
+    if (amazon!=() and amazon_bucket!=""):
       amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
       for libname, sample_id in processedLibs:
         if (backup.checkReadCounts(sample_id, tablename)):
