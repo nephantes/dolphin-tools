@@ -5,7 +5,7 @@
 @RPROG            = module load R/3.0.1
 @SAMTOOLS         = "module load  samtools/0.0.19 && samtools"
 @BIN              = /project/umw_biocore/bin
-@TOOLSDIR         = @BIN/workflow/dolphin-tools_galaxy
+@TOOLSDIR         = @BIN/workflow/dolphin-tools
 @DOLPHIN          = @TOOLSDIR/tools/Dolphinv1.3
 @GDB              = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GDB/commondb
@@ -56,7 +56,8 @@
 #StepCounts
 @RUNCOUNTS          = @PERL @DOLPHIN/stepCounts.pl
 @MAKEBED            = "@PERL @DOLPHIN/makeBed.pl"
-@BEDTOOLSCMD        = "module load bedtools/2.17.0; bedtools multicov"
+@BEDTOOLSCMD        = "module load bedtools/2.17.0 && bedtools multicov"
+@INDEXCMD           = "module load bowtie2/2-2.1.0 && bowtie2-build"
 
 #StepDESeq2
 @RUNDESEQ2          =  @PERL @DOLPHIN/stepDESeq2.pl
