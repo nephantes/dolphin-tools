@@ -141,8 +141,8 @@ countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $pubou
 }
 
 #Copy count directory to its web accessible area
-#`rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
-#die "Error 17: Cannot copy the directory:".$puboutdir if ($?);
+`rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
+die "Error 17: Cannot copy the directory:".$puboutdir if ($?);
 
 sub countCov
 {
