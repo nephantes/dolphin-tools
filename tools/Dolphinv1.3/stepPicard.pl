@@ -113,7 +113,7 @@ foreach my $d (@files){
     $com.=" OUTPUT=$outd/".$libname."_multiple.out";
   }
 
-  $com.=" INPUT=$d ";
+  $com.=" INPUT=$d > /dev/null";
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
