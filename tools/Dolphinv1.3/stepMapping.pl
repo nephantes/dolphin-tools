@@ -81,6 +81,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 
+my $fasta=createIndex($indexfile, $bowtiecmd);
 $indexpar=~s/_/ /g;
 
 if ($advparams ne "NONE")
@@ -137,7 +138,7 @@ foreach my $file (@files)
        $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
        $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
        $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="$samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
        $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
        $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
        $com.="rm -rf $outdir/$bname.sam;";
@@ -174,6 +175,31 @@ foreach my $file (@files)
  `$job`;
 die "Error 25: Cannot run the job:".$job if ($?);
 }
+
+sub createIndex
+{
+  my ($ind, $cmd) = @_;
+     my $fasta=$ind;
+     if(checkFile("$ind.fasta"))
+     {
+       $fasta.=".fasta";
+     }
+     elsif(checkFile("$ind.fa"))
+     {
+       $fasta.=".fa";
+     }
+     else
+     {
+      die "Error 64: please check the file: $ind.fa or $ind.fasta ";
+     }
+     if(!checkFile("$ind.4.bt2"))
+     {
+        $com=$cmd."-build $fasta $ind";
+        `$com`;
+     }
+     return $fasta;
+}
+
 
 sub checkFile
 {
