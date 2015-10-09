@@ -10,7 +10,10 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-
+   
+   quickstart
+   installation
+   dolphintools
 
 
 Indices and tables
