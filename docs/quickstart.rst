@@ -26,7 +26,7 @@ If the run finished sucessfully or killed in the cluster or your host machine, t
 There are examples in tests/pipeline folder.
 
 * Ex:
-
+.. code-block:: bash
 w1.txt
 
 step1	ls -l	1
@@ -62,6 +62,7 @@ Options:
                         
 please chose your -f option according to your installation. If you are running this on Docker and made your definitions right on your Docker section right. The command should be something like below;
 
+.. code-block:: bash
 python path/to/installation_dir/src/runWorkflow.py -f Docker -w path/to/w1.txt -o /export/TEST2
 
 Standart output of a run in Docker
@@ -69,6 +70,7 @@ Standart output of a run in Docker
 
 If everything is successfull you need to see an output something like below;
 
+.. code-block:: bash
 Docker
 http://localhost/dolphin/api/service.php
 localhost
@@ -109,6 +111,8 @@ The directory structure of an example run:
 There are other log files are about communication with mySQL and LSF logs if you are running them in LSF cluster
 * Intermediate submission scripts are in tmp/src folder
 * If there are other jobs submitted in the steps, they are going to be tracked under track folder to be able to resumed the jobs. But in this test, there is no such jobs. 
+
+.. code-block:: bash
 
 /export/TEST
 |-- scripts
