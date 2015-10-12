@@ -27,6 +27,7 @@ There are examples in tests/pipeline folder.
 
 * Ex:
 .. code-block:: bash
+   
    w1.txt
 
    step1	ls -l	1
@@ -63,6 +64,7 @@ Options:
 please chose your -f option according to your installation. If you are running this on Docker and made your definitions right on your Docker section right. The command should be something like below;
 
 .. code-block:: bash
+   
    python path/to/installation_dir/src/runWorkflow.py -f Docker -w path/to/w1.txt -o /export/TEST2
 
 Standart output of a run in Docker
@@ -71,6 +73,7 @@ Standart output of a run in Docker
 If everything is successfull you need to see an output something like below;
 
 .. code-block:: bash
+   
    Docker
    http://localhost/dolphin/api/service.php
    localhost
@@ -101,7 +104,7 @@ If everything is successfull you need to see an output something like below;
    "Service ended successfully!!!"
    Service ended successfully!!!
    
-All    the services Ended
+   All the services Ended
 
 The directory structure:
 ==========================================
