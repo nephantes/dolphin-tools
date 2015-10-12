@@ -147,13 +147,13 @@ sub trimFiles
         if ($nt>0)
         {
          $outfile="$outdir/$bname.fastq.$i.tmp";
-         $com.="$cmd $quality -v $param $nt -o $outfile -i $file;";
+         $com.="$cmd $quality -v $param $nt -o $outfile -i $file && ";
          $file=$outfile;
         }
       }
       $i++;
     }
-    $com.="mv $outfile $outdir/$bname.fastq;rm -rf $outdir/*.tmp";
+    $com.="mv $outfile $outdir/$bname.fastq && rm -rf $outdir/$bname.*.tmp";
     #print $com."\n";
     #`$com`;
     my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";

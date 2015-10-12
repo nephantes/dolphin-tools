@@ -1,10 +1,9 @@
 #!/bin/env python
-
+import logging
 from optparse import OptionParser
-from ZSI.client import NamedParamBinding as NPBinding, Binding
 import json
-import sys
 import subprocess
+import urllib,urllib2
 import os
 from os import path, access, R_OK
 import getpass
@@ -12,6 +11,9 @@ import re
 import random 
 import string
 import time
+import sys
+sys.path.insert(0, sys.path[0])
+from config import *
 from os.path import basename
 
 def remove_comments(line, sep):
@@ -55,6 +57,7 @@ def import_param(input_file=None):
     return whole_input
         
 def main():
+
     try:
         parser = OptionParser()
         parser.add_option('-i', '--inputparam', help='input parameters for the workflow', dest='inputparam')
@@ -64,6 +67,8 @@ def main():
         parser.add_option('-w', '--workflowfile', help='workflow filename', dest='workflowfile')
         parser.add_option('-d', '--dbhost', help='dbhost name', dest='dbhost')
         parser.add_option('-o', '--outdir', help='output directory in the cluster', dest='outdir')
+        parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
+                
         (options, args) = parser.parse_args()
     except:
         print "OptionParser Error:for help use --help"
@@ -76,13 +81,23 @@ def main():
     WORKFLOWFILE    = options.workflowfile
     DBHOST          = options.dbhost
     OUTDIR          = options.outdir
-
-    if (DBHOST==None):
-      DBHOST="localhost"
-    if (USERNAME==None):
-      USERNAME=getpass.getuser()
+    CONFIG          = options.config
     
-    USERNAME='galaxy'
+    print CONFIG
+    config=getConfig(CONFIG)
+    url=config['url']
+    DBHOST=config['dbhost']
+    LOGPATH=config['logpath']
+
+    print url
+    print DBHOST
+    print LOGPATH
+
+    #This section is just for username conversion in the cluster can be removed in the future
+    if (CONFIG != "Docker"):
+       com="grep "+USERNAME+" /project/umw_biocore/svcgalaxy/conv.file|awk '{print $2}'"
+       USERNAME=str(os.popen(com).readline().rstrip())
+    ########
 
     if (len(USERNAME)<3): 
         print "Error:Username doesn't exist"
@@ -93,57 +108,99 @@ def main():
     if (OUTDIR==None):
       OUTDIR="~/out"
     if (OUTDIR.find("/")==-1):
-      OUTDIR="/home/"+USERNAME+"/"+OUTDIR
+      OUTDIR="~/"+OUTDIR
+
     if (INPUTPARAM!=None):
         if path.isfile(INPUTPARAM) and access(INPUTPARAM, R_OK):
             INPUTPARAM = import_param(INPUTPARAM)
         else:
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
-    print INPUTPARAM
-    #sys.exit()
     services=import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
-    #print "slen"+slen
-    url="http://localhost/dolphin_webservice/service.php"
    
-    #kw = {'url':url, 'tracefile':sys.stdout}
-    kw = {'url':url}
-    b = NPBinding(**kw)
     wfname = os.path.splitext(basename(WORKFLOWFILE))[0]
-    mesg=b.startWorkflow(a=INPUTPARAM , c=DEFAULTPARAM , b=USERNAME , e=wfname, d=WKEY , f=OUTDIR, h=slen)
-    
-    data=json.dumps(mesg)
-    wkey=json.loads(data)
 
-    ret=str(wkey['return'])
-    print "WORKFLOW STARTED:"+ret+"\n"
+    opener = urllib2.build_opener(urllib2.HTTPHandler())
+    data = urllib.urlencode({'func':'startWorkflow', 'inputparam':INPUTPARAM, 
+                       'defaultparam':DEFAULTPARAM, 'username':USERNAME, 
+                       'workflow':wfname, 'wkey':WKEY, 'outdir':OUTDIR, 'services':slen})
+    trials=0
+    while trials<5:
+       try:
+          mesg = opener.open(url, data=data).read()
+          trials=10
+       except:
+          print "Couldn't connect to dolphin server"
+          time.sleep(15)
+       trials=trials+1   
+    ret=str(json.loads(mesg))
+    wkey = ret
+
     if (ret.startswith("ERROR")):
-                print wfname + ":" + ret + "\n"
+                logging.warning("ERROR:"+wfname + ":" + wkey)
+                print wfname + ":" + wkey + "\n"
                 print "Check the parameter files:\n"
                 sys.exit(2);
+    print "WORKFLOW STARTED:"+wkey+"\n"
+
+    logging.basicConfig(filename=LOGPATH+'/'+wkey+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(INPUTPARAM)
+    logging.info('WORKFLOW STARTED')
 
     for service in services:
         br=1
+        checkcount=0
         while ( br==1):
-            print service.servicename #+ ":" + wkey['return'] + ":" + service.command
-            res=json.loads(json.dumps(b.startService(a=service.servicename, c=wkey['return'], b=service.command)))
-            ret=str(res['return'])
+            print service.servicename + ":" + wkey + ":" + service.command
+            trials=0
+            while trials<5:
+              try:
+                 data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
+                        'wkey':wkey, 'command':service.command})
+                 resp = opener.open(url, data=data).read()
+                 print resp
+                 trials=10
+              except:
+                 print "Couldn't connect to dolphin server"
+                 print "wkey:"+wkey
+                 print "service:"+service.servicename
+                 time.sleep(15)
+              trials=trials+1
+
+            ret=str(json.loads(resp))
             print ret + "\n"
-            if (ret.startswith("RUNNING") and float(service.waittime)>0):
+            if (ret.startswith("RUNNING") and float(service.waittime)>0 and checkcount>0):
                 #print service.waittime+"\n"
                 time.sleep(float(service.waittime))
+            elif ( checkcount==0 ):
+                time.sleep(5)
             elif (ret.startswith("ERROR")):
-                #print service.servicename + ":" + ret + "\n"
+                print service.servicename + ":" + ret + "\n"
+                logging.warning("ERROR:"+ret)
+                logging.warning("ERROR:"+service.command)
                 print "Check the command:\n"
                 print service.command + "\n"
                 sys.exit(2);
             else:
+                checkcount=0
                 br=0
+            checkcount=checkcount+1
     br=1
     print "All the services Ended"    
     while ( br==1):
-        res=json.loads(json.dumps(b.endWorkflow(a=wkey['return'])))
-        ret=str(res['return'])
+        trials=0
+        while trials<5:
+           try:
+              data = urllib.urlencode({'func':'endWorkflow',  'wkey':wkey})
+              resp = opener.open(url, data=data).read()
+              trials=10
+           except:
+              print "Couldn't connect to dolphin server"
+              time.sleep(15)
+           trials=trials+1
+
+        res=str(json.loads(resp))
         #print ret + "\n"
         if (ret.startswith("WRUNNING")):
             time.sleep(5)

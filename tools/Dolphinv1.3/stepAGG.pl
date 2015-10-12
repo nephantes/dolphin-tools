@@ -37,20 +37,20 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
- 	'bedtoolsgencov=s' => \$bedtoolsgencov,
-	'genome=s'         => \$genome, #(hg19.chromInfo)
-	'reference=s'      => \$reference, #(refseq4col)
-        'act=s'            => \$act,
- 	'creationpdf=s'    => \$creationpdf,
-	'outdir=s'         => \$outdir,
-        'previous=s'       => \$previous,
-        'servicename=s'    => \$servicename,
-        'jobsubmit=s'      => \$jobsubmit,
-	'help'             => \$help, 
-	'version'          => \$print_version,
+    'bedtoolsgencov=s' => \$bedtoolsgencov,
+    'genome=s'         => \$genome, #(hg19.chromInfo)
+    'reference=s'      => \$reference, #(refseq4col)
+    'act=s'            => \$act,
+    'creationpdf=s'    => \$creationpdf,
+    'outdir=s'         => \$outdir,
+    'previous=s'       => \$previous,
+    'servicename=s'    => \$servicename,
+    'jobsubmit=s'      => \$jobsubmit,
+    'help'             => \$help, 
+    'version'          => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -81,8 +81,12 @@ if ($previous=~/SPLIT/g)
 
 $outdir  = "$outdir/agg";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
+
 my $com="";
-$com=`ls $inputdir/*$sorted.bam`;
+$com=`ls $inputdir/*$sorted.bam 2>&1`;
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
@@ -91,15 +95,16 @@ foreach my $file (@files)
  die "Error 64: please check the file:".$file unless (checkFile($file));
  $file=~/.*\/(.*)$sorted.bam/;
  my $bname=$1;
- $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed;\n";
- $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig;\n";
- $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig;\n";
- $com.= "$creationpdf --args $outdir/$bname.agg_plot.out;\n";
+ $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed && ";
+ $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig && ";
+ $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig && ";
+ $com.= "$creationpdf --args $outdir/$bname.agg_plot.out ";
  #print $com."\n\n";  
  #`$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub checkFile

@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import logging
 from optparse import OptionParser
 import sys
 import os
@@ -9,6 +9,8 @@ import re
 #import random 
 import string
 import subprocess
+sys.path.insert(0, sys.path[0])
+from config import *
 
 def RemoveComments(text):
   return text.split("#", 1)[0]
@@ -27,7 +29,7 @@ def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR):
     with open(path, 'r') as fo:
       for line in fo.readlines():
         line = re.sub('\r', "\n", line)
-        if (len(line) < 3 or re.match('^#', line)): continue
+        if (len(line) < 5 or re.match('^#', line)): continue
         
         line=RemoveComments(line)
  
@@ -58,6 +60,7 @@ def main():
         parser.add_option('-n', '--name', help='name of the run', dest='name')
         parser.add_option('-t', '--cpu', help='the # of cpu', dest='cpu')
         parser.add_option('-o', '--outdir', help='oupur directory', dest='outdir')
+        parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
         (options, args) = parser.parse_args()
     except:
         print "OptionParser Error:for help use --help"
@@ -72,41 +75,49 @@ def main():
     NAME        = options.name
     CPU         = options.cpu
     OUTDIR      = options.outdir
+    CONFIG      = options.config
+
+    config=getConfig(CONFIG)
    
-    edir        = os.environ["DOLPHIN_TOOLS_PATH"]
+    edir        = config['tooldir']
     python      = "python ";
     
+    if (config['params_section'] != "Docker"):
+       com="module list 2>&1 |grep python"
+       pythonload=str(os.popen(com).readline().rstrip())
+       if (len(pythonload)<5):
+          com = "module load python/2.7.5";
+          pythonload=str(os.popen(com).readline().rstrip())
+
     if (DBHOSTNAME == None):
-        DBHOSTNAME="localhost"
+        DBHOSTNAME=config['dbhost']
     if (USERNAME==None):
         USERNAME=getpass.getuser()
-    
+
     OUTDIR = OUTDIR.replace("@USERNAME", USERNAME)
     os.system("mkdir -p " + OUTDIR + "/scripts")
-    
-    print("OUTDIR:"+OUTDIR)   
-  
+   
+    bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
 
     comstr=""
     COM = re.sub('\n', "\n", COM)
     params={}
     if (INPUTPARAM != None): 
        params = InputParams(INPUTPARAM)
-       print params
 
     if (PARAMFILE != None and path.isfile(PARAMFILE) and access(PARAMFILE, R_OK)):
        params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR)
-     
+
    
     if (len(params)>0):
      for param in params:
-       print params[param]+":"+param+"\n"
+       #print params[param]+":"+param+"\n"
        regex=re.compile(param+"([\s\t\=\\\/\r\n]+)")
        COM=re.sub(regex, params[param]+'\\1', COM)
      for param in params:
        COM = COM.replace(param, params[param])
-    print "["+COM+"]\n"
- 
+    #print "["+COM+"]\n"
+
     COM = COM.replace("@USERNAME", USERNAME)
     COM = COM.replace("@DBHOSTNAME",DBHOSTNAME)
     COM = COM.replace("@WKEY", WKEY)
@@ -131,16 +142,20 @@ def main():
     else:
       comstr=COM
 
-    print "\n\n\n\n\n"+comstr+"\n"
+    #print "\n\n\n\n\n"+comstr+"\n"
+    logging.basicConfig(filename=config['logpath']+'/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(comstr)
 
-    bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
     f=open(bash_script_file, 'w')
    
     f.write(comstr + "\n")
+    #f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
+    #f.write("  echo success\n  exit 0\nelse\n  echo failed\n  exit 1\nfi")
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/src/runJobs.py -d "+DBHOSTNAME+" -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command 
     ## PUT TRY CATCH HERE
     child = os.popen(command)
@@ -151,7 +166,7 @@ def main():
     #print "\n\nERR"+str(err)
 
     if err:
-	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)
+       raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)
     return data
     
 if __name__ == "__main__":

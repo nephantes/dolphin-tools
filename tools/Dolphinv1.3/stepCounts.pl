@@ -4,7 +4,7 @@
 #                                       stepCounts.pl
 #########################################################################################
 # 
-#  This program trims the reads in the files. 
+#  This program prepares count and summary files in sequential mapping step 
 #
 #
 #########################################################################################
@@ -27,27 +27,34 @@
  my $mapnames         = "";
  my $outdir           = "";
  my $jobsubmit        = "";
+ my $indexcmd         = "";
+ my $pubdir           = "";
+ my $wkey             = "";
  my $bedmake          = "";
  my $gcommondb        = "";
  my $cmd              = ""; 
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
- my $version          = "1.0.0";
+ my $version          = "dolphin_counts v1.0.0";
+
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
         'mapnames=s'     => \$mapnames,
-		'outdir=s'       => \$outdir,
+	'outdir=s'       => \$outdir,
         'cmd=s'          => \$cmd,
         'bedmake=s'      => \$bedmake,
+        'indexcmd=s'     => \$indexcmd,
         'gcommondb=s'    => \$gcommondb,
+        'pubdir=s'       => \$pubdir,
+        'wkey=s'         => \$wkey,
         'servicename=s'  => \$servicename,
         'jobsubmit=s'    => \$jobsubmit,
-		'help'           => \$help, 
-		'version'        => \$print_version,
+	'help'           => \$help, 
+	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -65,10 +72,14 @@ if($print_version){
 pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($mapnames eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
+#  Prepare count and summary files
 
 my $outd   = "$outdir/counts";
 `mkdir -p $outd`;
+die "Error 15: Cannot create the directory:".$outd if ($?);
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 my ($inputdir, $com)=();
 
 my @mapnames_arr=split(/[,\t\s]+/, $mapnames);
@@ -81,23 +92,31 @@ foreach my $mapname (@mapnames_arr)
   {
   # Custom index, it requires the fasta file in the same directory with index file
      $name=$arr[0];
+     $mapname=$name;
      my $ind=$arr[1];
+     my $fasta=$ind;
      if(checkFile("$ind.fasta"))
      {
-       $ind.=".fasta";
+       $fasta.=".fasta";
      }
      elsif(checkFile("$ind.fa"))
      {
-       $ind.=".fa";
+       $fasta.=".fa";
      }
      else
      {
       die "Error 64: please check the file: $ind.fa or $ind.fasta "; 
      }
-
-     $bedfile="$outd/tmp/$name.bed";
-     $com="mkdir -p $outd/tmp;\n";
-     $com.="$bedmake $ind $name>$bedfile;\n";
+     if(!checkFile("$ind.4.bt2"))
+     {
+        $com="$indexcmd $fasta $ind"; 
+     }
+     $bedfile="$ind.bed";
+     if(!checkFile($bedfile))
+     { 
+        $com.=" && " if($com !~/^$/);
+        $com.="$bedmake $fasta $name>$bedfile";
+     }
   }
   else
   {
@@ -109,23 +128,32 @@ foreach my $mapname (@mapnames_arr)
       {
          if (checkFile("$gcommondb/$mapname/piRNAcoor.bed"))
          {
-           countCov($mapname, "piRNAcoor", "$gcommondb/$mapname/piRNAcoor.bed" , $outdir, $outd, $cmd, "");
+           countCov($mapname, "piRNAcoor", "$gcommondb/$mapname/piRNAcoor.bed" , $outdir, $outd, $cmd, "",$version, $puboutdir, $wkey);
          }
          if (checkFile("$gcommondb/$mapname/miRNAcoor.bed"))
          {
-           countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "");
+           countCov($mapname, "miRNAcoor", "$gcommondb/$mapname/miRNAcoor.bed" , $outdir, $outd, $cmd, "", $version, $puboutdir, $wkey);
          }
       }
   }
 
-countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com);
+countCov($mapname, $name, $bedfile, $outdir, $outd, $cmd, $com, $version, $puboutdir, $wkey);
 }
+
+#Copy count directory to its web accessible area
+`rm -rf $outd/tmp && cp -R $outd $puboutdir`;  
+die "Error 17: Cannot copy the directory:".$puboutdir if ($?);
 
 sub countCov
 {
-  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom)=@_; 
+  my ($mapname, $name, $bedfile, $outdir, $outd, $cmd, $precom, $version, $puboutdi, $wkey)=@_; 
   my $inputdir = "$outdir/seqmapping/".lc($mapname);
-  my $com=`ls $inputdir/*.sorted.bam`;
+  print $inputdir."\n";
+  my $com=`ls $inputdir/*.sorted.bam 2>&1`;
+
+  print $com."\n";
+  if ($com !~/No such file or directory/)
+  {
 
   my @files = split(/[\n\r\s\t,]+/, $com);
   my $filestr="";
@@ -137,17 +165,21 @@ sub countCov
     $file=~/.*\/(.*)\.sorted.bam/;
     $header.="\t$1";
   }
-  $com="mkdir -p $outd/tmp;\n\n"; 
-  $com.=$precom."\n\n";
-  $com.="echo \"$header\">$outd/tmp/$name.header.tsv;\n"; 
-  $com.= "$cmd -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp;\n";
-  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$4\"\\t\"(\$3-\$2)\"\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv;\n";
-  $com.= "sort -k3,3nr $outd/tmp/$name.counts.tsv>$outd/tmp/$name.sorted.tsv;\n";
-  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv;\n";
-  $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header;\n";
-  $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv;\n";
+  $com="mkdir -p $outd/tmp && "; 
+  $com.=$precom." && " if($precom !~/^$/);
+  $com.="echo \"$header\">$outd/tmp/$name.header.tsv &&"; 
+  $com.= "$cmd -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp && ";
+  $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$4\"\\t\"(\$3-\$2)\"\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv && ";
+  $com.= "sort -k3,3nr $outd/tmp/$name.counts.tsv>$outd/tmp/$name.sorted.tsv && ";
+  $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv && ";
+  $com.= "echo \"File\tTotal Reads\tUnmapped Reads\tReads 1\tReads >1\tTotal align\">$outd/tmp/$name.summary.header && ";
+  $com.= "cat $outd/tmp/$name.summary.header $outdir/seqmapping/".lc($name)."/*.sum>$outd/$name.summary.tsv && ";
+  $com.= "echo \"$wkey\t$version\tsummary\tcounts/$name.summary.tsv\" >> $puboutdir/reports.tsv && ";
+  $com.= "echo \"$wkey\t$version\tcounts\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
   print $com."\n"; 
   `$com`;
+  die "Error 18: Cannot add to the reports!" if ($?);
+  }
 }
 
 

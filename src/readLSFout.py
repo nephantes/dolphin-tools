@@ -63,7 +63,7 @@ def simplecount(fname):
    result = child.read()
    err = child.close()
    if err:
-	raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
+        raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
   
 
    return int(result.strip().split()[0])
@@ -79,11 +79,10 @@ def main():
         sys.exit(2)
 
     FILENAME = options.filename
-    ext=".std"
-    count = simplecount(str(FILENAME)+ext)
+    count = simplecount(str(FILENAME))
     
   
-    with File(str(FILENAME) + ext) as f:
+    with File(str(FILENAME)) as f:
        if (count<40):
           for row in f.head(count):
              print row.rstrip()

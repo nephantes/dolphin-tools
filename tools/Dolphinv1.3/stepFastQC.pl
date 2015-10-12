@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepRSEM.pl
+#                                       stepFastQC.pl
 #########################################################################################
 # 
-#  This program quantify the genes using RSEM 
+#  This program runs fastQC program
 #
 #########################################################################################
 # AUTHORS:
@@ -34,16 +34,16 @@
 
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'outdir=s'       => \$outdir,
-        'prog=s'         => \$prog,
-        'barcode=s'      => \$barcode,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'outdir=s'       => \$outdir,
+    'prog=s'         => \$prog,
+    'barcode=s'      => \$barcode,
+    'jobsubmit=s'    => \$jobsubmit,
+    'servicename=s'  => \$servicename,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -77,8 +77,11 @@ else
 print $inputdir."\n";
 $outdir   = "$outdir/fastqc";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
+
 my $com="";
 $com=`ls $inputdir/*.fastq`;
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -90,10 +93,12 @@ foreach my $file (@files)
  die "Error 64: please check the file:".$file unless (checkFile($file));
  my $dir=$outdir."/".$bname;
  `mkdir -p $dir`;
+ die "Error 15: Cannot create the directory:".$dir if ($?);
  $com="$prog ".$file." -o $dir";
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";
  `$job`;
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 
@@ -109,63 +114,12 @@ __END__
 
 =head1 NAME
 
-stepRSEM.pl
-
-=head1 SYNOPSIS  
-
-stepRSEM.pl 
-            -o outdir <output directory> 
-            -r rsemref <rsemref files> 
-            -c cmdrsem <rsem Commandd> 
-            -b bowtiepath <ribosome Index file>
-            -p paramsrsem <rsem parameters>
-
-stepRSEM.pl -help
-
-stepRSEM.pl -version
-
-For help, run this script with -help option.
-
-=head1 OPTIONS
-
-=head2 -o outdir <output directory>
-
-the output files will be "$outdir/after_ribosome" 
-
-=head2 -c CmdRSEM <bowtie dir and file> 
-
-Fullpath of rsem-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/rsem-calculate-expression
-
-=head2  -r rsemref <rsem ref files> 
-
-rsem reference file
-
-=head2 -help
-
-Display this documentation.
-
-=head2 -version
-
-Display the version
-
-=head1 DESCRIPTION
-
- This program maps the reads using tophat2
-
-=head1 EXAMPLE
-
-stepRSEM.pl 
-            -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -t tophatCmd <tophat dir and file> 
-            -b bowtie2Ind <ribosome Index file>
+stepFastQC.pl
 
 =head1 AUTHORS
 
-
  Alper Kucukural, PhD
 
- 
 =head1 LICENSE AND COPYING
 
  This program is free software; you can redistribute it and / or modify
@@ -181,6 +135,8 @@ stepRSEM.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
+
+
 
 
 

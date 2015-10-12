@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepIGVTDF.pl
+#                                       stepPicard.pl
 #########################################################################################
 # 
-#  Converts bam files for IGV visualization.
+#  This program runs the picard 
 #
 #########################################################################################
 # AUTHORS:
@@ -12,7 +12,6 @@
 # Alper Kucukural, PhD 
 # 
 #########################################################################################
-
 
 ############## LIBRARIES AND PRAGMAS ################
 
@@ -23,15 +22,13 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $genome           = "";
- my $type             = "";
- my $pair             = "";
- my $insertlen        = "";
+ my $refflat          = "";
  my $outdir           = "";
- my $pubdir          = "";
+ my $type             = "";
+ my $picardCmd        = "";
+ my $cmdname          = "";
+ my $pubdir           = "";
  my $wkey             = "";
- my $samtools         = "";
- my $igvtools         = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -41,20 +38,18 @@
 
 my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
-GetOptions( 
-    'outdir=s'       => \$outdir,
-    'type=s'         => \$type,
-    'samtools=s'     => \$samtools,
-    'igvtools=s'     => \$igvtools,
-    'len=s'          => \$insertlen,
-    'pair=s'         => \$pair,
-    'pubdir=s'       => \$pubdir,
-    'wkey=s'         => \$wkey,
-    'jobsubmit=s'    => \$jobsubmit,
-    'servicename=s'  => \$servicename,
-    'genome=s'       => \$genome,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+GetOptions(
+    'outdir=s'        => \$outdir,
+    'refflat=s'       => \$refflat,
+    'type=s'          => \$type,
+    'picardCmd=s'     => \$picardCmd,
+    'name=s'          => \$cmdname,
+    'pubdir=s'        => \$pubdir,
+    'wkey=s'          => \$wkey,
+    'jobsubmit=s'     => \$jobsubmit,
+    'servicename=s'   => \$servicename,
+    'help'            => \$help, 
+    'version'         => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -69,19 +64,14 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($genome eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outdir eq "") or ($picardCmd eq "") );	
 
- 
 ################### MAIN PROGRAM ####################
-#   converts the mapped reads for IGV visualization
+# runs the picard program
 
-my $outd  = "$outdir/tdf_$type";
+my $outd  = "$outdir/picard_$type";
+
 `mkdir -p $outd`;
-die "Error 15: Cannot create the directory:$outd" if ($?);
-
-my $puboutdir   = "$pubdir/$wkey/tdf_$type";
-`mkdir -p $puboutdir`;
-die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 print $type."\n";
@@ -107,64 +97,46 @@ else
    @files = <$indir/pipe*/*.sorted.bam>;
 }
 
-my $param="";
-if ($insertlen!~/^$/)
-{
-  $param="-e $insertlen";
-}
-if ($pair eq "paired")
-{
-  $param="--pairs";
-}
-
-
 foreach my $d (@files){ 
-  my ($com, $libname, $dirname)=();
-  print $d."\n";
+  my $dirname=dirname($d);
+  my $libname=basename($d, ".sorted.bam");
+  my $com="$picardCmd $cmdname"; 
+  
+  if ($cmdname eq "CollectRnaSeqMetrics") {
+    $com.=" REF_FLAT=$refflat STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ";
+    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
+  }
+  elsif ($cmdname eq "MarkDuplicates") {
+    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/PCR_duplicates REMOVE_DUPLICATES=true";
+  }
+  else {
+    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
+  }
 
-  if ($type eq "RSEM")
-  {
-     $libname=basename($d, ".genome.sorted.bam");
-     $dirname=dirname($d);
-     $libname=~s/rsem.out.//g;
-     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam && ";
-     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai && ";
-  }
-  else
-  {
-     $dirname=dirname($d);
-     $libname=basename($d, ".sorted.bam");
-     $libname=basename($d, ".bam")  if ($type eq "mergechip");
-     
-     $com="cp $d $outd/$libname.bam && ";
-     $com.="cp $d.bai $outd/$libname.bam.bai && ";
-  }
- 
-  $com.="cd $outdir && $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome && "; 
-  $com.="cp -R $outd/$libname.* $puboutdir/.";
+  $com.=" INPUT=$d > /dev/null";
+  
+  print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
-  print $job."\n";   
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }
-
 __END__
 
 
 =head1 NAME
 
-stepIGVTDF.pl
+stepPicard.pl
 
 =head1 SYNOPSIS  
 
-stepIGVTDF.pl 
+stepPicard.pl 
             -o outdir <output directory> 
-            -g genome <genome files> 
-            -s samtools <samtools fullpath> 
+            -r refflat <ucsc gtf files> 
+            -p picardCmd <picard full path> 
 
-stepIGVTDF.pl -help
+stepPicard.pl -help
 
-stepIGVTDF.pl -version
+stepPicard.pl -version
 
 For help, run this script with -help option.
 
@@ -172,15 +144,15 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome/tdf" 
+the output files will be stored "$outdir/after_ribosome/cuffdiff" 
 
-=head2  -g genome <genome files> 
+=head2 -p picardCmd <picard running line> 
 
-Genome fasta file. (Full path)
+Fullpath of picard running line. Ex: ~/cuffdiff_dir/cuffdiff
 
-=head2   -t samtools <samtools fullpath> 
+=head2  -r refflat <refflat file>  
 
-Samtools full path
+ucsc refflat file
 
 =head2 -help
 
@@ -192,19 +164,18 @@ Display the version
 
 =head1 DESCRIPTION
 
- This program maps the reads using tophat2
+This program runs the cufflinks after tophat mappings
 
 =head1 EXAMPLE
 
-stepIGVTDF.pl 
+stepPicard.pl 
             -o outdir <output directory> 
-            -g genome <genome files> 
-            -s samtools <samtools fullpath> 
+            -g gtf <ucsc gtf files> 
+            -c cufflinksCmd <cufflinks full path> 
 
 =head1 AUTHORS
 
  Alper Kucukural, PhD
-
  
 =head1 LICENSE AND COPYING
 
@@ -221,6 +192,4 @@ stepIGVTDF.pl
  You should have received a copy of the GNU General Public License
  along with this program; if not, a copy is available at
  http://www.gnu.org/licenses/licenses.html
-
-
 

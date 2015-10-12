@@ -1,3 +1,0 @@
-step1	ls -l	1
-step2	echo "Success Alper"	1
-step3	ls	1

@@ -43,22 +43,22 @@
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-	'input=s'        => \$input,
-	'outdir=s'       => \$outdir,
-        'cmd=s'          => \$bowtiecmd,
-        'msamtoolscmd=s' => \$samtoolscmd,
-        'awkdir=s'       => \$awkdir,
-        'dspaired=s'     => \$spaired,
-        'bowtiePar=s'    => \$bowtiePar,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-        'radvparam=s'    => \$advparams,
-        'param=s'        => \$param,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'input=s'        => \$input,
+    'outdir=s'       => \$outdir,
+    'cmd=s'          => \$bowtiecmd,
+    'msamtoolscmd=s' => \$samtoolscmd,
+    'awkdir=s'       => \$awkdir,
+    'dspaired=s'     => \$spaired,
+    'bowtiePar=s'    => \$bowtiePar,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'radvparam=s'    => \$advparams,
+    'param=s'        => \$param,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -81,6 +81,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 
+my $fasta=createIndex($indexfile, $bowtiecmd);
 $indexpar=~s/_/ /g;
 
 if ($advparams ne "NONE")
@@ -108,16 +109,19 @@ print "I:$inputdir\n";
 print "O:$outdir\n";
 
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir  if ($?);
 my $com="";
 
-if ($spaired eq "single")
+if (lc($spaired) eq "none")
 {
- $com=`ls $inputdir/*.fastq`;
+ print "Here";
+ $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
- $com=`ls $inputdir/*.1.fastq`;
+ $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
@@ -126,7 +130,7 @@ foreach my $file (@files)
 {
   $file=~/.*\/(.*).fastq/;
   my $bname=$1;
-  if ($spaired eq "single")
+  if (lc($spaired) eq "none")
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
 
@@ -134,7 +138,7 @@ foreach my $file (@files)
        $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
        $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
        $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
+       $com.="$samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
        $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
        $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
        $com.="rm -rf $outdir/$bname.sam;";
@@ -159,7 +163,7 @@ foreach my $file (@files)
        $com.="samtools index $outdir/$bname.sorted.bam;";
        $com.="rm -rf $outdir/$bname.sam;";
        $com.="rm -rf $outdir/$bname.bam;";
-       $com.="rm -rf $outdir/*.mapped;";
+       $com.="rm -rf $outdir/$bname*.mapped;";
  #      $com.="rm -rf $inputdir/$bname.1.fastq";
  #      $com.="rm -rf $inputdir/$bname.2.fastq";
   }
@@ -169,7 +173,33 @@ foreach my $file (@files)
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
+die "Error 25: Cannot run the job:".$job if ($?);
 }
+
+sub createIndex
+{
+  my ($ind, $cmd) = @_;
+     my $fasta=$ind;
+     if(checkFile("$ind.fasta"))
+     {
+       $fasta.=".fasta";
+     }
+     elsif(checkFile("$ind.fa"))
+     {
+       $fasta.=".fa";
+     }
+     else
+     {
+      die "Error 64: please check the file: $ind.fa or $ind.fasta ";
+     }
+     if(!checkFile("$ind.4.bt2"))
+     {
+        $com=$cmd."-build $fasta $ind";
+        `$com`;
+     }
+     return $fasta;
+}
+
 
 sub checkFile
 {

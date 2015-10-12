@@ -33,26 +33,37 @@
  my $jobsubmit        = "";
  my $barcode          = "";
  my $adapter          = ""; 
- my $trim             = ""; 
+ my $trim             = "";
+ my $dbcommcmd        = ""; 
+ my $username         = "";
+ my $config           = "";
+ my $wkey             = "";
+ my $runparamsid      = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
+my $execdir= dirname($0);
 
 GetOptions( 
-	'input=s'        => \$input,
-	'resume=s'       => \$resume,
-	'outdir=s'       => \$outdir,
-        'barcode=s'      => \$barcode,
-        'adapter=s'      => \$adapter,
-        'trim=s'         => \$trim,
-        'servicename=s'  => \$servicename,
-        'jobsubmit=s'    => \$jobsubmit,
-	'help'           => \$help, 
-	'version'        => \$print_version,
+    'input=s'        => \$input,
+    'resume=s'       => \$resume,
+    'outdir=s'       => \$outdir,
+    'barcode=s'      => \$barcode,
+    'username=s'     => \$username,
+    'adapter=s'      => \$adapter,
+    'trim=s'         => \$trim,
+    'wkey=s'         => \$wkey,
+    'config=s'       => \$config,
+    'dbcommcmd=s'    => \$dbcommcmd,
+    'paramsid=s'     => \$runparamsid,
+    'servicename=s'  => \$servicename,
+    'jobsubmit=s'    => \$jobsubmit,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized options.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -71,7 +82,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
-if ($resume eq "fresh")
+if (lc($resume) eq "yes")
 {
    `rm -rf $outdir/tmp/track/*`;
    `rm -rf $outdir/seqmapping`;
@@ -86,14 +97,19 @@ if ($resume eq "fresh")
 $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
- 
+
+my $cmd="$dbcommcmd -c $config -f running -u $username -r $runparamsid -w $wkey -o $outdir";
+print $cmd."\n";
+`$cmd`;
+die "Error 20: Cannot connect to the database:" if ($?);
+
 my @pfiles=split(/:/,$input);
 
-if($adapter ne "NONE")
+if(lc($adapter) ne "none")
 {
    die "Error 66: please check the adapter:$adapter" unless ($adapter =~/^[ACGT:]+$/);
 }
-if($trim ne "NONE")
+if(lc($trim) ne "none")
 {
    my @nts=split(/[,\s\t:]+/,$trim);
    foreach my $ntlen (@nts)
@@ -106,6 +122,7 @@ if($trim ne "NONE")
 }
 $outdir   = "$outdir/input";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my %prefiles=();
 foreach my $line (@pfiles)
@@ -117,7 +134,7 @@ foreach my $line (@pfiles)
   
   my $maxindex=2;
   my $offset=1;
-  if($barcode eq "NONE")
+  if(lc($barcode) eq "none")
   {
     $libname=$files[0];
     print "Libname:[$libname]\n";
@@ -150,11 +167,12 @@ foreach my $libname (keys %prefiles)
     my $job=$jobsubmit." -n ".$servicename.$libname." -c \"$com\"";
     print $job."\n\n";
     `$job`;
+	die "Error 25: Cannot run the job:".$job if ($?);
     $i++;
   }
  }
 
-if($barcode ne "NONE")
+if(lc($barcode) ne "none")
 {  
   my @blines=split(/:/,$barcode);
   foreach my $line (@blines)
@@ -162,7 +180,7 @@ if($barcode ne "NONE")
     if (length($line)>1)
     {
       my @defs=split(/[,\s\t]+/,$line);
-      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)==2);
+      die "Error 65: please check the barcode definitions:$line" unless (scalar(@defs)>1);
     }
   }
 }
