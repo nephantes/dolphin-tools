@@ -106,8 +106,8 @@ If everything is successfull you need to see an output something like below;
    
    All the services Ended
 
-The directory structure:
-==========================================
+The directory structure
+=======================
 
 * For each step you want to run will be a script under OUTDIR/scripts directory.
 * The standard output will be logged under tmp/lsf folder with its PID.std.
