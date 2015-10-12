@@ -27,11 +27,11 @@ There are examples in tests/pipeline folder.
 
 * Ex:
 .. code-block:: bash
-w1.txt
+   w1.txt
 
-step1	ls -l	1
-step2	echo 1	1
-step3	ls	1
+   step1	ls -l	1
+   step2	echo 1	1
+   step3	ls	1
 
 Here we are going to run three steps in the cluster and runWorkflow script will check the steps in every second, if they finished sucessfully or not.
 
@@ -63,7 +63,7 @@ Options:
 please chose your -f option according to your installation. If you are running this on Docker and made your definitions right on your Docker section right. The command should be something like below;
 
 .. code-block:: bash
-python path/to/installation_dir/src/runWorkflow.py -f Docker -w path/to/w1.txt -o /export/TEST2
+   python path/to/installation_dir/src/runWorkflow.py -f Docker -w path/to/w1.txt -o /export/TEST2
 
 Standart output of a run in Docker
 ==================================
@@ -71,39 +71,39 @@ Standart output of a run in Docker
 If everything is successfull you need to see an output something like below;
 
 .. code-block:: bash
-Docker
-http://localhost/dolphin/api/service.php
-localhost
-/export/tmp/logs
-WORKFLOW STARTED:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS
+   Docker
+   http://localhost/dolphin/api/service.php
+   localhost
+   /export/tmp/logs
+   WORKFLOW STARTED:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS
+   
+   step1:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls -l
+   "RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"ls -l\" -n step1 -s step1 2>&1"
+   RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "ls -l" -n step1 -s step1 2>&1
+   
+   step1:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls -l
+   "Service ended successfully!!!"
+   Service ended successfully!!!
+   
+   step2:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:echo 1
+   "RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"echo 1\" -n step2 -s step2 2>&1"
+   RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "echo 1" -n step2 -s step2 2>&1
+   
+   step2:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:echo 1
+   "Service ended successfully!!!"
+   Service ended successfully!!!
+   
+   step3:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls
+   "RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"ls\" -n step3 -s step3 2>&1"
+   RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "ls" -n step3 -s step3 2>&1
+   
+   step3:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls
+   "Service ended successfully!!!"
+   Service ended successfully!!!
+   
+All    the services Ended
 
-step1:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls -l
-"RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"ls -l\" -n step1 -s step1 2>&1"
-RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "ls -l" -n step1 -s step1 2>&1
-
-step1:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls -l
-"Service ended successfully!!!"
-Service ended successfully!!!
-
-step2:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:echo 1
-"RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"echo 1\" -n step2 -s step2 2>&1"
-RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "echo 1" -n step2 -s step2 2>&1
-
-step2:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:echo 1
-"Service ended successfully!!!"
-Service ended successfully!!!
-
-step3:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls
-"RUNNING(2):python \/usr\/local\/share\/dolphin_tools\/src\/runService.py -f Localhost -d localhost   -o \/export\/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c \"ls\" -n step3 -s step3 2>&1"
-RUNNING(2):python /usr/local/share/dolphin_tools/src/runService.py -f Localhost -d localhost   -o /export/TEST -u kucukura -k hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS -c "ls" -n step3 -s step3 2>&1
-
-step3:hiB4l9c3DZNw7YS4ZzjAdmxyyXPzHS:ls
-"Service ended successfully!!!"
-Service ended successfully!!!
-
-All the services Ended
-
-The directory structure of an example run:
+The directory structure:
 ==========================================
 
 * For each step you want to run will be a script under OUTDIR/scripts directory.
@@ -113,28 +113,28 @@ There are other log files are about communication with mySQL and LSF logs if you
 * If there are other jobs submitted in the steps, they are going to be tracked under track folder to be able to resumed the jobs. But in this test, there is no such jobs. 
 
 .. code-block:: bash
-
-/export/TEST
-|-- scripts
-|   |-- step1.bash
-|   |-- step2.bash
-|   `-- step3.bash
-`-- tmp
-    |-- lsf
-    |   |-- 862.jobStatus.log
-    |   |-- 862.std
-    |   |-- 895.jobStatus.log
-    |   |-- 895.std
-    |   |-- 927.jobStatus.log
-    |   `-- 927.std
-    |-- src
-    |   |-- step1.submit.bash
-    |   |-- step1.tmp.bash
-    |   |-- step2.submit.bash
-    |   |-- step2.tmp.bash
-    |   |-- step3.submit.bash
-    |   `-- step3.tmp.bash
-    `-- track
+   
+   /export/TEST
+   |-- scripts
+   |   |-- step1.bash
+   |   |-- step2.bash
+   |   `-- step3.bash
+   `-- tmp
+       |-- lsf
+       |   |-- 862.jobStatus.log
+       |   |-- 862.std
+       |   |-- 895.jobStatus.log
+       |   |-- 895.std
+       |   |-- 927.jobStatus.log
+       |   `-- 927.std
+       |-- src
+       |   |-- step1.submit.bash
+       |   |-- step1.tmp.bash
+       |   |-- step2.submit.bash
+       |   |-- step2.tmp.bash
+       |   |-- step3.submit.bash
+       |   `-- step3.tmp.bash
+       `-- track
 
 
 
