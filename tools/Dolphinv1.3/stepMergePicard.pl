@@ -76,7 +76,8 @@ my @outtypes = ("CollectRnaSeqMetrics", "alignment_summary_metrics", "base_distr
 my $c=0;
 foreach my $outtype (@outtypes)
 {
-my $ext="_multiple.out.$outtype";
+my $ext="_multiple.out";
+$ext.=".$outtype" if ($outtype ne "CollectRnaSeqMetrics");
 print $ext."\n";
 @files = <$indir/*$ext>;
 
