@@ -152,9 +152,9 @@ sub getMetricVals{
      while(my $line=<IN>)
      {
        chomp($line);
-       @{$rowheaders}=split(/[\s\t]+/, $line) if ($nextisheader && !scalar(@{$rowheaders})); 
+       @{$rowheaders}=split(/\t/, $line) if ($nextisheader && !scalar(@{$rowheaders})); 
        if ($nextisvals) {
-         @{${$metricvals}{$libname}}=split(/[\s\t]+/, $line);
+         @{${$metricvals}{$libname}}=split(/\t/, $line);
          $nextisvals=0;
        }
        if($nexthist){
