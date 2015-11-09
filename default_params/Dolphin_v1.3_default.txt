@@ -5,12 +5,11 @@
 @RPROG            = module load R/3.0.1
 @SAMTOOLS         = "module load  samtools/0.0.19 && samtools"
 @BIN              = /project/umw_biocore/bin
-@TOOLSDIR         = @BIN/workflow/dolphin-tools
+@TOOLSDIR         = @BIN/workflow/dolphin-tools-dev
 @DOLPHIN          = @TOOLSDIR/tools/Dolphinv1.3
 @GDB              = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GDB/commondb
-@JOB              = @PYTHON @TOOLSDIR/src/submitJobs.py -f @CONFIG -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR
-@JGEN             = "@JOB -p 1 -m 16096 -t 230 -q short"
+@JOB              = "@PYTHON @TOOLSDIR/src/submitJobs.py -f @CONFIG -d @DBHOSTNAME -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR"
 @PUBDIR           = /project/umw_biocore/pub/ngstrack_pub/
 
 
@@ -31,7 +30,6 @@
 @AWKDIR           = @DOLPHIN
 @BOWTIE2CMD       = @BIN/bowtie2-2.2.3/bowtie2
 @ADVPARAMS        = "-N 1"
-@JMAPPING         = "@JOB -p 2 -m 16096 -t 900 -q long"
 
 #StepBarcode Separation
 @RUNBARCODE         = @PERL @DOLPHIN/stepBarcode.pl
@@ -43,11 +41,9 @@
 #StepAdapter Remover
 @RUNADAPTER         = @PERL @DOLPHIN/stepAdapter.pl
 @MATICCMD           = "@JAVA -jar /project/umw_biocore/bin/Trimmomatic-0.32/trimmomatic-0.32.jar"
-@JADAPTER           = "@JOB -p 1 -m 16096 -t 530 -q short"
 
 #Step Quality Filtering
 @RUNQUALITY         = @PERL @DOLPHIN/stepQuality.pl
-@JQUALITY           = "@JOB -p 1 -m 16096 -t 530 -q short"
 
 #StepTrim 
 @RUNTRIM            = @PERL @DOLPHIN/stepTrimmer.pl
@@ -70,25 +66,21 @@
 @RUNFASTQC          = @DOLPHIN/stepFastQC.pl
 @FASTQCPROG         = "module load fastqc/0.10.1 && fastqc" 
 @RUNFASTQCMERGE     = @DOLPHIN/stepAfterFastQC.pl
-@JFASTQC            = "@JOB -p 1 -m 1024 -t 240"
 
 #StepRSEM
 @RUNRSEM            = @PERL @DOLPHIN/stepRSEM.pl
 @RSEMCMD            = "@PERL @BIN/RSEM/rsem-calculate-expression"
 @BOWTIEPATH         = @BIN/bowtie-0.12.9
 @RSEMREF            = @GDB/rsem_ref
-@JRSEM              = "@JOB -p 4 -m 8192 -t 900 -q long"
 
 #StepRSEMCount
 @RUNRSEMCOUNT       = @PERL @DOLPHIN/stepRSEMcount.pl
-@JRSEMCOUNT         = "@JOB"
 
 #StepTophat2
 @RUNTOPHAT2         = @DOLPHIN/stepTophat2.pl
 @BOWTIE2INDEX       = @GDB/@VERSION
 @GTF                = @GDB/ucsc.gtf#Required
 @TOPHAT2CMD         = "module load samtools/0.0.19 && module load bowtie2/2-2.1.0 && module load tophat/2.0.9 && tophat2"
-@JTOPHAT            = "@JOB -p 4 -m 4096 -t 2400 -q long"
 
 #stepSplit Fastq
 @RUNSPLIT           = @DOLPHIN/stepSplit.pl
@@ -99,45 +91,35 @@
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl
 @MACSCMD            = "module load macs/1.4.2 && macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
-@JMACS              = "@JOB -p 1 -m 16000 -t 230 -q short"
 
 #StepIGVTDF
 @RUNIGVTDF          = @PERL @DOLPHIN/stepIGVTDF.pl
 @GENOMEFASTA        = @GDB/@VERSION.fa #Required
 @IGVTOOLS           = @BIN/igvtools.sh
-@JIGVTDF            = "@JOB -p 4 -m 4096 -t 120"
 
 #Step Convert BW
 @GENOMESIZE         = @GDB/@VERSION.chrom.sizes
 @RUNBAM2BW          = @PERL @DOLPHIN/stepBAM2BW.pl
 @RUNCOVERAGE        = "@BIN/bedtools/bin/genomeCoverageBed" 
 @WIGTOBIGWIG        = @BIN/wigToBigWig
-@JBAM2BW            = "@JOB -p 1 -m 4096 -t 60"
 
 #Step picard
 @RUNPICARD          = @DOLPHIN/stepPicard.pl
 @RUNMERGEPICARD     = @DOLPHIN/stepMergePicard.pl
 @PICARDCMD          = "@RPROG && @JAVA -jar @BIN/picard-tools-1.131/picard.jar"
 @REFFLAT            = @GDB/ref_flat
-@JPICARD            = "@JOB -p 2 -m 16192 -t 900 -q long" 
 
-
- 
 #RunAggregation
 @RUNAGGREGATION   = @PERL @DOLPHIN/stepAGG.pl
 @REFACT           = @GDB/refACT.tab
 @BTOOLSGENCOV     = @RUNCOVERAGE
 @INTOPDF          = "@RPROG && R --file=@BIN/ACT/intopdf.R"
 @ACT              = "@PYTHON @BIN/ACT/ACT.py --radius=5000 --nbins=50 --mbins=50 --region"
-@JAGG             = "@JOB -p 1 -m 16192 -t 640 -q long"
 
 #BISULPHITE PIPELINE
 @RUNBSMAP         = @PERL @DOLPHIN/stepBSMap.pl
-@JBSMAP           = "@JOB -p 2 -m 16096 -t 900 -q long"
 @RUNMCALL         = @PERL @DOLPHIN/stepMCall.pm
-@JMCALL           = "@JOB -p 2 -m 16096 -t 900 -q long"
 @RUNMCOMP         = @PERL @DOLPHIN/stepMComp.pm
-@JMCOMP           = "@JOB -p 2 -m 16096 -t 900 -q long"
 
 #RunCleaning Step
 @RUNCLEAN         = @PERL @DOLPHIN/stepClean.pl
