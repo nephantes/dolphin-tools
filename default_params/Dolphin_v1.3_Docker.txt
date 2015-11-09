@@ -107,6 +107,7 @@
 @RUNMERGEPICARD     = @DOLPHIN/stepMergePicard.pl
 @PICARDCMD          = "@JAVA -jar @BIN/picard-tools-1.131/picard.jar" 
 @REFFLAT            = @GDB/ref_flat
+@JPICARD            = "@JOB -p 2 -m 16192 -t 900 -q long"
  
 #RunAggregation
 @RUNAGGREGATION   = @PERL @DOLPHIN/stepAGG.pl

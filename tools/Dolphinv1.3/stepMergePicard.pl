@@ -76,7 +76,8 @@ my @outtypes = ("CollectRnaSeqMetrics", "alignment_summary_metrics", "base_distr
 my $c=0;
 foreach my $outtype (@outtypes)
 {
-my $ext="_multiple.out.$outtype";
+my $ext="_multiple.out";
+$ext.=".$outtype" if ($outtype ne "CollectRnaSeqMetrics");
 print $ext."\n";
 @files = <$indir/*$ext>;
 
@@ -151,9 +152,9 @@ sub getMetricVals{
      while(my $line=<IN>)
      {
        chomp($line);
-       @{$rowheaders}=split(/[\s\t]+/, $line) if ($nextisheader && !scalar(@{$rowheaders})); 
+       @{$rowheaders}=split(/\t/, $line) if ($nextisheader && !scalar(@{$rowheaders})); 
        if ($nextisvals) {
-         @{${$metricvals}{$libname}}=split(/[\s\t]+/, $line);
+         @{${$metricvals}{$libname}}=split(/\t/, $line);
          $nextisvals=0;
        }
        if($nexthist){
