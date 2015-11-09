@@ -11,78 +11,33 @@ import sys
 import time
 sys.path.insert(0, sys.path[0])
 from config import *
+from funcs import *
 
 class jobStatus:
-    config=""
     url=""
-    re_string = re.compile(r'(?P<htmlchars>[<&>])|(?P<space>^[ \t]+)|(?P<lineend>\r\n|\r|\n)|(?P<protocal>(^|\s)((http|ftp)://.*?))(\s|$)', re.S|re.M|re.I)
-    
-    def plaintext2html(self, text, tabstop=4):
-        def do_sub(m):
-            c = m.groupdict()
-            if c['htmlchars']:
-                return cgi.escape(c['htmlchars'])
-            if c['lineend']:
-                return '<br>'
-            elif c['space']:
-                t = m.group().replace('\t', '&nbsp;'*tabstop)
-                t = t.replace(' ', '&nbsp;')
-                return t
-            elif c['space'] == '\t':
-                return ' '*tabstop;
-            else:
-                url = m.group('protocal')
-                if url.startswith(' '):
-                    prefix = ' '
-                    url = url[1:]
-                else:
-                    prefix = ''
-                last = m.groups()[-1]
-                if last in ['\n', '\r', '\r\n']:
-                    last = '<br>'
-                return '%s<a href="%s">%s</a>%s' % (prefix, url, url, last)
-        return re.sub(self.re_string, do_sub, text)
-    
-    def queryAPI(self, data, name, logging):
-        opener = urllib2.build_opener(urllib2.HTTPHandler())
-        trials=0
-        while trials<5:
-           try:
-              mesg = opener.open(self.url, data=data).read()
-              trials=10
-           except:
-              print "Couldn't connect to dolphin server (%s)"%trials
-              logging.info("Couldn't connect to dolphin server (%s)"%trials)
-              time.sleep(15)
-           trials=trials+1
-        ret=str(json.loads(mesg))
-        logging.info("%s:%s"%(name,ret))
-    
-        if (ret.startswith("ERROR")):
-              logging.info("%s:%s"%(name,ret))
-              print name + ":" + ret + "\n"
-              sys.exit(2);
-        
+    f=""
+    def __init__(self, url, f ):
+        self.url = url
+        self.f = f
     
     def checkAllJobsFinished(self, username, wkey, servicename, logging):
         data = urllib.urlencode({'func':'checkAllJobsFinished', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename})
-        
-        self.queryAPI(data, servicename, logging) 
+        self.f.queryAPI(self.url, data, servicename, logging) 
     
     def insertJob(self,  username, wkey, com, jobname, servicename, jobnum, result, logging):
         data = urllib.urlencode({'func':'insertJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 
                                  'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        self.queryAPI(data, "INSERT"+jobname, logging) 
-    
+        self.f.queryAPI(self.url, data, "INSERT"+jobname, logging) 
+   
     def updateJob(self,  username, wkey, jobname, servicename, field, jobnum, result, logging):
         data = urllib.urlencode({'func':'updateJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 
                                  'field':field , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        self.queryAPI(data, "UPDATE"+jobname, logging) 
+        self.f.queryAPI(self.url, data, "UPDATE"+jobname, logging) 
     
     def insertJobOut(self, username, wkey, jobnum, outdir, edir, logging):
         file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".std"
@@ -96,11 +51,11 @@ class jobStatus:
             if err:
                  logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
                  raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err) 
-            jobout=self.plaintext2html(re.sub('\'', "\"", jobout))
+            jobout=self.f.plaintext2html(re.sub('\'', "\"", jobout))
            
             data = urllib.urlencode({'func':'insertJobOut', 'username':username, 
                                  'wkey':wkey, 'jobnum':str(jobnum), 'jobout':jobout})
-            self.queryAPI(data, "jobnum:"+str(jobnum), logging) 
+            self.f.queryAPI(self.url, data, "jobnum:"+str(jobnum), logging) 
 
        
 def main():
@@ -136,9 +91,10 @@ def main():
    OUTDIR                  = options.outdir
    CONFIG                  = options.config
         
-   jobStat = jobStatus()
-   jobStat.config = getConfig(CONFIG)
-   jobStat.url = jobStat.config['url']
+
+   f = funcs()
+   config = getConfig(CONFIG)
+   jobStat = jobStatus(config['url'], f)
    
    edir=os.path.dirname(sys.argv[0])
    print OUTDIR

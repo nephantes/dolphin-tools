@@ -1,15 +1,17 @@
-.. dolphin-tools documentation master file, created by
-   sphinx-quickstart on Sat Jul  4 20:01:43 2015.
+.. dolphintools documentation master file, created by
+   sphinx-quickstart on Mon Oct 12 22:39:14 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to dolphin-tools's documentation!
-=========================================
+Welcome to dolphintools's documentation!
+========================================
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+   quickstart
 
 
 

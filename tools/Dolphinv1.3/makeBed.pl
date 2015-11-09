@@ -15,7 +15,7 @@ while(my $line=<IN>)
     $name="$1";
     $seq="";
   }
-  else
+  elsif($line=~/[ACGTN]+/)
   {
     $seq.=$line;
   }

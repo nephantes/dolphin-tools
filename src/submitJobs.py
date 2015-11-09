@@ -1,24 +1,75 @@
 #!/bin/env python
-        
+
+import logging
 from optparse import OptionParser
 import sys
 import os
 import re
 import string
 import subprocess
+import math
+import json
 
 sys.path.insert(0, sys.path[0])
 from config import *
+from funcs import *
 
-def runcmd(command): 
-    print command
-    child = os.popen(command)
-    data = child.read()
-    print data
-    err = child.close()
-    if err:
-        return 'ERROR: %s failed w/ exit code %d' % (command, err)
-    return data
+
+class submitJobs:
+    url = ""
+    f=""
+    def __init__(self, url, f ):
+        self.url = url
+        self.f = f
+
+    def getJobParams(self, servicename,name, wkey, logging):
+        queue = "short"
+        cputime = 240
+        memory = 8096
+        cpu = 1 
+
+        if (servicename != name):
+           data = urllib.urlencode({'func':'getJobParams', 'servicename':servicename, 'name':name, 'wkey':wkey})
+           jobparams=self.f.queryAPI(self.url, data, servicename, logging)
+           data    = json.loads(jobparams)
+           cputime = int(math.floor(int(data['cputime'])/60)+60)
+           memory = int(math.floor(int(data['maxmemory']))+1024)
+           # Set cputime and queue
+           if(cputime>240):
+              queue = "long"
+           if(cputime>=10000):
+              cputime = 10000
+           if(memory>=32000):
+              memory = 32000
+        alist = (queue, str(cputime), str(memory), str(cpu))
+        return list(alist)
+
+    def runcmd(self, command): 
+        print command
+        child = os.popen(command)
+        data = child.read()
+        print data
+        err = child.close()
+        if err:
+           return 'ERROR: %s failed w/ exit code %d' % (command, err)
+        return data
+ 
+    def moduleload(self, python):
+        com="module list 2>&1 |grep python/2.7.5"
+        pythonload=str(os.popen(com).readline().rstrip())
+        if (len(pythonload)<5):
+           com     = "module load python/2.7.5;";
+           pythonload=str(os.popen(com).readline().rstrip())
+           python      = "module load python/2.7.5;" + python;
+
+        com="module list 2>&1 |grep openssl/1.0.1g"
+        sslload=str(os.popen(com).readline().rstrip())
+        if (len(sslload)<5):
+           com = "module load openssl/1.0.1g;"
+           sslload=str(os.popen(com).readline().rstrip())
+        return python 
+
+
 
 def main():
 
@@ -30,11 +81,7 @@ def main():
         parser.add_option('-s', '--servicename', help='service name', dest='servicename')
         parser.add_option('-c', '--command', help='command that is goinf to be run', dest='com')
         parser.add_option('-n', '--name', help='name of the run', dest='name')
-        parser.add_option('-p', '--cpu', help='the # of cpu', dest='cpu')
-        parser.add_option('-t', '--time', help='time', dest='time')
-        parser.add_option('-m', '--memory', help='memory', dest='memory')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
-        parser.add_option('-q', '--queue', help='queue', dest='queue')
         parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
         (options, args) = parser.parse_args()
    except:
@@ -45,56 +92,14 @@ def main():
    WKEY        = options.wkey 
    OUTDIR      = options.outdir 
    SERVICENAME = options.servicename
-   COM         = options.com
    NAME        = options.name
-   CPU         = options.cpu
-   TIME        = options.time
-   MEMORY      = options.memory
-   QUEUE       = options.queue
+   COM         = options.com
    CONFIG      = options.config
    python      = "python"
 
    config=getConfig(CONFIG)
-
-   com="module list 2>&1 |grep python/2.7.5"
-   pythonload=str(os.popen(com).readline().rstrip())
-   if (len(pythonload)<5):
-       com     = "module load python/2.7.5;";
-       pythonload=str(os.popen(com).readline().rstrip())
-       python      = "module load python/2.7.5;" + python;
-
-   com="module list 2>&1 |grep openssl/1.0.1g"
-   sslload=str(os.popen(com).readline().rstrip())
-   if (len(sslload)<5):
-       com = "module load openssl/1.0.1g;"
-       sslload=str(os.popen(com).readline().rstrip())
-   
-   if (USERNAME==None):
-        USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
-   
-   print "USER:"+str(USERNAME)+"\n";
-
-   if (NAME == None):
-        NAME="job";
-   if (OUTDIR == None):
-        OUTDIR="~/out";
-   if (CPU == None):
-        CPU="1";
-   if (TIME == None):
-        TIME="240";
-   if (QUEUE == None):
-        queue="-q short"
-   else: 
-        queue="-q "+str(QUEUE)
-   if (MEMORY == None):
-        MEMORY="4096";
-  
-   COM.replace('\"{','\'{')
-   COM.replace('}\"','}\'')
-   print "COMMAND: [" + COM + "]\n"
-   print "NAME: [" + NAME + "]\n"
-   print "cpu: [" + CPU + "]\n"
-
+   f = funcs()
+   submitjobs = submitJobs(config['url'], f)
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    print "EXECDIR" + exec_dir
@@ -106,6 +111,37 @@ def main():
    os.system("mkdir -p "+track)
    os.system("mkdir -p "+src)
    os.system("mkdir -p "+lsf)
+
+   logfile="%s/tmp/lsf/%s.submit.log"%(OUTDIR, NAME)
+   logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+   logging.info("File Path:%s"%os.getcwd())
+   (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
+ 
+   logging.info("QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU))
+   
+   python = submitjobs.moduleload(python)
+   
+   if (USERNAME==None):
+        USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
+   
+   print "USER:"+str(USERNAME)+"\n";
+
+   if (NAME == None):
+        NAME="job";
+   if (OUTDIR == None):
+        OUTDIR="~/out";
+   if (QUEUE == None):
+        queue="-q short"
+   else: 
+        queue="-q "+str(QUEUE)
+  
+   COM.replace('\"{','\'{')
+   COM.replace('}\"','}\'')
+   print "COMMAND: [" + COM + "]\n"
+   print "NAME: [" + NAME + "]\n"
+   print "cpu: [" + CPU + "]\n"
+
+
    success_file = track+"/"+str(NAME)+".success";
    jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s"
   
@@ -162,7 +198,7 @@ def main():
      command="bsub "+queue+" -R \"select[os=rh6.4 || os=rh6.5]\" -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
      print command
      f.write("SUBMIT SCRIPT[" + command +"]\n\n")
-     output = runcmd(command)
+     output = submitjobs.runcmd(command)
      f.write("SUBMIT OUT:[" + str(output) + "]\n")
      words = re.split('[\<\>]+', str(output))
      num = words[1]
@@ -173,7 +209,7 @@ def main():
      command = jobstatus_cmd % locals()
      f.write("RUN COMMAND:\n" + str(command) + "\n")
      if num>0:
-        return runcmd(command)
+        return submitjobs.runcmd(command)
      f.close()
  
 if __name__ == "__main__":
