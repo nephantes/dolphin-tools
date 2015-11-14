@@ -110,7 +110,7 @@
 @REFFLAT            = @GDB/ref_flat
 
 #Step RSeQC
-@RUNRSEQC           = @DOLPHIN/stepRSEQC.pl
+@RUNRSEQC           = "module load python/2.7.5_packages/RSeQC/2.6.2 && @DOLPHIN/stepRSEQC.pl"
 @RUNMERGERSEQC      = @DOLPHIN/stepMergeRSeQC.pl
 @BED12FILE          = @GDB/@VERSION.bed
 
