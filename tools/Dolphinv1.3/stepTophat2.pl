@@ -133,13 +133,13 @@ foreach my $file (@files)
 
     $str_files ="$file $file2";
  }
-
- if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"))
- {
-   $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files && ";
-   $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted && ";
-   $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam "; 
- }     
+ my $com="";
+ $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
+ $com.=" && " if ($com!~/^$/);
+ $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam"));
+ $com.=" && " if ($com!~/^$/);
+ $com.=" $samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam.bai"));
+ 
 
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";
