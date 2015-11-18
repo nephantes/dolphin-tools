@@ -32,12 +32,17 @@ class submitJobs:
            data = urllib.urlencode({'func':'getJobParams', 'servicename':servicename, 'name':name, 'wkey':wkey})
            jobparams=self.f.queryAPI(self.url, data, servicename, logging)
            data    = json.loads(jobparams)
-           cputime = int(math.floor(int(data['cputime'])/60)+60)
+           cputime_pred = int(math.floor(int(data['cputime'])/60)+60)
            memory = int(math.floor(int(data['maxmemory']))+1024)
+           if(servicename=="stepTophat2" or servicename=="stepRSEM"):
+               cpu=4
+               cputime=cputime_pred*2
+        
            # Set cputime and queue
-           if(cputime>240):
+           if(cputime_pred>240):
               queue = "long"
-           if(cputime>=10000):
+              cputime=cputime_pred
+           if(cputime_pred>=10000):
               cputime = 10000
            if(memory>=32000):
               memory = 32000
