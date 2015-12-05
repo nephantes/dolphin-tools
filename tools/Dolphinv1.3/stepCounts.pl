@@ -178,7 +178,7 @@ sub countCov
   $com.= "echo \"$wkey\t$version\tcounts\tcounts/$name.counts.tsv\" >> $puboutdir/reports.tsv "; 
   print $com."\n"; 
   `$com`;
-  die "Error 18: Cannot add to the reports!" if ($?);
+  #die "Error 18: Cannot add to the reports!" if ($?);
   }
 }
 
