@@ -114,13 +114,13 @@ my $com="";
 
 if (lc($spaired) eq "none")
 {
- print "Here";
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
 else
 {
  $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
+#exit 0 if ($inputdir=~/DC/);
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;

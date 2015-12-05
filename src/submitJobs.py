@@ -25,7 +25,7 @@ class submitJobs:
     def getJobParams(self, servicename,name, wkey, logging):
         queue = "short"
         cputime = 240
-        memory = 8096
+        memory = 16096
         cpu = 1 
 
         if (servicename != name):
