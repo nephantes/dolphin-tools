@@ -59,12 +59,8 @@ class dbcomm:
         data = urllib.urlencode({'func':'insertJobStats', 'username':username, 'wkey':wkey, 'jobnum':jobnum, 'stats':str(json.dumps(stats)) })
         self.queryAPI(data, wkey) 
 
-  def updateRunParams(self, runparamsid, wkey):
-
-    data = urllib.urlencode({'func':'updateRunParams', 'wkey':wkey, 'runparamsid':str(runparamsid)})
-    self.queryAPI(data, "runparamsid:"+str(runparamsid))
- 
   def insertReportTable(self, reportfile):
+ 
   
     if os.path.isfile(reportfile): 
       with open(reportfile,'r') as source:
@@ -102,9 +98,7 @@ def main():
     config=getConfig(CONFIG)
     dbcon.url=config['url']
 
-    if (FUNC == "running"):
-       dbcon.updateRunParams(RUNPARAMSID, WKEY)
-    elif (FUNC == "insertreport"):
+    if (FUNC == "insertreport"):
        dbcon.insertReportTable(INSERTREPORT)
     elif (FUNC == "insertJobStats"):
          jobnums = dbcon.getJobNums(WKEY)

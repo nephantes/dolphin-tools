@@ -14,47 +14,79 @@ import time
 import sys
 sys.path.insert(0, sys.path[0])
 from config import *
+from funcs import *
 from os.path import basename
 
-def remove_comments(line, sep):
-    for s in sep:
-        line = line.split(s)[0]
-    line += "\n"    
-    return line
+class runWorkflow:
+    url=""
+    f=""
+    def __init__(self, url, f ):
+        self.url = url
+        self.f = f
+
+    def remove_comments(self, line, sep):
+        for s in sep:
+            line = line.split(s)[0]
+        line += "\n"    
+        return line
+
+
+    def import_workflow(self, input_file=None):
+        wf = list()
+
+        with open(input_file, 'r') as infile:
+          for line in infile.readlines():
+            line=self.remove_comments(line, '#')
+            if (len(line) < 5): continue
+
+            servicename, command, waittime = re.split(r'[\t\,]+', line)
+            wf.append(Service(servicename,command,waittime))
+        return wf
+
+    def import_param(self, input_file=None):
+        wf = list()
+        whole_input = ""
+        with open(input_file, 'r') as fo:
+          for line in fo.readlines():
+            line=self.remove_comments(line, '#')
+            if (len(line) < 2): continue
+            whole_input += line
+        whole_input=re.sub('[\t\s]*[\n\r]','\n', whole_input)
+        whole_input=re.sub('\n@',';@', whole_input)
+        whole_input=re.sub('\n',':', whole_input)
+        whole_input=re.sub(r'[\t\s]*=+[\t\s:]*', '=', whole_input)
+        whole_input=re.sub(r'[\t\s]+', ',', whole_input)
+        whole_input=re.sub(r':@?$', '', whole_input)
+        return whole_input
+
+    def updateRunParams(self, wkey, rpid, logging):
+        data = urllib.urlencode({'func':'updateRunParams', 'wkey':wkey, 'runparamsid':rpid })
+        self.f.queryAPI(self.url, data, "updateRunParams:"+wkey, logging)
+
+    def startWorkflow(self, inputparam, defaultparam, username, wfname, wkey, outdir, slen, logging): 
+        data = urllib.urlencode({'func':'startWorkflow', 'inputparam':inputparam, 
+                   'defaultparam':defaultparam, 'username':username, 
+                   'workflow':wfname, 'wkey':wkey, 'outdir':outdir, 'services':slen})
+        return self.f.queryAPI(self.url, data, "workflow started:"+wkey, logging)
+
+    def startService(self, service, wkey, logging):
+        data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
+                 'wkey':wkey, 'command':service.command})
+        return self.f.queryAPI(self.url, data, "service started:"+service.servicename, logging)
+
+    def endWorkflow(self, wkey, logging):
+        data = urllib.urlencode({'func':'endWorkflow',  'wkey':wkey})
+        return self.f.queryAPI(self.url, data, "endworkflow:"+wkey, logging)
+
+    def checkPermissions(self, username, outdir):
+        data = urllib.urlencode({'func':'checkPermissions',  'username':username, 'outdir':outdir})
+        return self.f.queryAPI(self.url, data, None, None)
 
 class Service:
     def __init__(self, servicename="service", command="command", waittime="60"):
       self.servicename  = servicename
       self.command      = command
       self.waittime     = waittime
-
-def import_workflow(input_file=None):
-    wf = list()
-
-    with open(input_file, 'r') as infile:
-      for line in infile.readlines():
-        line=remove_comments(line, '#')
-        if (len(line) < 5): continue
-
-        servicename, command, waittime = re.split(r'[\t\,]+', line)
-        wf.append(Service(servicename,command,waittime))
-    return wf
-
-def import_param(input_file=None):
-    wf = list()
-    whole_input = ""
-    with open(input_file, 'r') as fo:
-      for line in fo.readlines():
-        line=remove_comments(line, '#')
-        if (len(line) < 2): continue
-        whole_input += line
-    whole_input=re.sub('[\t\s]*[\n\r]','\n', whole_input)
-    whole_input=re.sub('\n@',';@', whole_input)
-    whole_input=re.sub('\n',':', whole_input)
-    whole_input=re.sub(r'[\t\s]*=+[\t\s:]*', '=', whole_input)
-    whole_input=re.sub(r'[\t\s]+', ',', whole_input)
-    whole_input=re.sub(r':@?$', '', whole_input)
-    return whole_input
         
 def main():
 
@@ -68,6 +100,7 @@ def main():
         parser.add_option('-d', '--dbhost', help='dbhost name', dest='dbhost')
         parser.add_option('-o', '--outdir', help='output directory in the cluster', dest='outdir')
         parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
+        parser.add_option('-r', '--runid', help='runid', dest='runid')
                 
         (options, args) = parser.parse_args()
     except:
@@ -82,16 +115,15 @@ def main():
     DBHOST          = options.dbhost
     OUTDIR          = options.outdir
     CONFIG          = options.config
+    RUNID           = options.runid
     
-    print CONFIG
-    config=getConfig(CONFIG)
-    url=config['url']
+    f = funcs()
+    config = getConfig(CONFIG)
+    workflow = runWorkflow(config['url'], f)
+
     DBHOST=config['dbhost']
     LOGPATH=config['logpath']
 
-    print url
-    print DBHOST
-    print LOGPATH
 
     #This section is just for username conversion in the cluster can be removed in the future
     if (CONFIG != "Docker"):
@@ -103,75 +135,51 @@ def main():
         print "Error:Username doesn't exist"
         sys.exit(2)
     
-    if (WKEY==None):
-      WKEY="start"
     if (OUTDIR==None):
       OUTDIR="~/out"
     if (OUTDIR.find("/")==-1):
       OUTDIR="~/"+OUTDIR
 
+    workflow.checkPermissions(USERNAME,OUTDIR+"/tmp/lsf") 
+
     if (INPUTPARAM!=None):
         if path.isfile(INPUTPARAM) and access(INPUTPARAM, R_OK):
-            INPUTPARAM = import_param(INPUTPARAM)
+            INPUTPARAM = workflow.import_param(INPUTPARAM)
         else:
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
-    services=import_workflow(WORKFLOWFILE)
+
+    logfile="%s/tmp/lsf/workflowRun.log"%(OUTDIR)
+    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info("File Path:%s"%os.getcwd())
+    logging.info("WKEY:"+str(WKEY))
+
+    if (WKEY==None):
+      WKEY="start"
+    else:
+      workflow.updateRunParams(WKEY, RUNID, logging)
+
+    services=workflow.import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
    
     wfname = os.path.splitext(basename(WORKFLOWFILE))[0]
 
-    opener = urllib2.build_opener(urllib2.HTTPHandler())
-    data = urllib.urlencode({'func':'startWorkflow', 'inputparam':INPUTPARAM, 
-                       'defaultparam':DEFAULTPARAM, 'username':USERNAME, 
-                       'workflow':wfname, 'wkey':WKEY, 'outdir':OUTDIR, 'services':slen})
-    trials=0
-    while trials<5:
-       try:
-          mesg = opener.open(url, data=data).read()
-          trials=10
-       except:
-          print "Couldn't connect to dolphin server"
-          time.sleep(15)
-       trials=trials+1   
-    ret=str(json.loads(mesg))
-    wkey = ret
+    wkey =  workflow.startWorkflow(INPUTPARAM, DEFAULTPARAM, USERNAME, wfname, WKEY, OUTDIR, slen,logging) 
 
-    if (ret.startswith("ERROR")):
-                logging.warning("ERROR:"+wfname + ":" + wkey)
-                print wfname + ":" + wkey + "\n"
+    if (wkey.startswith("ERROR")):
+                logging.warning("ERROR:"+ wkey)
                 print "Check the parameter files:\n"
                 sys.exit(2);
     print "WORKFLOW STARTED:"+wkey+"\n"
-
-    logging.basicConfig(filename=LOGPATH+'/'+wkey+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-    logging.info(USERNAME+":"+OUTDIR)
-    logging.info(INPUTPARAM)
-    logging.info('WORKFLOW STARTED')
+    logging.info('WORKFLOW STARTED'+wkey+"\n")
+    workflow.updateRunParams(wkey, RUNID, logging)
 
     for service in services:
         br=1
         checkcount=0
         while ( br==1):
-            print service.servicename + ":" + wkey + ":" + service.command
-            trials=0
-            while trials<5:
-              try:
-                 data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
-                        'wkey':wkey, 'command':service.command})
-                 resp = opener.open(url, data=data).read()
-                 print resp
-                 trials=10
-              except:
-                 print "Couldn't connect to dolphin server"
-                 print "wkey:"+wkey
-                 print "service:"+service.servicename
-                 time.sleep(15)
-              trials=trials+1
-
-            ret=str(json.loads(resp))
+            ret=workflow.startService(service, wkey, logging)
             print ret + "\n"
             if (ret.startswith("RUNNING") and float(service.waittime)>0 and checkcount>0):
-                #print service.waittime+"\n"
                 time.sleep(float(service.waittime))
             elif ( checkcount==0 ):
                 time.sleep(5)
@@ -189,18 +197,7 @@ def main():
     br=1
     print "All the services Ended"    
     while ( br==1):
-        trials=0
-        while trials<5:
-           try:
-              data = urllib.urlencode({'func':'endWorkflow',  'wkey':wkey})
-              resp = opener.open(url, data=data).read()
-              trials=10
-           except:
-              print "Couldn't connect to dolphin server"
-              time.sleep(15)
-           trials=trials+1
-
-        res=str(json.loads(resp))
+        res=workflow.endWorkflow(wkey, logging)
         #print ret + "\n"
         if (ret.startswith("WRUNNING")):
             time.sleep(5)
