@@ -98,11 +98,6 @@ $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
 
-my $cmd="$dbcommcmd -c $config -f running -u $username -r $runparamsid -w $wkey -o $outdir";
-print $cmd."\n";
-`$cmd`;
-die "Error 20: Cannot connect to the database:" if ($?);
-
 my @pfiles=split(/:/,$input);
 
 if(lc($adapter) ne "none")

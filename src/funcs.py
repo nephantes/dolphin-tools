@@ -47,14 +47,17 @@ class funcs:
               trials=10
            except:
               print "Couldn't connect to dolphin server (%s)"%trials
-              logging.info("Couldn't connect to dolphin server (%s)"%trials)
+              if logging:
+                 logging.info("Couldn't connect to dolphin server (%s)"%trials)
               time.sleep(15)
            trials=trials+1
         ret=str(json.loads(mesg))
-        logging.info("%s:%s"%(name,ret))
+        if logging: 
+           logging.info("%s:%s"%(name,ret))
     
         if (ret.startswith("ERROR")):
-              logging.info("%s:%s"%(name,ret))
+              if logging:
+                 logging.info("%s:%s"%(name,ret))
               print name + ":" + ret + "\n"
               sys.exit(2);
         return ret
