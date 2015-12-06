@@ -49,6 +49,11 @@ class submitJobs:
         alist = (queue, str(cputime), str(memory), str(cpu))
         return list(alist)
 
+    def checkJob(self, jobname, wkey, logging):
+        data = urllib.urlencode({'func':'checkJob', 'jobname':jobname, 'wkey':wkey})
+        return json.loads(self.f.queryAPI(self.url, data, jobname, logging))['Result']
+        
+
     def runcmd(self, command): 
         print command
         child = os.popen(command)
@@ -74,10 +79,7 @@ class submitJobs:
            sslload=str(os.popen(com).readline().rstrip())
         return python 
 
-
-
 def main():
-
    try:
         parser = OptionParser()
         parser.add_option('-u', '--username', help='defined user in the cluster', dest='username')
@@ -120,9 +122,17 @@ def main():
    logfile="%s/tmp/lsf/%s.submit.log"%(OUTDIR, NAME)
    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
    logging.info("File Path:%s"%os.getcwd())
+   print "checkJob\n";
+   result = submitjobs.checkJob(NAME, WKEY, logging)
+   print result+"\n"
+   if (result != "START"):
+        sys.exit(0)
+   print "checkJob[DONE]\n";
+      
+   print "getJobParams\n";
    (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
- 
    logging.info("QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU))
+   print "getJobParams[DONE]\n";
    
    python = submitjobs.moduleload(python)
    

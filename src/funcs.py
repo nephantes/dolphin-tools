@@ -44,12 +44,15 @@ class funcs:
         while trials<5:
            try:
               mesg = opener.open(url, data=data).read()
-              trials=10
+              print mesg
+              print url+":"+data
+              print "Trial:"+str(trials)
+              trials=5
            except:
               print "Couldn't connect to dolphin server (%s)"%trials
               if logging:
                  logging.info("Couldn't connect to dolphin server (%s)"%trials)
-              time.sleep(15)
+              time.sleep(5)
            trials=trials+1
         ret=str(json.loads(mesg))
         if logging: 

@@ -140,18 +140,15 @@ def main():
     if (OUTDIR.find("/")==-1):
       OUTDIR="~/"+OUTDIR
 
-    workflow.checkPermissions(USERNAME,OUTDIR+"/tmp/lsf") 
-
     if (INPUTPARAM!=None):
         if path.isfile(INPUTPARAM) and access(INPUTPARAM, R_OK):
             INPUTPARAM = workflow.import_param(INPUTPARAM)
         else:
             INPUTPARAM = re.sub(" ", "", INPUTPARAM)
 
-    logfile="%s/tmp/lsf/workflowRun.log"%(OUTDIR)
-    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-    logging.info("File Path:%s"%os.getcwd())
-    logging.info("WKEY:"+str(WKEY))
+    logging.basicConfig(filename=LOGPATH+'/run'+str(RUNID)+'.log', filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info(USERNAME+":"+OUTDIR)
+    logging.info(INPUTPARAM)
 
     if (WKEY==None):
       WKEY="start"
@@ -160,9 +157,9 @@ def main():
 
     services=workflow.import_workflow(WORKFLOWFILE)
     slen=str(len(services))    
-   
-    wfname = os.path.splitext(basename(WORKFLOWFILE))[0]
-
+  
+    wfbase = os.path.splitext(basename(WORKFLOWFILE))[0] 
+    wfname = wfbase.split('.')[0]
     wkey =  workflow.startWorkflow(INPUTPARAM, DEFAULTPARAM, USERNAME, wfname, WKEY, OUTDIR, slen,logging) 
 
     if (wkey.startswith("ERROR")):
