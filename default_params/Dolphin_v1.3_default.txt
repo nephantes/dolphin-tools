@@ -5,7 +5,7 @@
 @RPROG            = module load R/3.0.1
 @SAMTOOLS         = "module load  samtools/0.0.19 && samtools"
 @BIN              = /project/umw_biocore/bin
-@TOOLSDIR         = @BIN/workflow/dolphin-tools_galaxy
+@TOOLSDIR         = @BIN/workflow/dolphin-tools
 @DOLPHIN          = @TOOLSDIR/tools/Dolphinv1.3
 @GDB              = /share/data/umw_biocore/genome_data/@GENOME/@VERSION
 @GCOMMONDB        = @GDB/commondb

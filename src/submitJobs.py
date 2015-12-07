@@ -36,7 +36,7 @@ class submitJobs:
            memory = int(math.floor(int(data['maxmemory']))+1024)
            if(servicename=="stepTophat2" or servicename=="stepRSEM"):
                cpu=4
-               cputime=cputime_pred*2
+               cputime_pred=cputime_pred*2
         
            # Set cputime and queue
            if(cputime_pred>240):
@@ -49,11 +49,16 @@ class submitJobs:
         alist = (queue, str(cputime), str(memory), str(cpu))
         return list(alist)
 
+    def checkJob(self, jobname, wkey, logging):
+        data = urllib.urlencode({'func':'checkJob', 'jobname':jobname, 'wkey':wkey})
+        return json.loads(self.f.queryAPI(self.url, data, jobname, logging))['Result']
+        
+
     def runcmd(self, command): 
-        print command
+        #print command
         child = os.popen(command)
         data = child.read()
-        print data
+        #print data
         err = child.close()
         if err:
            return 'ERROR: %s failed w/ exit code %d' % (command, err)
@@ -74,10 +79,7 @@ class submitJobs:
            sslload=str(os.popen(com).readline().rstrip())
         return python 
 
-
-
 def main():
-
    try:
         parser = OptionParser()
         parser.add_option('-u', '--username', help='defined user in the cluster', dest='username')
@@ -107,7 +109,7 @@ def main():
    submitjobs = submitJobs(config['url'], f)
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
-   print "EXECDIR" + exec_dir
+   #print "EXECDIR" + exec_dir
    sdir=config['tooldir']+"/src"
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
@@ -120,9 +122,17 @@ def main():
    logfile="%s/tmp/lsf/%s.submit.log"%(OUTDIR, NAME)
    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
    logging.info("File Path:%s"%os.getcwd())
+   #print "checkJob\n";
+   result = submitjobs.checkJob(NAME, WKEY, logging)
+   #print result+"\n"
+   if (result != "START"):
+        sys.exit(0)
+   #print "checkJob[DONE]\n";
+      
+   #print "getJobParams\n";
    (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
- 
    logging.info("QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU))
+   #print "getJobParams[DONE]\n";
    
    python = submitjobs.moduleload(python)
    
