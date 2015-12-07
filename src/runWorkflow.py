@@ -176,10 +176,8 @@ def main():
         while ( br==1):
             ret=workflow.startService(service, wkey, logging)
             print ret + "\n"
-            if (ret.startswith("RUNNING") and float(service.waittime)>0 and checkcount>0):
+            if (ret.startswith("RUNNING") and float(service.waittime)>0):
                 time.sleep(float(service.waittime))
-            elif ( checkcount==0 ):
-                time.sleep(5)
             elif (ret.startswith("ERROR")):
                 print service.servicename + ":" + ret + "\n"
                 logging.warning("ERROR:"+ret)
