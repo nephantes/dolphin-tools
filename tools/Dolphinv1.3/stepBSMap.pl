@@ -176,7 +176,11 @@ sub do_job {
 	die "Invalid file (must be a regular file): $file1" if ( ! -f $file1 );
 	die "Invalid file (must be a regular file): $file2" if ( $file2 and ! -f $file2 );
 
-
+        my $loadsamtools="";
+        if ($args{samtools}=~/(.*load.*\&\&) /)
+        {
+            $loadsamtools = $1;
+        }
 
 #construct the command
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
@@ -190,7 +194,7 @@ sub do_job {
 	my $indexcom = "&& $args{samtools} index $sortedfile.bam";
 	my $rmcom = "&& rm $unsortedfile";
 
-	my $com = $args{binpath};
+	my $com = $loadsamtools . $args{binpath};
 	$com .= " -a $file1";
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
 	$com .= " -o $outfile";

@@ -96,6 +96,7 @@ $conds=~s/[\s\t]+//g;
 $cols = checkCols($cols);
 $cols=~s/,/\",\"/g;
 $cols="c(\"$cols\")";
+$cols=~s/-/\./g;
 $conds=~s/,/\",\"/g;
 $conds="c(\"$conds\")";
 
