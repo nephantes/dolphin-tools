@@ -26,6 +26,7 @@
  my $outdir           = "";
  my $type             = "";
  my $picardCmd        = "";
+ my $samtools         = "";
  my $cmdname          = "";
  my $pubdir           = "";
  my $wkey             = "";
@@ -44,6 +45,7 @@ GetOptions(
     'type=s'          => \$type,
     'picardCmd=s'     => \$picardCmd,
     'name=s'          => \$cmdname,
+    'samtools=s'      => \$samtools,
     'pubdir=s'        => \$pubdir,
     'wkey=s'          => \$wkey,
     'jobsubmit=s'     => \$jobsubmit,
@@ -70,6 +72,9 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outd
 # runs the picard program
 
 my $outd  = "$outdir/picard_$type";
+if ($cmdname eq 'MarkDuplicates'){
+    $outd  = "$outdir/dup$type";
+}
 
 `mkdir -p $outd`;
 
@@ -90,11 +95,17 @@ elsif ($type eq "mergechip")
    my $indir   = "$outdir/seqmapping/mergechip";
    @files = <$indir/*.bam>;
 }
-else
+elsif (lc($type) eq "tophat")
 {
    my $indir   = "$outdir/tophat";
    print $indir."\n";
    @files = <$indir/pipe*/*.sorted.bam>;
+}
+else
+{
+   my $indir   = "$outdir/$type";
+   print $indir."\n";
+   @files = <$indir/*.bam>;
 }
 
 foreach my $d (@files){ 
@@ -107,13 +118,21 @@ foreach my $d (@files){
     $com.=" OUTPUT=$outd/".$libname."_multiple.out";
   }
   elsif ($cmdname eq "MarkDuplicates") {
-    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/PCR_duplicates REMOVE_DUPLICATES=true";
+    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/$libname.PCR_duplicates REMOVE_DUPLICATES=true ";
   }
   else {
     $com.=" OUTPUT=$outd/".$libname."_multiple.out";
   }
 
   $com.=" INPUT=$d > /dev/null";
+  
+  if ($cmdname eq "MarkDuplicates") {
+    $com .= "&& $samtools index $outd/".$libname.".bam"
+  }
+  elsif ($cmdname eq "CollectMultipleMetrics") {
+    $com .= "&& mkdir -p $outd/multi && mv $outd/*.pdf $outd/multi/. ";
+    
+  }
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";

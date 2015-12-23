@@ -114,7 +114,7 @@ if (-s $ucsc) {
   $ti=" --transcriptome-index=$ucsc";
 }
 
-if ($params_tophat=~/NONE/)
+if ($params_tophat=~/NONE/ || $params_tophat=~//)
 {
    $params_tophat="";
 }

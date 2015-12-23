@@ -1,17 +1,17 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepSplit.pl
+#                                       stepMergeBAM.pl
 #########################################################################################
 # 
-#  This program trims the reads in the files. 
+#  This program merges bam file. 
 #
 #
 #########################################################################################
 # AUTHORS:
 #
 # Alper Kucukural, PhD 
-# Jul 4, 2014
+# Aug 14, 2014
 #########################################################################################
 
 ############## LIBRARIES AND PRAGMAS ################
@@ -23,12 +23,11 @@
  use Pod::Usage; 
 
 #################### VARIABLES ######################
- my $number           = "";
  my $outdir           = "";
+ my $samtools         = "";
  my $jobsubmit        = "";
- my $previous         = ""; 
  my $spaired          = "";
- my $cmd              = ""; 
+ my $type             = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -38,11 +37,10 @@
 my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
-    'number=s'       => \$number,
     'outdir=s'       => \$outdir,
-    'previous=s'     => \$previous,
+    'samtools=s'     => \$samtools,
     'dspaired=s'     => \$spaired,
-    'cmd=s'          => \$cmd,
+    'type=s'         => \$type,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
     'help'           => \$help, 
@@ -61,58 +59,65 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($number eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-#    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
-
-my $inputdir="";
-print "$previous\n";
-if ($previous=~/NONE/g)
-{
-  $inputdir = "$outdir/input";
-}
-else
-{
-  $inputdir = "$outdir/seqmapping/".lc($previous);
+my $inputfiles = "$outdir/seqmapping/$type/*.bam";
+my $outd = "$outdir/seqmapping/merge$type";
+if ($type=="tophat") {
+    $inputfiles = "$outdir/$type/*/*.sorted.bam";
+    $outd="$outdir/merge$type";
 }
 
-$outdir  = "$outdir/seqmapping/split";
-`mkdir -p $outdir`;
-die "Error 15: Cannot create the directory:".$outdir if ($?);
+
+
+die "Error 15: Cannot create the directory:".$outd  if ($?);
 my $com="";
-$com=`ls $inputdir/*.fastq`;
+print $inputfiles."\n";
+$com=`ls $inputfiles 2>&1`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
+my %mergeCmd=();
 foreach my $file (@files)
 {
- die "Error 64: please check the file:".$file unless (checkFile($file));
- $file=~/.*\/(.*).fastq/;
- my $bname=$1;
- my $pairednum="";
- if ($spaired eq "paired")
- {
-    $file=~/.*\/(.*)(.[12]).fastq/;
-    $bname=$1;
-    $pairednum=$2;
+ $file=~/(.*)\/(.*)(_[\d]+).sorted.bam/;
+ my $bpath=$1;
+ my $bname=$2;
+ my $num=$3;
+ if ($bpath !~ "" && $bname !~ "") {
+	`mkdir -p $outd`;
+    $bpath=~s/$num$/\*/;
+    $mergeCmd{"$bpath/$bname*.sorted.bam"}=$bname;
  }
- $com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname$pairednum._ && ";
- $com.= "ls $outdir/$bname$pairednum._*|awk '{n=split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[n]\\\"$pairednum.fastq\\\")}'"; 
+}
 
- my $job=$jobsubmit." -n ".$servicename."_".$bname.$pairednum." -c \"$com\"";
+foreach my $filekey (keys %mergeCmd)
+{
+ my $bname=$mergeCmd{$filekey};
+ 
+ my $outfile=$outd."/$bname.sorted.bam"; 
+ my $lscmd ="ls $filekey|wc -l";
+ print "LS:".$lscmd."\n";
+ my $fcount=`$lscmd`;
+ chomp($fcount);
+ if ($fcount>1)
+ {
+   $com ="$samtools merge $outfile $filekey -f && ";
+   $com .="$samtools index $outfile ";
+ }
+ else
+ {
+   $com ="cp $filekey $outfile && ";
+   $com .="cp $filekey.bai $outfile.bai ";
+ }
+ #`$com`;
+ my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
  die "Error 25: Cannot run the job:".$job if ($?);
-}
-
-sub checkFile
-{
- my ($file) = $_[0];
- return 1 if (-e $file);
- return 0;
 }
 
 __END__
@@ -120,17 +125,17 @@ __END__
 
 =head1 NAME
 
-stepSplit.pl
+stepMergeBAM.pl
 
 =head1 SYNOPSIS  
 
-stepSplit.pl -o outdir <output directory> 
+stepMergeBAM.pl -o outdir <output directory> 
             -p previous 
             -n #reads
 
-stepSplit.pl -help
+stepMergeBAM.pl -help
 
-stepSplit.pl -version
+stepMergeBAM.pl -version
 
 For help, run this script with -help option.
 
@@ -138,7 +143,7 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/split" 
+the output files will be "$outdir/Merge$type" 
 
 =head2  -p previous
 
@@ -160,7 +165,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepSplit.pl 
+stepMergeBAM.pl 
             -o ~/out
             -n 1000
             -p previous

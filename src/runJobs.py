@@ -96,7 +96,8 @@ def main():
      f.write("JOB_NUM=$1\n")
      f.write("sleep 1\n")
      f.write("cd " + exec_dir + "\n")
-     f.write("echo '"+str(COM)+"'\n")
+     COMSTR=re.sub(r"'",r"''", COM)
+     f.write("echo '"+str(COMSTR)+"'\n")
      MESSAGE="2"
      TYPE="dbSetStartTime"
      f.write(jobstatus_cmd % locals() + " -n $JOB_NUM")

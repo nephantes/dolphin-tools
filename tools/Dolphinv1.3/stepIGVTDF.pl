@@ -28,7 +28,8 @@
  my $pair             = "";
  my $insertlen        = "";
  my $outdir           = "";
- my $pubdir          = "";
+ my $pubdir           = "";
+ my $extfactor        = "";
  my $wkey             = "";
  my $samtools         = "";
  my $igvtools         = "";
@@ -49,6 +50,7 @@ GetOptions(
     'len=s'          => \$insertlen,
     'pair=s'         => \$pair,
     'pubdir=s'       => \$pubdir,
+    'extfactor=s'    => \$extfactor,
     'wkey=s'         => \$wkey,
     'jobsubmit=s'    => \$jobsubmit,
     'servicename=s'  => \$servicename,
@@ -90,31 +92,25 @@ if ($type eq "RSEM")
    my $indir   = "$outdir/rsem";
    @files = <$indir/pipe*/*.genome.sorted.bam>;
 }
-elsif ($type eq "chip")
+elsif ($type eq "tophat")
 { 
-   my $indir   = "$outdir/seqmapping/chip";
-   @files = <$indir/*.sorted.bam>;
-}
-elsif ($type eq "mergechip")
-{ 
-   my $indir   = "$outdir/seqmapping/mergechip";
-   @files = <$indir/*.bam>;
+   my $indir   = "$outdir/tophat";
+   @files = <$indir/pipe*/*.sorted.bam>;
 }
 else
 {
-   my $indir   = "$outdir/tophat";
-   print $indir."\n";
-   @files = <$indir/pipe*/*.sorted.bam>;
+  my $indir = "$outdir/$type";
+  @files = <$indir/*.bam>;
 }
 
 my $param="";
-if ($insertlen!~/^$/)
+if ($extfactor!~/^$/)
 {
-  $param="-e $insertlen";
+  $param=" -e $extfactor ";
 }
 if ($pair eq "paired")
 {
-  $param="--pairs";
+  $param.=" --pairs ";
 }
 
 

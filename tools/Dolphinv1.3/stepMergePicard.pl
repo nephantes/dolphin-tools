@@ -24,6 +24,7 @@
 #################### VARIABLES ######################
  my $outdir           = "";
  my $type             = "";
+ my $mergepicard      = "";
  my $pubdir           = "";
  my $wkey             = "";
  my $help             = "";
@@ -36,6 +37,7 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions(
     'outdir=s'        => \$outdir,
     'type=s'          => \$type,
+    'mergepicard=s'   => \$mergepicard,
     'pubdir=s'        => \$pubdir,
     'wkey=s'          => \$wkey,
     'help'            => \$help, 
@@ -62,6 +64,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($type eq "") or ($outdir 
 my $indir  = "$outdir/picard_$type";
 my $outd  = "$outdir/picard_$type";
 
+
 `mkdir -p $outd`;
 die "Error 15: Cannot create the directory:".$outd if ($?);
 
@@ -87,16 +90,18 @@ my %metricvals=();
 my %histvals=();
 $version="picard_tools_1.131";
 
-my $pdffiles="";
+
 foreach my $d (@files){
   my $libname=basename($d, $ext);
   print $libname."\n";
   push(@libs, $libname); 
   getMetricVals($d, $libname, \%metricvals, \%histvals,\@rowheaders);
-  my $pdfext=$ext;
-  $pdfext=~s/_metrics/.pdf/;
-  $pdffiles.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/$libname$pdfext\" >> $puboutdir/reports.tsv " if ($c>1); 
-
+}
+my $pdffile="";
+if (-e "$outd/multi")
+{
+  $pdffile= "&& $mergepicard $outd/multi/*.pdf $outd/multi_metrics.pdf && rm -rf $outd/multi/";
+  $pdffile= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/multi_metrics.pdf\" >> $puboutdir/reports.tsv "; 
 }
 
 my $sizemetrics = keys %metricvals;
@@ -114,7 +119,7 @@ my $com="cp -R $outd $puboutdir ";
 
 $com.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/picard.$outtype.stats.tsv\" >> $puboutdir/reports.tsv " if ($sizemetrics>0); 
 $com.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/picard.$outtype.hist.tsv\" >> $puboutdir/reports.tsv " if ($sizehist>0); 
-$com.= $pdffiles;
+$com.= $pdffile;
 print $com."\n"; 
 `$com`;
 $c++;
