@@ -84,8 +84,8 @@
 #stepSplit Fastq
 @RUNSPLIT           = @DOLPHIN/stepSplit.pl
 
-#stepMergeChip
-@RUNMERGECHIP       = @DOLPHIN/stepMergeChip.pl
+#stepMergeBAM
+@RUNMERGEBAM       = @DOLPHIN/stepMergeBAM.pl
 
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl

@@ -90,18 +90,19 @@ my %metricvals=();
 my %histvals=();
 $version="picard_tools_1.131";
 
-
+my $pdffile="";
 foreach my $d (@files){
   my $libname=basename($d, $ext);
   print $libname."\n";
   push(@libs, $libname); 
   getMetricVals($d, $libname, \%metricvals, \%histvals,\@rowheaders);
-}
-my $pdffile="";
-if (-e "$outd/multi")
-{
-  $pdffile= "&& $mergepicard $outd/multi/*.pdf $outd/multi_metrics.pdf && rm -rf $outd/multi/";
-  $pdffile= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/multi_metrics.pdf\" >> $puboutdir/reports.tsv "; 
+
+
+  if (-e "$outd/".$libname."_multi")
+  {
+    $pdffile.= "&& $mergepicard $outd/".$libname."_multi/*.pdf $outd/".$libname."_multi_metrics.pdf && rm -rf $outd/".$libname."_multi/";
+    $pdffile.= "&& echo \"$wkey\t$version\tpicard_$type\tpicard_$type/".$libname."_multi_metrics.pdf\" >> $puboutdir/reports.tsv "; 
+  }
 }
 
 my $sizemetrics = keys %metricvals;

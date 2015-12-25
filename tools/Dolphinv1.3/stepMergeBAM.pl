@@ -62,13 +62,13 @@ if($print_version){
 pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-my $inputfiles = "$outdir/seqmapping/$type/*.bam";
-my $outd = "$outdir/seqmapping/merge$type";
-if ($type=="tophat") {
+my $inputfiles = "$outdir/$type/*.bam";
+my $outd = "$outdir/merge$type";
+print "TYPE:$type\n";
+if ($type eq "tophat") {
     $inputfiles = "$outdir/$type/*/*.sorted.bam";
     $outd="$outdir/merge$type";
 }
-
 
 
 die "Error 15: Cannot create the directory:".$outd  if ($?);
@@ -99,20 +99,9 @@ foreach my $filekey (keys %mergeCmd)
  my $bname=$mergeCmd{$filekey};
  
  my $outfile=$outd."/$bname.sorted.bam"; 
- my $lscmd ="ls $filekey|wc -l";
- print "LS:".$lscmd."\n";
- my $fcount=`$lscmd`;
- chomp($fcount);
- if ($fcount>1)
- {
-   $com ="$samtools merge $outfile $filekey -f && ";
-   $com .="$samtools index $outfile ";
- }
- else
- {
-   $com ="cp $filekey $outfile && ";
-   $com .="cp $filekey.bai $outfile.bai ";
- }
+ $com ="$samtools merge $outfile $filekey -f && ";
+ $com .="$samtools index $outfile ";
+
  #`$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   

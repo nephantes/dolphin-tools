@@ -130,8 +130,7 @@ foreach my $d (@files){
     $com .= "&& $samtools index $outd/".$libname.".bam"
   }
   elsif ($cmdname eq "CollectMultipleMetrics") {
-    $com .= "&& mkdir -p $outd/multi && mv $outd/*.pdf $outd/multi/. ";
-    
+    $com .= "&& mkdir -p $outd/".$libname."_multi && mv $outd/$libname*.pdf $outd/".$libname."_multi/. ";
   }
   
   print $com."\n\n";

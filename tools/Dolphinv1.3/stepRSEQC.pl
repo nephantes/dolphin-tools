@@ -73,11 +73,17 @@ if ($type eq "RSEM")
    $indir   = "$outdir/rsem";
    @files = <$indir/pipe*/*.genome.sorted.bam>;
 }
-else
+elsif($type eq "tophat")
 {
    $indir   = "$outdir/tophat";
    print $indir."\n";
    @files = <$indir/pipe*/*.sorted.bam>;
+}
+else
+{
+   $indir   = "$outdir/$type";
+   print $indir."\n";
+   @files = <$indir/*.bam>;
 }
 
 foreach my $d (@files){ 
