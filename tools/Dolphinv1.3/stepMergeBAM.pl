@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMergeChip.pl
+#                                       stepMergeBAM.pl
 #########################################################################################
 # 
-#  This program merges chip output. 
+#  This program merges bam file. 
 #
 #
 #########################################################################################
@@ -27,6 +27,7 @@
  my $samtools         = "";
  my $jobsubmit        = "";
  my $spaired          = "";
+ my $type             = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -39,6 +40,7 @@ GetOptions(
     'outdir=s'       => \$outdir,
     'samtools=s'     => \$samtools,
     'dspaired=s'     => \$spaired,
+    'type=s'         => \$type,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
     'help'           => \$help, 
@@ -60,12 +62,19 @@ if($print_version){
 pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
+my $inputfiles = "$outdir/$type/*.bam";
+my $outd = "$outdir/merge$type";
+print "TYPE:$type\n";
+if ($type eq "tophat") {
+    $inputfiles = "$outdir/$type/*/*.sorted.bam";
+    $outd="$outdir/merge$type";
+}
 
-my $inputdir = "$outdir/seqmapping/chip";
-$outdir  = "$outdir/seqmapping/mergechip";
-die "Error 15: Cannot create the directory:".$outdir  if ($?);
+
+die "Error 15: Cannot create the directory:".$outd  if ($?);
 my $com="";
-$com=`ls $inputdir/*.bam 2>&1`;
+print $inputfiles."\n";
+$com=`ls $inputfiles 2>&1`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
@@ -74,32 +83,25 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 my %mergeCmd=();
 foreach my $file (@files)
 {
- $file=~/(.*\/(.*))_[\d]+.sorted.bam/;
+ $file=~/(.*)\/(.*)(_[\d]+).sorted.bam/;
  my $bpath=$1;
  my $bname=$2;
+ my $num=$3;
  if ($bpath !~ "" && $bname !~ "") {
-	`mkdir -p $outdir`;
-    $mergeCmd{$bpath."*.sorted.bam"}=$bname;
+	`mkdir -p $outd`;
+    $bpath=~s/$num$/\*/;
+    $mergeCmd{"$bpath/$bname*.sorted.bam"}=$bname;
  }
-
 }
 
-foreach my $cmd (keys %mergeCmd)
+foreach my $filekey (keys %mergeCmd)
 {
- my $bname=$mergeCmd{$cmd};
- my $outfile=$outdir."/$bname.bam"; 
- my $fcount=`ls $cmd|wc -l`;
- chomp($fcount);
- if ($fcount>1)
- {
-   $com ="$samtools merge $outfile $cmd -f && ";
-   $com .="$samtools index $outfile ";
- }
- else
- {
-   $com ="cp $cmd $outfile && ";
-   $com .="cp $cmd.bai $outfile.bai ";
- }
+ my $bname=$mergeCmd{$filekey};
+ 
+ my $outfile=$outd."/$bname.sorted.bam"; 
+ $com ="$samtools merge $outfile $filekey -f && ";
+ $com .="$samtools index $outfile ";
+
  #`$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
@@ -112,17 +114,17 @@ __END__
 
 =head1 NAME
 
-stepMergeChip.pl
+stepMergeBAM.pl
 
 =head1 SYNOPSIS  
 
-stepMergeChip.pl -o outdir <output directory> 
+stepMergeBAM.pl -o outdir <output directory> 
             -p previous 
             -n #reads
 
-stepMergeChip.pl -help
+stepMergeBAM.pl -help
 
-stepMergeChip.pl -version
+stepMergeBAM.pl -version
 
 For help, run this script with -help option.
 
@@ -130,7 +132,7 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/MergeChip" 
+the output files will be "$outdir/Merge$type" 
 
 =head2  -p previous
 
@@ -152,7 +154,7 @@ Display the version
 =head1 EXAMPLE
 
 
-stepMergeChip.pl 
+stepMergeBAM.pl 
             -o ~/out
             -n 1000
             -p previous

@@ -100,7 +100,7 @@ foreach my $file (@files)
     $pairednum=$2;
  }
  $com = "split -l ".($number*4)." --numeric-suffixes $file $outdir/$bname$pairednum._ && ";
- $com.= "ls $outdir/$bname$pairednum._*|awk '{split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[length(a)]\\\"$pairednum.fastq\\\")}'"; 
+ $com.= "ls $outdir/$bname$pairednum._*|awk '{n=split(\\\$1,a,\\\".\\\");system(\\\"mv \\\"\\\$1\\\" $outdir/$bname\\\"a[n]\\\"$pairednum.fastq\\\")}'"; 
 
  my $job=$jobsubmit." -n ".$servicename."_".$bname.$pairednum." -c \"$com\"";
  print $job."\n";   

@@ -182,6 +182,8 @@ def main():
      TYPE="dbSetStartTime"
      f.write(jobstatus_cmd % locals() + " -n $LSB_JOBID")
      f.write("\n   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
+     COMSTR=re.sub(r"'",r"''", COM)
+     f.write("echo '"+str(COMSTR)+"'\n")
      f.write("\n\n"+ str(COM) +"\n\n")
      f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
      if (str(NAME) != str(SERVICENAME)):

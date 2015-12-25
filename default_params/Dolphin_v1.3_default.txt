@@ -85,8 +85,8 @@
 #stepSplit Fastq
 @RUNSPLIT           = @DOLPHIN/stepSplit.pl
 
-#stepMergeChip
-@RUNMERGECHIP       = @DOLPHIN/stepMergeChip.pl
+#stepMergeBAM
+@RUNMERGEBAM       = @DOLPHIN/stepMergeBAM.pl
 
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl
@@ -106,6 +106,7 @@
 #Step picard
 @RUNPICARD          = @DOLPHIN/stepPicard.pl
 @RUNMERGEPICARD     = @DOLPHIN/stepMergePicard.pl
+@MERGEPDFCMD        = @BIN/pdfbox-app-2.0.0-RC2.jar
 @PICARDCMD          = "@RPROG && @JAVA -jar @BIN/picard-tools-1.131/picard.jar"
 @REFFLAT            = @GDB/ref_flat
 

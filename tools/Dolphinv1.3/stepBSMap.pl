@@ -179,29 +179,32 @@ sub do_job {
         my $loadsamtools="";
         if ($args{samtools}=~/(.*load.*\&\&) /)
         {
-            $loadsamtools = $1;
+            $loadsamtools = $1 ." && ";
         }
 
 #construct the command
 	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
 	my $sortedfile = "$outdir/$bname.sorted"; #because samtools adds bam automatically
+	my $tmpoutfile = getRandFileName().".bam";
 	my $outfile = "$outdir/$bname.bam";
 	my $unsortedfile = "$outdir/$bname.unsorted";
 
 # construct the move command
-	my $mvcom = "&& mv $outfile $unsortedfile";
+    my $gotodir = " cd $outdir && ";
+	my $mvcom = "&& mv $tmpoutfile $unsortedfile";
 	my $sortcom = "&& $args{samtools} sort $unsortedfile $sortedfile";
 	my $indexcom = "&& $args{samtools} index $sortedfile.bam";
 	my $rmcom = "&& rm $unsortedfile";
-
-	my $com = $loadsamtools . $args{binpath};
+	
+	
+	my $com = $loadsamtools . $gotodir . $args{binpath};
 	$com .= " -a $file1";
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
-	$com .= " -o $outfile";
+	$com .= " -o $tmpoutfile";
 	$com .= " -d $args{ref}";
 	$com .= " -R"; #include strand info
-	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} );
-	$com .= " $args{params}" if ( exists $args{params} );
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} != "NONE");
+	$com .= " $args{params}" if ( exists $args{params} and $args{params} != "NONE");
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
 	$com .= " $sortcom";
@@ -214,15 +217,16 @@ sub do_job {
 # jobname = servicename_bname
 	my $jobname = "$args{servicename}_$bname";
 
-	my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
-	print "job: $job\n" if $args{verbose};
+    my $job=$args{jobsubmit} ." -n ".$jobname." -c \"$com\"";
+    print $job."\n";
+    `$job`;
+    die "Error 25: Cannot run the job:".$job if ($?);
+}
 
-# /share/pkg/moabs/1.3.2//bin/bsmap -a s1_r1.fq              -o wt_r1.bam   -d /share/data/umw_biocore/genome_data/mouse/mm10/mm10.fa  -R   -D C-CGG  -p 8  > moabs.bsmap.wt_r1.bam.log 2>&1
-
-# run the job
-	unless ( system ($job) == 0 ) {
-		die "Error 25: Cannot run the job $job: $!";
-	}
+sub getRandFileName
+{
+   my @charset = ('A'..'Z', 'a'..'z');
+   return join '', @charset[map {int rand @charset} (1..8)];
 }
 
 __END__
