@@ -133,6 +133,8 @@ if (lc($heatmap) eq "yes")
 $heatmapR=qq/
   f1<-res[!is.na(res\$padj) & !is.na(res\$log2FoldChange), ]
   res_selected<-f1[(f1\$padj<$padj_cutoff & abs(f1\$log2FoldChange)>log2($foldChange_cutoff)),]
+  if (dim(res_selected)>4 && length(conds)>2)
+  {
   ld <- log(filtd[rownames(res_selected),]+0.1,base=2)
 
   cldt <- scale(t(ld), center=TRUE, scale=TRUE);
@@ -145,6 +147,7 @@ $heatmapR=qq/
   heatmap.2(cld, col=redgreen(75), scale="row",
           key=TRUE, symkey=FALSE, density.info="none",cexRow=1,cexCol=1,margins=c(12,8),trace="none",srtCol=45)
   dev.off()
+  }
 /;
 }
 
