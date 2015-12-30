@@ -29,6 +29,7 @@
  my $reference        = "";
  my $creationpdf      = "";
  my $outdir           = "";
+ my $type             = "";
  my $jobsubmit        = "";
  my $previous         = ""; 
  my $servicename      = "";
@@ -44,6 +45,7 @@ GetOptions(
     'genome=s'         => \$genome, #(hg19.chromInfo)
     'reference=s'      => \$reference, #(refseq4col)
     'act=s'            => \$act,
+    'type=s'           => \$type,
     'creationpdf=s'    => \$creationpdf,
     'outdir=s'         => \$outdir,
     'previous=s'       => \$previous,
@@ -70,13 +72,14 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($act eq "") or ($outdir e
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
 
-print "$previous\n";
-my $sorted=".sorted";
-my $inputdir = "$outdir/seqmapping/chip";
-if ($previous=~/SPLIT/g)
+my $inputdir = "";
+if ($type eq "chip")
 {
-  $inputdir = "$outdir/seqmapping/mergechip";
-  $sorted="";
+  $inputdir = "$outdir/seqmapping/chip";
+}
+else
+{
+  $inputdir = "$outdir/$type";
 }
 
 $outdir  = "$outdir/agg";
@@ -84,7 +87,7 @@ $outdir  = "$outdir/agg";
 die "Error 15: Cannot create the directory:".$outdir  if ($?);
 
 my $com="";
-$com=`ls $inputdir/*$sorted.bam 2>&1`;
+$com=`ls $inputdir/*.bam 2>&1`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
@@ -93,8 +96,9 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 foreach my $file (@files)
 {
  die "Error 64: please check the file:".$file unless (checkFile($file));
- $file=~/.*\/(.*)$sorted.bam/;
+ $file=~/.*\/(.*).bam/;
  my $bname=$1;
+ $bname=~s/\.sorted//g;
  $com = "$bedtoolsgencov -bga -ibam $file -g $genome > $outdir/$bname.bed && ";
  $com.= "awk '{print \\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"\\\$4}' $outdir/$bname.bed > $outdir/$bname.sig && ";
  $com.= "$act --output=$outdir/$bname.agg_plot.out $reference $outdir/$bname.sig && ";

@@ -88,20 +88,20 @@ if ($type eq "RSEM")
    $indir   = "$outdir/rsem";
    @files = <$indir/*/*.genome.sorted.bam>;
 }
-elsif ($type eq "chip")
-{ 
-   my $indir   = "$outdir/seqmapping/chip";
-   @files = <$indir/*.sorted.bam>;
-}
-elsif ($type eq "mergechip")
-{ 
-   my $indir   = "$outdir/seqmapping/mergechip";
-   @files = <$indir/*.bam>;
-}
-else
+elsif ($type eq "tophat")
 {
    $indir   = "$outdir/tophat";
    @files = <$indir/*/*.sorted.bam>;
+}
+elsif ($type eq "chip")
+{
+   $indir   = "$outdir/seqmapping/chip";
+   @files = <$indir/*.sorted.bam>;
+}
+else
+{
+   $indir   = "$outdir/$type";
+   @files = <$indir/*.bam>;
 }
 
 foreach my $d (@files){ 
@@ -110,13 +110,10 @@ foreach my $d (@files){
   {
      $libname=basename($d, ".genome.sorted.bam");
   }
-  elsif ($type eq "mergechip")
-  {
-     $libname=basename($d, ".bam");
-  }
   else
   {
-     $libname=basename($d, ".sorted.bam");
+     $libname=basename($d, ".sorted.bam") if ($libname =~ /\.sorted.bam/);
+     $libname=basename($d, ".bam") if ($libname !~ /\.sorted.bam/);
   }
   my $outputbg="$outdir/ucsc_$type/$libname.bg";
   my $outputbw="$outdir/ucsc_$type/$libname.bw";

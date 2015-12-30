@@ -90,11 +90,6 @@ elsif ($type eq "chip")
    my $indir   = "$outdir/seqmapping/chip";
    @files = <$indir/*.sorted.bam>;
 }
-elsif ($type eq "mergechip")
-{ 
-   my $indir   = "$outdir/seqmapping/mergechip";
-   @files = <$indir/*.bam>;
-}
 elsif (lc($type) eq "tophat")
 {
    my $indir   = "$outdir/tophat";
@@ -110,7 +105,9 @@ else
 
 foreach my $d (@files){ 
   my $dirname=dirname($d);
-  my $libname=basename($d, ".sorted.bam");
+  my $libname=basename($d, ".bam");
+  $libname=~s/\.sorted//g;
+  
   my $com="$picardCmd $cmdname"; 
   
   if ($cmdname eq "CollectRnaSeqMetrics") {

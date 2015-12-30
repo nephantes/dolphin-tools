@@ -129,8 +129,8 @@ foreach my $d (@files){
   else
   {
      $dirname=dirname($d);
-     $libname=basename($d, ".sorted.bam");
-     $libname=basename($d, ".bam")  if ($type eq "mergechip");
+     $libname=basename($d, ".sorted.bam") if ($libname =~ /\.sorted.bam/);
+     $libname=basename($d, ".bam") if ($libname !~ /\.sorted.bam/);
      
      $com="cp $d $outd/$libname.bam && ";
      $com.="cp $d.bai $outd/$libname.bam.bai && ";

@@ -26,6 +26,7 @@
  my $chipinput        = "";
  my $outdir           = "";
  my $jobsubmit        = "";
+ my $type             = "";
  my $previous         = ""; 
  my $acmd             = ""; 
  my $servicename      = "";
@@ -40,6 +41,7 @@ GetOptions(
     'inputchip=s'    => \$chipinput,
     'outdir=s'       => \$outdir,
     'previous=s'     => \$previous,
+    'type=s'         => \$type,
     'acmd=s'         => \$acmd,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
@@ -64,14 +66,16 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($chipinput eq "") or ($ou
 ################### MAIN PROGRAM ####################
 #  It runs macs14 to find the peaks using alined peaks   
 
-print "$previous\n";
-my $sorted=".sorted";
-my $inputdir = "$outdir/seqmapping/chip";
-if ($previous=~/SPLIT/g)
+my $inputdir = "";
+if ($type eq "chip")
 {
-  $inputdir = "$outdir/seqmapping/mergechip";
-  $sorted="";
+  $inputdir = "$outdir/seqmapping/chip";
 }
+else
+{
+  $inputdir = "$outdir/$type";
+}
+
 
 $outdir  = "$outdir/macs";
 `mkdir -p $outdir`;
@@ -84,20 +88,20 @@ foreach my $chipline (@chiplibs)
  my @chips=split(/,/,$chipline);
  my $first=$chips[0];
  my $bname=$first;
- my $file1=$inputdir."/".$first."$sorted.bam";
+ my $file1=$inputdir."/".$first.".bam";
  die "Error 64: please check the file:".$file1 unless (checkFile($file1));
  my $com="$acmd -t $file1 --name=$outdir/$first\n";
  
  if (@chips>1 && length($chips[1])>=1)
  {
     my $second=$chips[1];
-    my $file2=$inputdir."/".$second."$sorted.bam";
+    my $file2=$inputdir."/".$second.".bam";
     die "Error 64: please check the file:".$file2 unless (checkFile($file2));
     $bname="$first.vs.$second";
-    $com="$acmd -t $file1 -c $file2 --name=$outdir/$first.vs.$second\n";
+    $bname=~s/\.sorted//g;
+    $com="$acmd -t $file1 -c $file2 --name=$outdir/$bname\n";
  }
- #print $com;  
- #`$com`;
+
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
