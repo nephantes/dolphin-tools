@@ -62,11 +62,17 @@ if($print_version){
 pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
-my $inputfiles = "$outdir/$type/*.bam";
+
+my $sorted=".sorted";
+my $inputfiles = "$outdir/$type/*$sorted.bam";
 my $outd = "$outdir/merge$type";
 print "TYPE:$type\n";
 if ($type eq "tophat") {
-    $inputfiles = "$outdir/$type/*/*.sorted.bam";
+    $inputfiles = "$outdir/$type/*/*$sorted.bam";
+    $outd="$outdir/merge$type";
+}
+elsif ($type eq "chip") {
+    $inputfiles = "$outdir/seqmapping/chip/*$sorted.bam";
     $outd="$outdir/merge$type";
 }
 
@@ -83,14 +89,14 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 my %mergeCmd=();
 foreach my $file (@files)
 {
- $file=~/(.*)\/(.*)(_[\d]+).sorted.bam/;
+ $file=~/(.*)\/(.*)(_[\d]+)$sorted.bam/;
  my $bpath=$1;
  my $bname=$2;
  my $num=$3;
  if ($bpath !~ "" && $bname !~ "") {
 	`mkdir -p $outd`;
     $bpath=~s/$num$/\*/;
-    $mergeCmd{"$bpath/$bname*.sorted.bam"}=$bname;
+    $mergeCmd{"$bpath/$bname*$sorted.bam"}=$bname;
  }
 }
 
@@ -98,11 +104,22 @@ foreach my $filekey (keys %mergeCmd)
 {
  my $bname=$mergeCmd{$filekey};
  
- my $outfile=$outd."/$bname.sorted.bam"; 
- $com ="$samtools merge $outfile $filekey -f && ";
- $com .="$samtools index $outfile ";
-
- #`$com`;
+ my $outfile=$outd."/$bname.bam"; 
+ my $lscmd ="ls $filekey|wc -l";
+ print "LS:".$lscmd."\n";
+ my $fcount=`$lscmd`;
+ chomp($fcount);
+ if ($fcount>1)
+ {
+   $com ="$samtools merge $outfile $filekey -f && ";
+   $com .="$samtools index $outfile ";
+ }
+ else
+ {
+   $com ="cp $filekey $outfile && ";
+   $com .="cp $filekey.bai $outfile.bai ";
+ }
+ `$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
