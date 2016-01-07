@@ -177,7 +177,7 @@ sub do_job {
 	die "Invalid file (must be a regular file): $file2" if ( $file2 and ! -f $file2 );
 
         my $loadsamtools="";
-        if ($args{samtools}=~/(.*load.*\&\&) /)
+        if ($args{samtools}=~/(.*load.*)\&\& /)
         {
             $loadsamtools = $1 ." && ";
         }
@@ -203,8 +203,8 @@ sub do_job {
 	$com .= " -o $tmpoutfile";
 	$com .= " -d $args{ref}";
 	$com .= " -R"; #include strand info
-	$com .= " -D $args{digestion}" if ( exists $args{digestion} and $args{digestion} != "NONE");
-	$com .= " $args{params}" if ( exists $args{params} and $args{params} != "NONE");
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} and lc($args{digestion})!~/^no/ );
+	$com .= " $args{params}" if ( exists $args{params} and lc($args{params}) !~ /^no/);
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
 	$com .= " $sortcom";
