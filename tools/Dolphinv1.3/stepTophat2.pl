@@ -93,7 +93,7 @@ die "Error 15: Cannot create the directory:".$outdir if ($?);
 $params_tophat =~s/,/ /g;
 $params_tophat=~s/_/-/g;
 my $com="";
-if (lc($spaired) eq "none")
+if (lc($spaired) =~ /^no/)
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -114,7 +114,7 @@ if (-s $ucsc) {
   $ti=" --transcriptome-index=$ucsc";
 }
 
-if ($params_tophat=~/NONE/ || $params_tophat=~//)
+if (lc($params_tophat)=~/^no/ || $params_tophat=~/^$/)
 {
    $params_tophat="";
 }
@@ -124,7 +124,7 @@ foreach my $file (@files)
  my $bname=$1;
  my $str_files=$file;
  die "Error 64: please check the file:".$file unless (checkFile($file));
- if (lc($spaired) ne "none")
+ if (lc($spaired) !~ /^no/)
  {
     $file=~/(.*\/(.*)).1.fastq/;
     $bname=$2;

@@ -83,7 +83,7 @@ $outdir   = "$outdir/seqmapping/quality";
 die "Error 15: Cannot create the directory:".$outdir  if ($?);
 
 my $com="";
-if ($spaired eq "single" || lc($spaired) eq "none")
+if (lc($spaired) =~ /^no/)
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -118,7 +118,7 @@ foreach my $file (@files)
 
 
  my $bname="";
- if ($spaired eq "single" || lc($spaired) eq "none")
+ if (lc($spaired) =~/^no/)
  {
     $file=~/.*\/(.*).fastq/;
     $bname=$1;

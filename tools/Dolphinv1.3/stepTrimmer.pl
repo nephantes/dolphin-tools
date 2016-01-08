@@ -83,7 +83,7 @@ $outdir   = "$outdir/seqmapping/trim";
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my $com="";
-if ($spaired eq "single")
+if ($spaired =~ /^no/)
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -99,7 +99,7 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 foreach my $file (@files)
 {
  die "Error 64: please check the file:".$file unless (checkFile($file));
- if ($spaired eq "single")
+ if ($spaired =~ /^no/)
  {
     $file=~/.*\/(.*).fastq/;
     my $bname=$1;
