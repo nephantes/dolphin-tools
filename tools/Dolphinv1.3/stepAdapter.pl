@@ -93,7 +93,7 @@ foreach my $adap (@adaps)
 close(OUT);
 
 my $com="";
-if (lc($spaired) eq "none")
+if (lc($spaired) =~/^no/)
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -110,7 +110,7 @@ foreach my $file (@files)
 {
  die "Error 64: please check the file:".$file unless (checkFile($file));
  my $bname="";
- if (lc($spaired) eq "none")
+ if (lc($spaired) =~ /^no/)
  {
     $file=~/.*\/(.*).fastq/;
     $bname=$1;

@@ -97,7 +97,7 @@ my $cmdSE=$cmds[0];
 my $cmdPE=$cmds[1];
 
  my $bname="";
- if ($spaired eq "single")
+ if ($spaired !~ /^no/)
  {
     my $filename=getFileName($inputdir, 0);
 

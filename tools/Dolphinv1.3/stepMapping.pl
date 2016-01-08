@@ -112,7 +112,7 @@ print "O:$outdir\n";
 die "Error 15: Cannot create the directory:".$outdir  if ($?);
 my $com="";
 
-if (lc($spaired) eq "none")
+if (lc($spaired) =~ /^no/)
 {
  $com=`ls $inputdir/*.fastq 2>&1`;
 }
@@ -130,7 +130,7 @@ foreach my $file (@files)
 {
   $file=~/.*\/(.*).fastq/;
   my $bname=$1;
-  if (lc($spaired) eq "none")
+  if (lc($spaired) =~ /^no/)
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
 

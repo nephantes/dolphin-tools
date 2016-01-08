@@ -93,7 +93,7 @@ foreach my $file (@files)
  $file=~/.*\/(.*).fastq/;
  my $bname=$1;
  my $pairednum="";
- if ($spaired eq "paired")
+ if ($spaired !~/^no/)
  {
     $file=~/.*\/(.*)(.[12]).fastq/;
     $bname=$1;
