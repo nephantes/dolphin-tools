@@ -119,7 +119,7 @@ foreach my $file (@files)
   die "Error 64: please check the file:".$file unless (checkFile($file));
   print "spaired = $spaired\n";
   
-  if (lc($spaired) =~ /^no/)
+  if (lc($spaired) !~ /^no/)
   {
     $file=~/(.*\/(.*)).1.fastq/;
     $bname=$2;
