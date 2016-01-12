@@ -49,6 +49,7 @@ my %args = (
 GetOptions( \%args,
 'binpath=s',
 'sampleconditions=s',
+'fields=s',
 'help',
 'jobsubmit=s',
 'outdir=s',
@@ -94,11 +95,6 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 	die ( "Invalid option binpath: location $args{binpath}" );
 }
 
-#sampleconditions must be of the form "samplename1,samplename2:condition1,conditon2"
-unless ( exists $args{sampleconditions} and $args{sampleconditions} =~ /[\w,]+:[\w,]+/ ) {
-	die ( "Invalid option sampleconditons [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
-}
-
 ################### MAIN PROGRAM ####################
 
 # Setup the output directory
@@ -119,15 +115,10 @@ else {
 $outdir .= lc($binname);
 make_path($outdir);
 
-### Parse the samplecondtions args ###
-my @presplit = split( /:/, $args{sampleconditions});
-unless ( 2 == scalar @presplit ) {
-	die ( "Invalid option sampleconditons (must have one colon) [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
-}
-my @samplenames = split( /,/, $presplit[0] );
-my @conditionnames = split( /,/, $presplit[1] );
+my  @conditionnames = split( /,/, $args{sampleconditions});
+my @samplenames = split( /,/, $args{fields} );
 unless ( scalar @samplenames == scalar @conditionnames ) {
-	die ( "Invalid option sampleconditons (not same # of s and c) [s1,s2,...:c1,c2,...]: parsed $args{sampleconditions}" );
+	die ( "Invalid option sampleconditons and fields (not same # of s and c) [s1,s2,...]: parsed $args{sampleconditions}" );
 }
 
 ### Construct the file list ###
@@ -140,7 +131,9 @@ closedir $dh;
 for (my $i=0; $i < scalar(@samplenames); $i++) {
 	my $condition = $conditionnames[$i];
 	my $sample = $samplenames[$i];
+
 	my @samples = grep { /^$sample/ } @file_list;
+
 	unless ( 1 == scalar @samples ) {
 		die ( "Multiple matching files found for $sample:$condition. This is probably not what you want." );
 	}

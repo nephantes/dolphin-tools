@@ -123,6 +123,7 @@ def main():
 
     DBHOST=config['dbhost']
     LOGPATH=config['logpath']
+    print LOGPATH
 
 
     #This section is just for username conversion in the cluster can be removed in the future
