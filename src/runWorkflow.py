@@ -186,7 +186,7 @@ def main():
                 print "Check the command:\n"
                 print service.command + "\n"
                 sys.exit(2);
-            else:
+            elif (ret.startswith("DONE")):
                 checkcount=0
                 br=0
             checkcount=checkcount+1
