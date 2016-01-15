@@ -219,7 +219,7 @@ sub do_job {
 
     my $job=$args{jobsubmit} ." -n ".$jobname." -c \"$com\"";
     print $job."\n";
-    #`$job`;
+    `$job`;
     die "Error 25: Cannot run the job:".$job if ($?);
 }
 
