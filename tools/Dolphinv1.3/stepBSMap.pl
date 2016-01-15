@@ -203,7 +203,7 @@ sub do_job {
 	$com .= " -o $tmpoutfile";
 	$com .= " -d $args{ref}";
 	$com .= " -R"; #include strand info
-	$com .= " -D $args{digestion}" if ( exists $args{digestion} and lc($args{digestion})!~/^no/ );
+	$com .= " -D $args{digestion}" if ( exists $args{digestion} and lc($args{digestion})!~/^no/ and lc($args{digestion})!~ /^$/);
 	$com .= " $args{params}" if ( exists $args{params} and lc($args{params}) !~ /^no/);
 	$com .= " > $logfile 2>&1";
 	$com .= " $mvcom";
@@ -219,7 +219,7 @@ sub do_job {
 
     my $job=$args{jobsubmit} ." -n ".$jobname." -c \"$com\"";
     print $job."\n";
-    `$job`;
+    #`$job`;
     die "Error 25: Cannot run the job:".$job if ($?);
 }
 
