@@ -53,6 +53,7 @@ GetOptions( \%args,
 'help',
 'jobsubmit=s',
 'outdir=s',
+'strand=s',
 'params:s',
 'previous=s',
 'ref=s',
@@ -95,6 +96,11 @@ unless ( -e $args{binpath} and -x $args{binpath} ) {
 	die ( "Invalid option binpath: location $args{binpath}" );
 }
 
+my $strand="*";
+if (exists $args{strands} && lc($args{strand})=~/yes/)  {
+	$strand="\\\$7";
+}
+
 ################### MAIN PROGRAM ####################
 
 # Setup the output directory
@@ -115,7 +121,7 @@ else {
 $outdir .= lc($binname);
 make_path($outdir);
 
-my  @conditionnames = split( /,/, $args{sampleconditions});
+my @conditionnames = split( /,/, $args{sampleconditions});
 my @samplenames = split( /,/, $args{fields} );
 unless ( scalar @samplenames == scalar @conditionnames ) {
 	die ( "Invalid option sampleconditons and fields (not same # of s and c) [s1,s2,...]: parsed $args{sampleconditions}" );
@@ -131,25 +137,25 @@ closedir $dh;
 for (my $i=0; $i < scalar(@samplenames); $i++) {
 	my $condition = $conditionnames[$i];
 	my $sample = $samplenames[$i];
-
+    print $sample."\n";
 	my @samples = grep { /^$sample/ } @file_list;
-
+	print Dumper(@samples);
 	unless ( 1 == scalar @samples ) {
 		die ( "Multiple matching files found for $sample:$condition. This is probably not what you want." );
 	}
 	my $sample_file = pop( @samples );
-	push @{ $files{$condition} }, "$inputdir/$sample_file"; #push the filename into the array $files{condition} => [filename]
+	push @{ $files{$sample} }, "$inputdir/$sample_file"; #push the filename into the array $files{condition} => [filename]
 }
 
 
 ### Run the jobs ###
 print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
 foreach my $condition ( keys %files ) {
-	do_job( $condition, $files{$condition} );
+	do_job( $condition, $files{$condition}, $outdir, $strand );
 }
 
 sub do_job {
-	my ($condition, $files) = @_;
+	my ($condition, $files, $outdir, $strand) = @_;
 
 	#construct and check the file list
 	my $filelist = '';
@@ -164,7 +170,7 @@ sub do_job {
 # TODO this can be used to copy files to web dir
 	my $mvcom = '';
 # $mvcom .= "&& mv x y";
-
+    my $convmethylkit = " && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"$strand\\\"\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$condition.G.bed | sort -k1,1 -k2,2n > $outdir/$condition.methylkit.txt";
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
@@ -176,6 +182,7 @@ sub do_job {
 	$com .= " -r $args{ref}";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
+	$com .= $convmethylkit;
 	$com .= " $mvcom";
 
 	print "command: $com\n" if $args{verbose};

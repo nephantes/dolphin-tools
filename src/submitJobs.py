@@ -34,7 +34,7 @@ class submitJobs:
            data    = json.loads(jobparams)
            cputime_pred = int(math.floor(int(data['cputime'])/60)+60)
            memory = int(math.floor(int(data['maxmemory']))+1024)
-           if(servicename=="stepTophat2" or servicename=="stepRSEM"):
+           if(servicename=="stepTophat2" or servicename=="stepRSEM" or servicename=="stemBSMap"):
                cpu=4
                cputime_pred=cputime_pred*2
         

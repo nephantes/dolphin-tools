@@ -200,7 +200,7 @@ sub do_job {
 	my $com = $loadsamtools . $gotodir . $args{binpath};
 	$com .= " -a $file1";
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
-	$com .= " -o $tmpoutfile";
+	$com .= " -o $tmpoutfile -n 4";
 	$com .= " -d $args{ref}";
 	$com .= " -R"; #include strand info
 	$com .= " -D $args{digestion}" if ( exists $args{digestion} and lc($args{digestion})!~/^no/ and lc($args{digestion})!~ /^$/);
