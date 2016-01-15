@@ -4,7 +4,7 @@
 #                                       stepDESeq2.pl
 #########################################################################################
 # 
-#  This program removes adapter sequence. 
+#  This program runs DESeq2 in R.
 #
 #
 #########################################################################################
@@ -246,9 +246,6 @@ stepDESeq2.pl
 
 stepDESeq2.pl -i input <fastq> 
             -o outdir <output directory> 
-            -b bowtieCmd <bowtie dir and file> 
-            -p params <bowtie params> 
-            -r ribosomeInd <ribosome Index file>
 
 stepDESeq2.pl -help
 
@@ -259,33 +256,10 @@ For help, run this script with -help option.
 =head1 OPTIONS
 
 =head2 -i  input file <fastq format> 
-
-fastq files has to be separated with ":". If it is paired end the paired end files has to ber separated by ","
-
-Ex: For single end;
-
-test1.fastq:test2.fastq:ctrl1.fastq:ctrl2.fastq
-
-for paired end;
-
-test1_R1.fastq,test1_R2.fastq:ctrl1_R1.fastq,ctrl1_R2.fastq
-
     
 =head2 -o outdir <output directory>
 
-the output files will be "$outdir/after_ribosome" 
-
-=head2 -b bowtieCmd <bowtie dir and file> 
-
-Fullpath of bowtie executable file. Ex: ~/bowtie_dir/bowtie
-
-=head2  -p params <bowtie params> 
-
-Bowtie running parameteres. Ex: "-p 8 -n 2 -l 20 -M 1 -a --strata --best"
-
-=head2  -r ribosomeInd <ribosome Index file>
-
-Ribosomal index files. Ex: ~/bowtie_ind/rRNA
+the output files will be "$outdir/" 
 
 
 =head2 -help
@@ -298,14 +272,13 @@ Display the version
 
 =head1 DESCRIPTION
 
- This program map the reads to rRNAs and put the rest into other files 
+ This program runs DESeq2 in R
 
 =head1 EXAMPLE
 
 
-stepDESeq2.pl -d col1
+stepDESeq2.pl -c cols
             -o ~/out
-            -f cbowtie_dir/bowtie
 
 =head1 AUTHORS
 

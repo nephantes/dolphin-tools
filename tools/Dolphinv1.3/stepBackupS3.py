@@ -86,7 +86,7 @@ class stepBackup:
 
   def updateInitialFileCounts(self, file_id, tablename, inputdir, filename, paired):
     count=-1
-    if (paired != "None"):
+    if (paired):
     	files=filename.split(',')
     	firstCount=self.getValfromFile(inputdir+'/tmp/'+files[0]+'.count')
     	secondCount=self.getValfromFile(inputdir+'/tmp/'+files[1]+'.count')
@@ -150,7 +150,7 @@ class stepBackup:
     backup_dir=sample[6]
     filename=''
  
-    if (paired != 'None'):
+    if (paired):
         firstCount=self.getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.count')
         secondCount=self.getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.count')
         if (firstCount == secondCount):
@@ -230,13 +230,14 @@ def main():
     processedLibs=[]
     amazon_bucket=""
     for sample in samplelist:
+       
         sample_id=sample[0]
         file_id=sample[1]
         libname=sample[4]  
         filename=sample[5]
         backup_dir=sample[6]
         amazon_bucket=sample[7]
-
+        PAIRED=None
         if (filename.find(',')!=-1):
            PAIRED="Yes"
 
@@ -245,7 +246,7 @@ def main():
             backup.processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
-    if (amazon!=() and amazon_bucket!=""):
+    if (AMAZONUPLOAD.lower() != "no" and amazon!=() and amazon_bucket!=""):
       amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
       for libname, sample_id in processedLibs:
         if (backup.checkReadCounts(sample_id, tablename)):
