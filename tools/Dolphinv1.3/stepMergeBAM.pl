@@ -119,7 +119,6 @@ foreach my $filekey (keys %mergeCmd)
    $com ="cp $filekey $outfile && ";
    $com .="cp $filekey.bai $outfile.bai ";
  }
- `$com`;
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;

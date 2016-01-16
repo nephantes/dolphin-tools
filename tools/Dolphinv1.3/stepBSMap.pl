@@ -112,6 +112,7 @@ unless ( exists $args{dspaired} and $args{dspaired} =~ /no|none|yes|paired/i ) {
 
 # Setup the output directory
 my $binname = basename( $args{binpath} ); #the name of the binary we execute (bsmap here)
+
 my $outdir = "$args{outdir}/";
 
 # Setup the input directory
@@ -196,8 +197,9 @@ sub do_job {
 	my $indexcom = "&& $args{samtools} index $sortedfile.bam";
 	my $rmcom = "&& rm $unsortedfile";
 	
-	
-	my $com = $loadsamtools . $gotodir . $args{binpath};
+        #my $bsmap=" module load bsmap/2.89; bsmap";	
+        my $bsmap=" /project/umw_biocore/bin/bsmap_1.90/bsmap-2.90/bsmap";	
+	my $com = $loadsamtools . $gotodir . $bsmap;
 	$com .= " -a $file1";
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
 	$com .= " -o $tmpoutfile -n 4";
