@@ -80,6 +80,7 @@ class stepBackup:
 
   def getAmazonCredentials(self, clusteruser):
     sql = 'SELECT DISTINCT ac.* FROM amazon_credentials ac, group_amazon ga, users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
+    print sql
     results = self.runSQL(sql)
 
     return results
@@ -214,6 +215,7 @@ def main():
     print USERNAME
     
     amazon = backup.getAmazonCredentials(USERNAME)
+    print amazon
 
     if (amazon!=()):   
        conn = S3Connection(amazon[0][1], amazon[0][2])
