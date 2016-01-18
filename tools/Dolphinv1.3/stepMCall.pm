@@ -155,8 +155,12 @@ foreach my $condition ( keys %files ) {
 }
 
 sub do_job {
-	my ($condition, $files, $outdir, $strand) = @_;
-
+	my ($condition, $files, $outdir, $strand_inf) = @_;
+    my $strand="R";
+	if ($strand_inf eq "+")
+	{
+		$strand = "F";
+	}
 	#construct and check the file list
 	my $filelist = '';
 	foreach my $file ( @{$files} ) {
@@ -170,7 +174,7 @@ sub do_job {
 # TODO this can be used to copy files to web dir
 	my $mvcom = '';
 # $mvcom .= "&& mv x y";
-    my $convmethylkit = " && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t\\\"$strand\\\"\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$condition.G.bed | sort -k1,1 -k2,2n > $outdir/$condition.methylkit.txt";
+    my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$condition.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$condition.G.bed | sort -k1,1 -k2,2n >> $outdir/$condition.methylkit.txt ";
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa

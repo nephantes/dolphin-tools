@@ -30,7 +30,10 @@
  my $outdir           = "";
  my $strand           = "";
  my $tilesize         = "";
+ my $lengthtile       = "";
  my $bedfile          = "";
+ my $topX             = "";
+ my $maxcoverage      = "";
  my $rscriptCMD       = "";
  my $pubdir           = "";
  my $wkey             = "";
@@ -49,9 +52,12 @@ GetOptions(
     'conds=s'        => \$conds,
     'gbuild=s'       => \$gbuild,
     'outdir=s'       => \$outdir,
+    'xtop=s'        => \$topX,
+    'maxcoverage'    => \$maxcoverage,
     'strand=s'       => \$strand,
     'name=s'         => \$name,
     'tilesize=s'     => \$tilesize,
+    'lengthtile=s'   => \$lengthtile,
     'bedfile=s'      => \$bedfile,
     'rscriptCMD=s'   => \$rscriptCMD,
     'pubdir=s'       => \$pubdir,
@@ -81,7 +87,10 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($
 
 my $inputdir = "$outdir/mcall";
 my $input_file_suffix = ".methylkit.txt";
-
+$maxcoverage=0 if ($maxcoverage=/^$/);
+$topX = 2000 if ($topX=/^$/);
+$tilesize=300 if ($tilesize=/^$/);
+$lengthtile=300 if ($lengthtile=/^$/);
 
 $outdir   = "$outdir/meth_".$name;
 `mkdir -p $outdir`;
@@ -105,19 +114,21 @@ else{
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
-runMethylKit($inputdir, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $puboutdir, $wkey);
+runMethylKit($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize,  $lengthtile,$maxcoverage, $topX, $puboutdir, $wkey);
 
 `cp -R $outdir $puboutdir/.`;
 
 sub runMethylKit
 {
-my ($inputdir, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $puboutdir, $wkey)=@_;
+my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $lengthtile, $maxcoverage, $topX, $puboutdir, $wkey)=@_;
 my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize;";
+print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; tilelength<-$lengthtile; maxcoverage<-$maxcoverage, topX<-$topX)";
 
 open(OUT, ">$output");
 my $rscript = qq/
+library("methylKit")
+
 push <- function(l, ...) c(l, list(...))
 outerJoin <- function(data1, data2,data3, fields)
 {
@@ -125,8 +136,10 @@ outerJoin <- function(data1, data2,data3, fields)
   d2 <- merge(data3, d1,  by=fields, all=TRUE)
   d2[,fields]
 }
-runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize)
+runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, lengthtile, maxcoverage, topX)
 {
+  conds<-conds-1
+  bedfile<-"$bedfile"
   statspdf<-paste(outdir,"\/stats.pdf", sep="")
   analysispdf<-paste(outdir,"\/analysis.pdf", sep="")
   file.list<-list()
@@ -160,8 +173,8 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   dev.off()
   meth=unite(myobj)
   
-  tiles<-tileMethylCounts(myobj,win.size=tilesize,step.size=tilesize)
-  tiles_cpgcov<-tileMethylCounts(myobj.cpgcov,win.size=tilesize,step.size=tilesize)
+  tiles<-tileMethylCounts(myobj,win.size=tilesize,step.size=lengthtile)
+  tiles_cpgcov<-tileMethylCounts(myobj.cpgcov,win.size=tilesize,step.size=lengthtile)
   
   meth_tiles<-unite(tiles)
   meth_tiles_cpgcov<-unite(tiles_cpgcov)
@@ -180,15 +193,15 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   
   myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,weighted.mean=TRUE,num.cores=4)
   
-  myDiff_25p.hyper<-get.methylDiff(myDiff,difference=25,qvalue=0.01,type="hyper")
-  myDiff_25p.hypo<-get.methylDiff(myDiff,difference=25,qvalue=0.01,type="hypo")
+  myDiff_25p.hyper<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hyper")
+  myDiff_25p.hypo<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hypo")
   
   data<-getData(meth_tiles)
   data_cpgcov<-getData(meth_tiles_cpgcov)
   
-  difftiles.hyper<-getData(myDiff_HF_LP_25p.hyper)
-  difftiles.hypo<-getData(myDiff_HF_LP_25p.hypo)
-  difftiles<-getData(myDiff_HF_LP_25p)
+  difftiles.hyper<-getData(myDiff_25p.hyper)
+  difftiles.hypo<-getData(myDiff_25p.hypo)
+  difftiles<-getData(myDiff)
   
   write.table(difftiles.hyper, paste(outdir,"\/difftiles.hyper.tsv",sep=""))
   write.table(difftiles.hypo, paste(outdir,"\/difftiles.hypo.tsv",sep=""))
@@ -213,16 +226,15 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   colnames(norm_data) <- c("Cov", "Cpg", samplenames)
   snames<-samplenames
   
-  filtmaxcoverage<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>5,3:dim(norm_data)[2]], 1, function(x) max(x)),1)
+  filtmaxcoverage<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>maxcoverage,3:dim(norm_data)[2]], 1, function(x) max(x)),1)
   
-  plot(density( filtmaxcoverage[,1]))
+  #plot(density( filtmaxcoverage[,1]))
   lowelim<-norm_data[filtmaxcoverage[,1]>0.6, ]
   
   write.table(lowelim, paste(outdir,"\/after_elimination.tsv",sep=""))
   
   cv<-cbind(apply(lowelim, 1, function(x) (sd(x,na.rm=TRUE)\/mean(x,na.rm=TRUE))), 1)
   
-  #cv<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>5 ,snames], 1, function(x) (sd(x,na.rm=TRUE))), 1)
   colnames(cv)<-c("coeff", "a")
   
   withcvlowelim<-cbind(cv[,1], lowelim)
@@ -230,13 +242,17 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   write.table(withcvlowelim, paste(outdir,"\/after_elimination_with_coeff.tsv",sep=""))
   
   cvsort<-cv[order(cv[,1],decreasing=TRUE),]
+  topindex<-dim(cvsort)[1]
+  if (topindex>topX)
+  {
+     topindex<-topX
+  }
+  cvsort_top <- cvsort[1:topindex,]
   
-  cvsort_top2000 <- cvsort[1:2000,]
-  
-  selected<-data.frame(norm_data[rownames(cvsort_top2000),snames])
-  #write.table(combData[rownames(cvsort_top2000),], paste(outdir,"\/combData_cov_top2000.tsv",sep=""))
+  selected<-data.frame(norm_data[rownames(cvsort_top),snames])
+  #write.table(combData[rownames(cvsort_top),], paste(outdir,"\/combData_cov_top.tsv",sep=""))
   colnames(selected) <- snames
-  write.table(selected, paste(outdir,"\/most_cv_top2000.tsv",sep=""))
+  write.table(selected, paste(outdir,"\/most_cv_top.tsv",sep=""))
   gene.obj=read.transcript.features(bedfile)
   ann<-annotate.WithGenicParts(myDiff,gene.obj)
   
@@ -248,7 +264,7 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
 }
 
-runMethylSeq <- function("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize)
+runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $lengthtile, $maxcoverage, $topX)
 /;
 print $rscript; 
 
