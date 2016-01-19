@@ -87,7 +87,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($
 
 my $inputdir = "$outdir/mcall";
 my $input_file_suffix = ".methylkit.txt";
-$maxcoverage=0 if ($maxcoverage=/^$/);
+$maxcoverage=5 if ($maxcoverage=/^$/);
 $topX = 2000 if ($topX=/^$/);
 $tilesize=300 if ($tilesize=/^$/);
 $lengthtile=300 if ($lengthtile=/^$/);
