@@ -31,7 +31,7 @@ class stepBackup:
     try:
         cursor = db.cursor()
         cursor.execute(sql)
-        #print sql
+        print sql
         results = cursor.fetchall()
         cursor.close()
         del cursor
@@ -80,7 +80,6 @@ class stepBackup:
 
   def getAmazonCredentials(self, clusteruser):
     sql = 'SELECT DISTINCT ac.* FROM amazon_credentials ac, group_amazon ga, users u where ac.id=ga.amazon_id and ga.group_id=u.group_id and u.clusteruser="'+clusteruser+'";'
-    print sql
     results = self.runSQL(sql)
 
     return results

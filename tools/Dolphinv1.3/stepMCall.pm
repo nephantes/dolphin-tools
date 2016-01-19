@@ -156,10 +156,10 @@ foreach my $condition ( keys %files ) {
 
 sub do_job {
 	my ($condition, $files, $outdir, $strand_inf) = @_;
-    my $strand="R";
-	if ($strand_inf eq "+")
+	my $strand = "*";
+	if ($strand_inf=~/^yes/)
 	{
-		$strand = "F";
+              $strand="\\\$7";
 	}
 	#construct and check the file list
 	my $filelist = '';
