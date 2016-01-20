@@ -1,0 +1,3 @@
+testStep1	@SHARE/tests/pipeline/stepTest.pl -c 'sleep 100 && ls -l' -o @OUTDIR -n 3 -s testStep1 -j @JOB	1
+testStep2	@SHARE/tests/pipeline/stepTest.pl -c 'sleep 30 && ls' -o @OUTDIR -n 4 -s testStep2 -j @JOB	1
+testStep3	@SHARE/tests/pipeline/stepTest.pl -c 'sleep 50 && echo "alper"' -o @OUTDIR -n 5 -s testStep3 -j @JOB	1

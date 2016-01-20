@@ -142,8 +142,13 @@ def main():
     else:
       comstr=COM
 
+    logs=OUTDIR + "/tmp/logs"
+    os.system("mkdir -p "+logs)
+
+    logfile="%s/SERVICE.%s.log"%(logs, SERVICENAME)
+   
     #print "\n\n\n\n\n"+comstr+"\n"
-    logging.basicConfig(filename=config['logpath']+'/'+WKEY+'_'+SERVICENAME+'.log', filemode='w',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info(USERNAME+":"+OUTDIR)
     logging.info(comstr)
 
@@ -156,14 +161,17 @@ def main():
     os.system("chmod +x " + bash_script_file)
    
     command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
-    print command 
+    print command
+    logging.info(command)
     ## PUT TRY CATCH HERE
+    logging.info("STARTED")
     child = os.popen(command)
     
     data = child.read()
     err = child.close()
     #print "\n\nDATA"+str(data)
     #print "\n\nERR"+str(err)
+    logging.info("ENDED")
 
     if err:
        raise RuntimeError, 'ERROR: %s failed w/ exit code %d' % (command, err)

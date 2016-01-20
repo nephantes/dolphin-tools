@@ -113,13 +113,13 @@ def main():
    sdir=config['tooldir']+"/src"
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
-   lsf=OUTDIR + "/tmp/lsf"
+   logs=OUTDIR + "/tmp/logs"
   
    os.system("mkdir -p "+track)
    os.system("mkdir -p "+src)
-   os.system("mkdir -p "+lsf)
+   os.system("mkdir -p "+logs)
 
-   logfile="%s/tmp/lsf/%s.submit.log"%(OUTDIR, NAME)
+   logfile="%s/JOB.%s.log"%(logs, NAME)
    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
    logging.info("File Path:%s"%os.getcwd())
    #print "checkJob\n";
@@ -202,8 +202,7 @@ def main():
      f.close();
      os.system("chmod 755 "+src+"/"+NAME+".tmp.bash")
      f=open(src+"/"+NAME+".submit.bash", 'w')
-     f.write(src + "/" +NAME + ".tmp.bash > " + lsf + "/$LSB_JOBID.std 2>&1")
-     #f.write(src + "/" +NAME + ".tmp.bash 1> " + lsf + "/dene.std 2> >(tee -a " + lsf + "/dene.std >&2)")
+     f.write(src + "/" +NAME + ".tmp.bash > " + logs + "/$LSB_JOBID.std 2>&1")
      f.close();
 
      os.system("chmod 755 "+src+"/"+NAME+".submit.bash")
@@ -212,7 +211,7 @@ def main():
 
      #CHANGE this submition script according to the system.
      #PUT TRY CATCH HERE 
-     command="bsub "+queue+" -R \"select[os=rh6.4 || os=rh6.5]\" -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+lsf+" < "+src+"/"+NAME+".submit.bash"
+     command="bsub "+queue+" -R \"select[os=rh6.4 || os=rh6.5]\" -P dolphin -R \"span[hosts=1]\" -n "+str(CPU)+" -W "+str(TIME)+" -R \"rusage[mem="+str(MEMORY)+"]\" -J "+NAME+" -o "+logs+" < "+src+"/"+NAME+".submit.bash"
      print command
      f.write("SUBMIT SCRIPT[" + command +"]\n\n")
      output = submitjobs.runcmd(command)
