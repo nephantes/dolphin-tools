@@ -87,7 +87,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($
 
 my $inputdir = "$outdir/mcall";
 my $input_file_suffix = ".methylkit.txt";
-$maxcoverage=5 if ($maxcoverage=/^$/);
+$maxcoverage=0 if ($maxcoverage=/^$/);
 $topN = 2000 if ($topN=/^$/);
 $tilesize=300 if ($tilesize=/^$/);
 $stepsize=300 if ($stepsize=/^$/);
@@ -136,7 +136,7 @@ outerJoin <- function(data1, data2,data3, fields)
   d2 <- merge(data3, d1,  by=fields, all=TRUE)
   d2[,fields]
 }
-runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, maxcoverage, topX)
+runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, maxcoverage, topN)
 {
   conds<-conds-1
   bedfile<-"$bedfile"
