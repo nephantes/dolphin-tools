@@ -121,7 +121,6 @@ $outdir .= lc($binname);
 make_path($outdir);
 
 ### Construct the file list ###
-my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
 my @file_list = grep { /\.bam$/ } readdir($dh);
 closedir $dh;
@@ -130,9 +129,11 @@ closedir $dh;
 ### Run the jobs ###
 
 foreach my $file ( @file_list ) {
-    $file=~/.*\/(.*).bam/;
+    print $file."\n";
+    $file=~/(.*).bam/;
     my $samplename=$1;
-	do_job( $samplename, $file, $outdir, $strand );
+    print $samplename."\n";
+    do_job( $samplename, $inputdir."/".$file, $outdir, $strand );
 }
 
 sub do_job {
@@ -150,7 +151,7 @@ sub do_job {
 # TODO this can be used to copy files to web dir
 	my $mvcom = '';
 # $mvcom .= "&& mv x y";
-    my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$samplename.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$samplename.G.bed | sort -k1,1 -k2,2n >> $outdir/$samplename.methylkit.txt ";
+        my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$samplename.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$samplename.G.bed | sort -k1,1 -k2,2n >> $outdir/$samplename.methylkit.txt ";
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
