@@ -123,6 +123,7 @@
 
 #BISULPHITE PIPELINE
 @RUNBSMAP         = @PERL @DOLPHIN/stepBSMap.pl
+@BSMAPCMD         = @BIN/bsmap
 @RUNMCALL         = @PERL @DOLPHIN/stepMCall.pl
 @RUNMETHYLKIT     = @PERL @DOLPHIN/stepMethylKit.pl
 
