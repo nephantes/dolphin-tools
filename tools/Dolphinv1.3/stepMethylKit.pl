@@ -123,7 +123,7 @@ sub runMethylKit
 my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $stepsize, $maxcoverage, $topN, $puboutdir, $wkey)=@_;
 my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; tilelength<-$stepsize; maxcoverage<-$maxcoverage; topN<-$topN";
+print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; maxcoverage<-$maxcoverage; topN<-$topN";
 
 open(OUT, ">$output");
 my $rscript = qq/
@@ -191,7 +191,7 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   tiles_comp=reorganize(meth_tiles,sample.ids=samplenames,
                         treatment=conds )
   
-  myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,weighted.mean=TRUE,num.cores=4)
+  myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,weigthed.mean=TRUE,num.cores=4)
   
   myDiff_25p.hyper<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hyper")
   myDiff_25p.hypo<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hypo")
