@@ -132,6 +132,7 @@ foreach my $file ( @file_list ) {
     print $file."\n";
     $file=~/(.*).bam/;
     my $samplename=$1;
+	$samplename=~s/\.sorted//g;
     print $samplename."\n";
     do_job( $samplename, $inputdir."/".$file, $outdir, $strand );
 }
