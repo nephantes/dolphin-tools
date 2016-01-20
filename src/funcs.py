@@ -38,7 +38,7 @@ class funcs:
                 return '%s<a href="%s">%s</a>%s' % (prefix, url, url, last)
         return re.sub(self.re_string, do_sub, text)
     
-    def queryAPI(self, url, data, name, logging):
+    def queryAPI(self, url, data, name=None, logging=None):
         opener = urllib2.build_opener(urllib2.HTTPHandler())
         trials=0
         while trials<5:
@@ -55,13 +55,17 @@ class funcs:
               time.sleep(5)
            trials=trials+1
         ret=str(json.loads(mesg))
-        if logging: 
+        ret = re.sub (r'[\[|\]]', '', ret)
+        ret = re.sub (r'u\'', '\'', ret)
+        ret = re.sub (r'\'', '\"', ret)
+        if logging and name: 
            logging.info("%s:%s"%(name,ret))
     
         if (ret.startswith("ERROR")):
               if logging:
                  logging.info("%s:%s"%(name,ret))
-              print name + ":" + ret + "\n"
+              if name:
+                 print name + ":" + ret + "\n"
               sys.exit(2);
         return ret
         
