@@ -197,8 +197,8 @@ sub do_job {
 	my $indexcom = "&& $args{samtools} index $sortedfile.bam";
 	my $rmcom = "&& rm $unsortedfile";
 	
-        #my $bsmap=" module load bsmap/2.89; bsmap";	
-        my $bsmap=" /project/umw_biocore/bin/bsmap_1.90/bsmap-2.90/bsmap";	
+
+    my $bsmap=" ".$args{binpath};	
 	my $com = $loadsamtools . $gotodir . $bsmap;
 	$com .= " -a $file1";
 	$com .= " -b $file2" if ( $file2 ); #only for paired end libs
