@@ -31,7 +31,7 @@ class runWorkflow:
         return line
 
 
-    def import_workflow(self, input_file=None):
+    def import_workflow(self, input_file, logging):
         wf = list()
 
         with open(input_file, 'r') as infile:
@@ -40,6 +40,7 @@ class runWorkflow:
             if (len(line) < 5): continue
 
             servicename, command, waittime = re.split(r'[\t\,]+', line)
+            logging.info( "servicename=[%s]\ncommand=[%s]waittime=[%s]"%(servicename, command, waittime) )
             wf.append(Service(servicename,command,waittime))
         return wf
 
@@ -152,11 +153,11 @@ def main():
     logging.info(INPUTPARAM)
 
     if (WKEY==None):
-      WKEY="start"
+       WKEY="start"
     else:
-      workflow.updateRunParams(WKEY, RUNID, logging)
+       workflow.updateRunParams(WKEY, RUNID, logging)
 
-    services=workflow.import_workflow(WORKFLOWFILE)
+    services=workflow.import_workflow(WORKFLOWFILE, logging)
     slen=str(len(services))    
   
     wfbase = os.path.splitext(basename(WORKFLOWFILE))[0] 

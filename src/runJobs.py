@@ -7,19 +7,44 @@ import re
 import string
 import subprocess
 #import time
+import math
+import json
+
+sys.path.insert(0, sys.path[0])
+from config import *
+from funcs import *
 
 #def getKey(num):
 #       return ''.join(random.choice(string.ascii_letters) for x in range(num))
-   
-def runcmd(command): 
-    print command
-    child = os.popen(command)
-    data = child.read()
-    print data
-    err = child.close()
-    if err:
-        return 'ERROR: %s failed w/ exit code %d' % (command, err)
-    return data
+sys.path.insert(0, sys.path[0])
+from config import *
+from funcs import *
+
+
+class submitJobs:
+    url = ""
+    f=""
+    def __init__(self, url, f ):
+        self.url = url
+        self.f = f
+    
+    def checkJob(self, jobname, wkey, logging):
+        data = urllib.urlencode({'func':'checkJob', 'jobname':jobname, 'wkey':wkey})
+        return json.loads(self.f.queryAPI(self.url, data, jobname, logging))['Result']
+                
+    def runcmd(self, command, logging): 
+       print command
+       logging.info("\n\n\nCOM:["+command+"]\n\n\n")
+       child = os.popen(command)
+       data = child.read()
+       logging.info("\n\n\ndata:["+data+"]\n\n\n")
+       print data
+       err = child.close()
+       if err:
+           logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
+           return 'ERROR: %s failed w/ exit code %d' % (command, err)
+           
+       return data
 
 def main():
 
@@ -31,11 +56,7 @@ def main():
         parser.add_option('-s', '--servicename', help='service name', dest='servicename')
         parser.add_option('-c', '--command', help='command that is goinf to be run', dest='com')
         parser.add_option('-n', '--name', help='name of the run', dest='name')
-        parser.add_option('-p', '--cpu', help='the # of cpu', dest='cpu')
-        parser.add_option('-t', '--time', help='time', dest='time')
-        parser.add_option('-m', '--memory', help='memory', dest='memory')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
-        parser.add_option('-q', '--queue', help='queue', dest='queue')
         parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
         (options, args) = parser.parse_args()
    except:
@@ -48,44 +69,34 @@ def main():
    SERVICENAME = options.servicename
    COM         = options.com
    NAME        = options.name
-   CPU         = options.cpu
-   TIME        = options.time
-   MEMORY      = options.memory
-   QUEUE       = options.queue
    CONFIG      = options.config
    python      = "python"
+   
+   config=getConfig(CONFIG)
+   f = funcs()
+   submitjobs = submitJobs(config['url'], f)
+   
 
    if (USERNAME==None):
         USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
    
    print "USER:"+str(USERNAME)+"\n";
 
-   if (NAME == None):
-        NAME="job";
-   if (OUTDIR == None):
-        OUTDIR="~/out";
-   if (CPU == None):
-        CPU="1";
-   if (TIME == None):
-        TIME="600";
-   if (QUEUE == None):
-        queue="-q short"
-   else: 
-        queue="-q "+str(QUEUE)
-   if (MEMORY == None):
-        MEMORY="4096";
-   if (DBHOSTNAME == None):
-        DBHOSTNAME="localhost"
    sdir=os.path.dirname(sys.argv[0])
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    #print "EXECDIR" + exec_dir
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
-   lsf=OUTDIR + "/tmp/lsf"
+   logs=OUTDIR + "/tmp/logs"
   
    os.system("mkdir -p "+track)
    os.system("mkdir -p "+src)
-   os.system("mkdir -p "+lsf)
+   os.system("mkdir -p "+logs)
+   
+   logfile="%s/JOB.%s.log"%(logs, NAME)
+   logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+   logging.info("File Path:%s"%os.getcwd())
+   
    success_file = track+"/"+str(NAME)+".success";
    jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s"
    if not os.path.exists(success_file):
@@ -120,7 +131,7 @@ def main():
      f.close();
      os.system("chmod 755 "+src+"/"+NAME+".tmp.bash")
      f=open(src+"/"+NAME+".submit.bash", 'w')
-     f.write(src + "/" +NAME + ".tmp.bash $1> " + lsf + "/$1.std 2>&1")
+     f.write(src + "/" +NAME + ".tmp.bash $1> " + logs + "/$1.std 2>&1")
      f.close();
 
      os.system("chmod 755 "+src+"/"+NAME+".submit.bash")
@@ -136,7 +147,7 @@ def main():
      command = jobstatus_cmd % locals()
      #PUT TRY CATCH HERE 
      if pid>0:
-        return runcmd(command)
+        return submitjobs.runcmd(command, logging)
  
 if __name__ == "__main__":
     main()

@@ -21,29 +21,36 @@ class jobStatus:
         self.f = f
     
     def checkAllJobsFinished(self, username, wkey, servicename, logging):
+        logging.info("checkAllJobsFinished:START")
         data = urllib.urlencode({'func':'checkAllJobsFinished', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename})
-        self.f.queryAPI(self.url, data, servicename, logging) 
+        self.f.queryAPI(self.url, data, servicename, logging)
+        logging.info("checkAllJobsFinished:END")
     
     def insertJob(self,  username, wkey, com, jobname, servicename, jobnum, result, logging):
+        logging.info("JOB insert:START")
         data = urllib.urlencode({'func':'insertJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 
                                  'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        self.f.queryAPI(self.url, data, "INSERT"+jobname, logging) 
+        self.f.queryAPI(self.url, data, "INSERT"+jobname, logging)
+        logging.info("JOB insert:END")
    
     def updateJob(self,  username, wkey, jobname, servicename, field, jobnum, result, logging):
+        logging.info("JOB update:START")
         data = urllib.urlencode({'func':'updateJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 
                                  'field':field , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        self.f.queryAPI(self.url, data, "UPDATE"+jobname, logging) 
+        self.f.queryAPI(self.url, data, "UPDATE"+jobname, logging)
+        logging.info("JOB update:END")
     
     def insertJobOut(self, username, wkey, jobnum, outdir, edir, logging):
-        file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".std"
+        logging.info("insertJobOut:START")
+        file=str(outdir)+"/tmp/logs/"+str(jobnum)+".std"
         print "insertJobOut file:"+file
         if os.path.isfile(file) and os.access(file, os.R_OK):
-            command="python " + edir  + "/readLSFout.py -f "+file
+            command="python " + edir  + "/readJOBout.py -f "+file
             child = os.popen(command)
             jobout = child.read().rstrip()
             err = child.close()
@@ -56,8 +63,8 @@ class jobStatus:
             data = urllib.urlencode({'func':'insertJobOut', 'username':username, 
                                  'wkey':wkey, 'jobnum':str(jobnum), 'jobout':jobout})
             self.f.queryAPI(self.url, data, "jobnum:"+str(jobnum), logging) 
-
-       
+        logging.info("insertJobOut:END")
+        
 def main():
    try:
         #python finishJob.py -u kucukura -k nVy1THnthvrRWfXcj187KeDDQrNAkY -s splitFastQ
@@ -97,9 +104,7 @@ def main():
    jobStat = jobStatus(config['url'], f)
    
    edir=os.path.dirname(sys.argv[0])
-   print OUTDIR
-   print TYPE
-   logfile="%s/tmp/lsf/%s.jobStatus.log"%(OUTDIR,str(JOBNUM))
+   logfile="%s/tmp/logs/JOBSTATUS.%s.log"%(OUTDIR,str(JOBNUM))
    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
    logging.info("File Path:%s"%os.getcwd())
    logging.info("WKEY:"+str(WKEY))
