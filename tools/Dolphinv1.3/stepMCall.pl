@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-
+use File::Basename;
+ 
 use vars qw($VERSION);
 $VERSION = '0.0.1';  ## Current version of this file
 require  5.008;    ## requires this Perl version or later
@@ -48,8 +49,6 @@ my %args = (
 #
 GetOptions( \%args,
 'binpath=s',
-'sampleconditions=s',
-'fields=s',
 'help',
 'jobsubmit=s',
 'outdir=s',
@@ -121,68 +120,45 @@ else {
 $outdir .= lc($binname);
 make_path($outdir);
 
-my @conditionnames = split( /,/, $args{sampleconditions});
-my @samplenames = split( /,/, $args{fields} );
-unless ( scalar @samplenames == scalar @conditionnames ) {
-	die ( "Invalid option sampleconditons and fields (not same # of s and c) [s1,s2,...]: parsed $args{sampleconditions}" );
-}
-
 ### Construct the file list ###
 my %files;
 opendir(my $dh, $inputdir) || die "can't opendir $inputdir: $!";
 my @file_list = grep { /\.bam$/ } readdir($dh);
 closedir $dh;
 
-#find all the filenames matching samplename[n] (should be one) and add it to condition key
-for (my $i=0; $i < scalar(@samplenames); $i++) {
-	my $condition = $conditionnames[$i];
-	my $sample = $samplenames[$i];
-    print $sample."\n";
-	my @samples = grep { /^$sample/ } @file_list;
-	print Dumper(@samples);
-	unless ( 1 == scalar @samples ) {
-		die ( "Multiple matching files found for $sample:$condition. This is probably not what you want." );
-	}
-	my $sample_file = pop( @samples );
-	push @{ $files{$sample} }, "$inputdir/$sample_file"; #push the filename into the array $files{condition} => [filename]
-}
-
 
 ### Run the jobs ###
-print "File hash:\n".Dumper( \%files) if ( $args{verbose} );
-foreach my $condition ( keys %files ) {
-	do_job( $condition, $files{$condition}, $outdir, $strand );
+
+foreach my $file ( @file_list ) {
+    $file=~/.*\/(.*).bam/;
+    my $samplename=$1;
+	do_job( $samplename, $file, $outdir, $strand );
 }
 
 sub do_job {
-	my ($condition, $files, $outdir, $strand_inf) = @_;
+	my ($samplename, $file, $outdir, $strand_inf) = @_;
 	my $strand = "*";
 	if ($strand_inf=~/^yes/)
 	{
               $strand="\\\$7";
 	}
 	#construct and check the file list
-	my $filelist = '';
-	foreach my $file ( @{$files} ) {
-		die "Invalid file (must be a regular file): $file" if ( ! -f $file );
-		$filelist .= " -m $file";
-	}
-
-
+	my $filelist = " -m $file";
+	
 # construct the move command
 # not implemented
 # TODO this can be used to copy files to web dir
 	my $mvcom = '';
 # $mvcom .= "&& mv x y";
-    my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$condition.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$condition.G.bed | sort -k1,1 -k2,2n >> $outdir/$condition.methylkit.txt ";
+    my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$samplename.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$samplename.G.bed | sort -k1,1 -k2,2n >> $outdir/$samplename.methylkit.txt ";
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
-	my $logfile = "$args{outdir}/tmp/lsf/$condition.$binname.log";
+	my $logfile = "$args{outdir}/tmp/lsf/$samplename.$binname.log";
 ##outdir doesn't do anything in mcall so we cd instead
 	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
-	$com .= " --sampleName $condition";
+	$com .= " --sampleName $samplename";
 	$com .= " -r $args{ref}";
 	$com .= " $args{params}" if ( exists $args{params} );
 	$com .= " > $logfile 2>&1";
@@ -193,7 +169,7 @@ sub do_job {
 
 # construct the job submission command
 # jobname = servicename_bname
-	my $jobname = "$args{servicename}_$condition";
+	my $jobname = "$args{servicename}_$samplename";
 
 	my $job = qq($args{jobsubmit} -n $jobname -c "$com"); #TODO $com should be single quoted?
 	print "job: $job\n" if $args{verbose};

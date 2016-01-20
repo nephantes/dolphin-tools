@@ -30,9 +30,9 @@
  my $outdir           = "";
  my $strand           = "";
  my $tilesize         = "";
- my $lengthtile       = "";
+ my $stepsize         = "";
  my $bedfile          = "";
- my $topX             = "";
+ my $topN             = "";
  my $maxcoverage      = "";
  my $rscriptCMD       = "";
  my $pubdir           = "";
@@ -52,12 +52,12 @@ GetOptions(
     'conds=s'        => \$conds,
     'gbuild=s'       => \$gbuild,
     'outdir=s'       => \$outdir,
-    'xtop=s'        => \$topX,
-    'maxcoverage'    => \$maxcoverage,
+    'topN=s'         => \$topN,
+    'maxcoverage=s'  => \$maxcoverage,
     'strand=s'       => \$strand,
     'name=s'         => \$name,
     'tilesize=s'     => \$tilesize,
-    'lengthtile=s'   => \$lengthtile,
+    'stepsize=s'     => \$stepsize,
     'bedfile=s'      => \$bedfile,
     'rscriptCMD=s'   => \$rscriptCMD,
     'pubdir=s'       => \$pubdir,
@@ -88,9 +88,9 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($
 my $inputdir = "$outdir/mcall";
 my $input_file_suffix = ".methylkit.txt";
 $maxcoverage=5 if ($maxcoverage=/^$/);
-$topX = 2000 if ($topX=/^$/);
+$topN = 2000 if ($topN=/^$/);
 $tilesize=300 if ($tilesize=/^$/);
-$lengthtile=300 if ($lengthtile=/^$/);
+$stepsize=300 if ($stepsize=/^$/);
 
 $outdir   = "$outdir/meth_".$name;
 `mkdir -p $outdir`;
@@ -114,16 +114,16 @@ else{
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
-runMethylKit($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize,  $lengthtile,$maxcoverage, $topX, $puboutdir, $wkey);
+runMethylKit($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize,  $stepsize,$maxcoverage, $topN, $puboutdir, $wkey);
 
 `cp -R $outdir $puboutdir/.`;
 
 sub runMethylKit
 {
-my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $lengthtile, $maxcoverage, $topX, $puboutdir, $wkey)=@_;
+my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $stepsize, $maxcoverage, $topN, $puboutdir, $wkey)=@_;
 my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; tilelength<-$lengthtile; maxcoverage<-$maxcoverage, topX<-$topX)";
+print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; tilelength<-$stepsize; maxcoverage<-$maxcoverage; topN<-$topN";
 
 open(OUT, ">$output");
 my $rscript = qq/
@@ -136,7 +136,7 @@ outerJoin <- function(data1, data2,data3, fields)
   d2 <- merge(data3, d1,  by=fields, all=TRUE)
   d2[,fields]
 }
-runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, lengthtile, maxcoverage, topX)
+runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, maxcoverage, topX)
 {
   conds<-conds-1
   bedfile<-"$bedfile"
@@ -173,8 +173,8 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   dev.off()
   meth=unite(myobj)
   
-  tiles<-tileMethylCounts(myobj,win.size=tilesize,step.size=lengthtile)
-  tiles_cpgcov<-tileMethylCounts(myobj.cpgcov,win.size=tilesize,step.size=lengthtile)
+  tiles<-tileMethylCounts(myobj,win.size=tilesize,step.size=stepsize)
+  tiles_cpgcov<-tileMethylCounts(myobj.cpgcov,win.size=tilesize,step.size=stepsize)
   
   meth_tiles<-unite(tiles)
   meth_tiles_cpgcov<-unite(tiles_cpgcov)
@@ -243,9 +243,9 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   
   cvsort<-cv[order(cv[,1],decreasing=TRUE),]
   topindex<-dim(cvsort)[1]
-  if (topindex>topX)
+  if (topindex>topN)
   {
-     topindex<-topX
+     topindex<-topN
   }
   cvsort_top <- cvsort[1:topindex,]
   
@@ -264,7 +264,7 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
 }
 
-runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $lengthtile, $maxcoverage, $topX)
+runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $stepsize, $maxcoverage, $topN)
 /;
 print $rscript; 
 
