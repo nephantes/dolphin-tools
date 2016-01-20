@@ -38,7 +38,7 @@ class dbcomm:
     return ret
 
   def insertJobStats(self, username, wkey, jobnum, outdir):
-    file=str(outdir)+"/tmp/lsf/"+str(jobnum)+".out"
+    file=str(outdir)+"/tmp/logs/"+str(jobnum)+".out"
     if os.path.isfile(file) and os.access(file, os.R_OK):
         lines = [line.rstrip('\n') for line in open(file)]
         stats = {

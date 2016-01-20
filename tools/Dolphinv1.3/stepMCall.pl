@@ -154,7 +154,7 @@ sub do_job {
 
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
-	my $logfile = "$args{outdir}/tmp/lsf/$samplename.$binname.log";
+	my $logfile = "$args{outdir}/tmp/logs/$samplename.$binname.log";
 ##outdir doesn't do anything in mcall so we cd instead
 	my $com = "cd $outdir && $args{binpath}";
 	$com .= " $filelist";
