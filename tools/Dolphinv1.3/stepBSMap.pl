@@ -184,7 +184,7 @@ sub do_job {
         }
 
 #construct the command
-	my $logfile = "$args{outdir}/tmp/lsf/$bname.$binname.log";
+	my $logfile = "$args{outdir}/tmp/logs/$bname.$binname.log";
 	my $sortedfile = "$outdir/$bname.sorted"; #because samtools adds bam automatically
 	my $tmpoutfile = getRandFileName().".bam";
 	my $outfile = "$outdir/$bname.bam";
