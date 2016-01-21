@@ -24,7 +24,7 @@ def InputParams(inputparams):
     return data
 
       
-def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR):
+def Params(params1, path, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR):
     data = params1
     with open(path, 'r') as fo:
       for line in fo.readlines():
@@ -40,7 +40,6 @@ def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLD
           value = value.replace(param, data[param])
           value = value.replace("@TOOLDIR", TOOLDIR)
           value = value.replace("@USERNAME", USERNAME)
-          value = value.replace("@DBHOSTNAME", DBHOSTNAME)
           value = value.replace("@WKEY", WKEY)
           value = value.replace("@SERVICENAME", SERVICENAME)
           value = value.replace("@OUTDIR", OUTDIR)
@@ -53,7 +52,6 @@ def main():
         parser = OptionParser()
         parser.add_option('-i', '--inputparam', help='defined param file in the cluster', dest='inputparam')
         parser.add_option('-p', '--defaultparamfile', help='defined param file in the cluster', dest='paramfile')
-        parser.add_option('-d', '--dbhostname', help='defined hostname for the db', dest='dbhostname')
         parser.add_option('-u', '--username', help='defined user in the cluster', dest='username')
         parser.add_option('-k', '--key', help='defined key for the workflow', dest='wkey')
         parser.add_option('-s', '--servicename', help='service name', dest='servicename')
@@ -66,9 +64,9 @@ def main():
     except:
         print "OptionParser Error:for help use --help"
         sys.exit(2)
+
     INPUTPARAM  = options.inputparam
     PARAMFILE   = options.paramfile
-    DBHOSTNAME  = options.dbhostname
     USERNAME    = options.username
     WKEY        = options.wkey 
     SERVICENAME = options.servicename
@@ -83,21 +81,14 @@ def main():
     TOOLDIR     = config['tooldir']
     python      = "python ";
     
-    if (config['params_section'] != "Docker"):
-       com="module list 2>&1 |grep python"
-       pythonload=str(os.popen(com).readline().rstrip())
-       if (len(pythonload)<5):
-          com = "module load python/2.7.5";
-          pythonload=str(os.popen(com).readline().rstrip())
-
-    if (DBHOSTNAME == None):
-        DBHOSTNAME=config['dbhost']
     if (USERNAME==None):
         USERNAME=getpass.getuser()
 
     OUTDIR = OUTDIR.replace("@USERNAME", USERNAME)
     os.system("mkdir -p " + OUTDIR + "/scripts")
-   
+    print OUTDIR
+    print NAME
+    
     bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
 
     comstr=""
@@ -107,12 +98,11 @@ def main():
        params = InputParams(INPUTPARAM)
 
     if (PARAMFILE != None and path.isfile(PARAMFILE) and access(PARAMFILE, R_OK)):
-       params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR)
+       params = Params(params, PARAMFILE, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR)
 
    
     if (len(params)>0):
      for param in params:
-       #print params[param]+":"+param+"\n"
        regex=re.compile(param+"([\s\t\=\\\/\r\n]+)")
        COM=re.sub(regex, params[param]+'\\1', COM)
      for param in params:
@@ -120,14 +110,12 @@ def main():
     #print "["+COM+"]\n"
 
     COM = COM.replace("@USERNAME", USERNAME)
-    COM = COM.replace("@DBHOSTNAME",DBHOSTNAME)
     COM = COM.replace("@WKEY", WKEY)
     COM = COM.replace("@SERVICENAME", SERVICENAME)
     COM = COM.replace("@OUTDIR", OUTDIR)
     COM = COM.replace('\n', ' ')
     COM = COM.replace(r'([\t\s]+)', " ")
-      
-   
+
     words =  re.split(r'([\t\s;]+)', COM)
  
     for word in words:
@@ -147,8 +135,6 @@ def main():
     os.system("mkdir -p "+logs)
 
     logfile="%s/SERVICE.%s.log"%(logs, SERVICENAME)
-   
-    #print "\n\n\n\n\n"+comstr+"\n"
     logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info(USERNAME+":"+OUTDIR)
     logging.info(comstr)
@@ -156,12 +142,11 @@ def main():
     f=open(bash_script_file, 'w')
    
     f.write(comstr + "\n")
-    #f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
-    #f.write("  echo success\n  exit 0\nelse\n  echo failed\n  exit 1\nfi")
+
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + TOOLDIR  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + TOOLDIR  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command
     logging.info(command)
     ## PUT TRY CATCH HERE
