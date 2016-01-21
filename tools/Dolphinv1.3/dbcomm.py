@@ -5,38 +5,25 @@ import warnings
 import json
 import time
 import urllib,urllib2
-sys.path.insert(0, sys.path[0]+"/../../src")
-from config import *
-
 from sys import argv, exit, stderr
 from optparse import OptionParser
- 
+
+sys.path.insert(0, sys.path[0]+"/../../src")
+from config import *
+from funcs import *
 
 class dbcomm:
   url=""
-  def queryAPI(self, data, name):
-    opener = urllib2.build_opener(urllib2.HTTPHandler())
-    trials=0
-    while trials<5:
-       try:
-          mesg = opener.open(self.url, data=data).read()
-          trials=10
-       except:
-          print "Couldn't connect to dolphin server (%s)"%trials
-          time.sleep(15)
-       trials=trials+1
-    ret=str(json.loads(mesg))
-
-    if (ret.startswith("ERROR")):
-          print name + ":" + ret + "\n"
-          sys.exit(2);
-    return ret
-
+  f=""
+  def __init__(self, url, f ):
+      self.url = url
+      self.f = f
+        
   def getJobNums(self, wkey):
     data = urllib.urlencode({'func':'getJobNums', 'wkey':wkey})
-    ret=eval(self.queryAPI(data, wkey))
+    ret = eval(self.f.queryAPI(self.url, data, "getJobNums:"+wkey))
     return ret
-
+    
   def insertJobStats(self, username, wkey, jobnum, outdir):
     file=str(outdir)+"/tmp/logs/"+str(jobnum)+".out"
     if os.path.isfile(file) and os.access(file, os.R_OK):
@@ -55,9 +42,10 @@ class dbcomm:
            if re.match("\s*(.*)\s:\s*(.*)\s(sec.|MB|)", line):
               m = re.match("\s*(.*)\s:\s*([^\s]*)\s?(sec.|MB|)", line)
               stats[m.groups()[0]] = m.groups()[1]
-            
+        
         data = urllib.urlencode({'func':'insertJobStats', 'username':username, 'wkey':wkey, 'jobnum':jobnum, 'stats':str(json.dumps(stats)) })
-        self.queryAPI(data, wkey) 
+        print data
+        self.f.queryAPI(self.url, data, "insertJobStats:"+wkey ) 
 
   def insertReportTable(self, reportfile):
  
@@ -67,7 +55,7 @@ class dbcomm:
         for line in source:
           wkey, version, type, file=re.split(r'\t+', line.rstrip())
           data = urllib.urlencode({'func':'insertReportTable', 'wkey':wkey, 'version':version, 'type':type, 'file':file})
-          self.queryAPI(data, wkey)
+          self.f.queryAPI(self.url, data, "insertReportTable:"+wkey )
 
 def main():
     try:
@@ -94,9 +82,10 @@ def main():
     USERNAME                = options.username
     CONFIG                  = options.config
    
-    dbcon = dbcomm()
-    config=getConfig(CONFIG)
-    dbcon.url=config['url']
+    f = funcs()
+    config = getConfig(CONFIG)
+    print config['url']
+    dbcon = dbcomm(config['url'], f)
 
     if (FUNC == "insertreport"):
        dbcon.insertReportTable(INSERTREPORT)

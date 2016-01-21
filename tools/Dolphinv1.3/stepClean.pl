@@ -41,11 +41,11 @@ my $command=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'outdir=s'       => \$outdir,
 	'level=s'        => \$level,
-        'pubdir=s'       => \$pubdir,
-        'wkey=s'         => \$wkey,
-        'dbcommcmd=s'    => \$dbcommcmd,
-        'config=s'       => \$config,
-        'username=s'     => \$username,
+    'pubdir=s'       => \$pubdir,
+    'wkey=s'         => \$wkey,
+    'dbcommcmd=s'    => \$dbcommcmd,
+    'config=s'       => \$config,
+    'username=s'     => \$username,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
