@@ -88,6 +88,7 @@ def main():
     os.system("mkdir -p " + OUTDIR + "/scripts")
     print OUTDIR
     print NAME
+    print USERNAME
     
     bash_script_file = OUTDIR + "/scripts/" + NAME + ".bash"
 
@@ -107,7 +108,7 @@ def main():
        COM=re.sub(regex, params[param]+'\\1', COM)
      for param in params:
        COM = COM.replace(param, params[param])
-    #print "["+COM+"]\n"
+    print "["+COM+"]\n"
 
     COM = COM.replace("@USERNAME", USERNAME)
     COM = COM.replace("@WKEY", WKEY)

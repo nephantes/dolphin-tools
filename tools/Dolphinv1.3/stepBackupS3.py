@@ -45,7 +45,9 @@ class stepBackup:
 
   def getAmazonCredentials(self, username):
     data = urllib.urlencode({'func':'getAmazonCredentials', 'username':username})
-    ret = json.loads(self.f.queryAPI(self.url, data, "getAmazonCredentials:"+str(username)))
+    ret = self.f.queryAPI(self.url, data, "getAmazonCredentials:"+str(username))
+    if (ret):
+      ret=json.loads(ret)
     return ret
 
   def updateInitialFileCounts(self, file_id, tablename, inputdir, filename, paired):
@@ -193,7 +195,7 @@ def main():
     
     amazon = backup.getAmazonCredentials(USERNAME)
     
-    if (amazon!=()):
+    if (amazon):
        conn = S3Connection(amazon['aws_access_key_id'], amazon['aws_secret_access_key'])
        pb = conn.get_bucket(amazon['bucket'])
      
