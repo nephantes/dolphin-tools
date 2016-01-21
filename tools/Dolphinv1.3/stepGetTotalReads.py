@@ -90,6 +90,8 @@ def main():
     
     processedLibs=[]
     for sample in filelist:
+        if (type(sample) is str):
+            sample = filelist
         libname=sample['samplename']  
         filename=sample['file_name']
         fastq_dir=sample['fastq_dir']
