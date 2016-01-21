@@ -21,7 +21,9 @@ class stepGetTotalReads:
 
   def getFileList(self, runparamsid, barcode):  
     data = urllib.urlencode({'func':'getSampleList', 'runparamsid':str(runparamsid), 'barcode':str(barcode)})
-    ret = eval(self.f.queryAPI(self.url, data, "getSampleList:"+runparamsid))
+    ret = self.f.queryAPI(self.url, data, "getSampleList:"+runparamsid)
+    if (ret):
+       ret=json.loads(ret)
     return ret
 
   def submitJob(self, JOBSUBMIT, name, command):
@@ -90,8 +92,6 @@ def main():
     
     processedLibs=[]
     for sample in filelist:
-        if (type(sample) is str):
-            sample = filelist
         libname=sample['samplename']  
         filename=sample['file_name']
         fastq_dir=sample['fastq_dir']

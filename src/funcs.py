@@ -55,7 +55,7 @@ class funcs:
               time.sleep(5)
            trials=trials+1
         ret=str(json.loads(mesg))
-        ret = re.sub (r'[\[|\]]', '', ret)
+        #ret = re.sub (r'[\[|\]]', '', ret)
         ret = re.sub (r'u\'', '\'', ret)
         ret = re.sub (r'\'', '\"', ret)
         if logging and name: 

@@ -23,7 +23,9 @@ class stepBackup:
       
   def getSampleList(self, runparamsid, barcode):  
     data = urllib.urlencode({'func':'getSampleList', 'runparamsid':str(runparamsid), 'barcode':str(barcode)})
-    ret = eval(self.f.queryAPI(self.url, data, "getSampleList:"+runparamsid))
+    ret = self.f.queryAPI(self.url, data, "getSampleList:"+runparamsid)
+    if (ret):
+       ret=json.loads(ret)
     return ret
   
   def uploadFile(self, pb, amazon_bucket, fastq_dir, filename ):
@@ -46,7 +48,7 @@ class stepBackup:
   def getAmazonCredentials(self, username):
     data = urllib.urlencode({'func':'getAmazonCredentials', 'username':username})
     ret = self.f.queryAPI(self.url, data, "getAmazonCredentials:"+str(username))
-    if (ret):
+    if (len(ret)>0):
       ret=json.loads(ret)
     return ret
 
@@ -67,8 +69,8 @@ class stepBackup:
               sys.exit(85)
       else:
           count=self.getValfromFile(inputdir+'/tmp/'+filename+'.count')
-          data = urllib.urlencode({'func':'updateInitialFileCounts', 'tablename':str(tablename), 'total_reads':str(count), 'file_id':str(file_id)})
-          ret = eval(self.f.queryAPI(self.url, data, "updateInitialFileCounts:"+str(count)))
+      data = urllib.urlencode({'func':'updateInitialFileCounts', 'tablename':str(tablename), 'total_reads':str(count), 'file_id':str(file_id)})
+      ret = eval(self.f.queryAPI(self.url, data, "updateInitialFileCounts:"+str(count)))
    except Exception, ex:
       self.stop_err('Error (line:%s)running stepBackupS3.py updateInitialFileCounts\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
 
@@ -84,28 +86,29 @@ class stepBackup:
     return val
 
   def getFastqFileId(self, sample):
-    data = urllib.urlencode({'func':'getFastqFileId', 'file_id':str(sample['file_id'])})
-    ret = json.loads(self.f.queryAPI(self.url, data, "getFastqFileId:"+str(sample['file_id'])))
-    return ret['id']
+    data = urllib.urlencode({'func':'getFastqFileId', 'sample_id':str(sample['sample_id'])})
+    ret = self.f.queryAPI(self.url, data, "getFastqFileId:"+str(sample['sample_id']))
+    ret=json.loads(ret)
+    if (len(ret)>0):
+      ret=ret[0]['sample_id']
+    else:
+      ret=0
+    return ret
 
-  def upadateFastqFile(self, fastq_id, md5sum, count, filename, sample):
+  def updateFastqFile(self, md5sum, count, filename, sample):
     sample_id=sample['sample_id']
     owner_id=sample['owner_id']
-    data = urllib.urlencode({'func':'upadateFastqFile', 'sample_id':str(sample_id), 'owner_id':str(owner_id), 'md5sum':str(md5sum), 'total_reads':str(count), 'fastq_id':str(fastq_id)})
+    data = urllib.urlencode({'func':'upadateFastqFile', 'sample_id':str(sample_id), 'owner_id':str(owner_id), 'md5sum':str(md5sum), 'total_reads':str(count)})
     ret = eval(self.f.queryAPI(self.url, data, "upadateFastqFile:"+str(sample_id)))
-
     
   def insertFastqFile(self, checksum, total_reads, filename, sample):
     data = urllib.urlencode({'func':'insertFastqFile', 'filename':str(filename),'total_reads':str(total_reads),'checksum':str(checksum), 'sample_id':str(sample['sample_id']),'lane_id':str(sample['lane_id']),'dir_id': str(sample['dir_id']),'owner_id':str(sample['owner_id']), 'group_id':str(sample['group_id']), 'perms':str(sample['perms'])})
     ret = eval(self.f.queryAPI(self.url, data, "insertFastqFile:"+str(sample['sample_id'])))
-
     
   def checkReadCounts(self, sample_id, tablename):
     data = urllib.urlencode({'func':'checkReadCounts', 'sample_id':str(sample_id), 'tablename':str(tablename)})
-    print data
     ret = self.f.queryAPI(self.url, data, "checkReadCounts:"+str(sample_id))
     ret = json.loads(ret)
-    print ret
     return ret['Result']
     
     
@@ -134,10 +137,10 @@ class stepBackup:
           filename= libname+'.fastq.gz'
           count=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.count')
           md5sum=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.md5sum')
-      fastq_id=self.getFastqFileId(sample)
+      sample_id=self.getFastqFileId(sample)
       
-      if (fastq_id>0):
-          self.upadateFastqFile(fastq_id, md5sum, count, filename, sample)
+      if (sample_id>0):
+          self.updateFastqFile( md5sum, count, filename, sample)
       else:
           self.insertFastqFile(md5sum, count, filename, sample)
 
@@ -210,9 +213,6 @@ def main():
     processedLibs=[]
     amazon_bucket=""
     for sample in samplelist:
-        if (type(sample) is str):
-            sample = samplelist
-       
         sample_id=sample['sample_id']
         file_id=sample['file_id']
         libname=sample['samplename']  
