@@ -24,7 +24,7 @@ def InputParams(inputparams):
     return data
 
       
-def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR):
+def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR):
     data = params1
     with open(path, 'r') as fo:
       for line in fo.readlines():
@@ -38,6 +38,7 @@ def Params(params1, path, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR):
         value = parts[1]
         for param in data:
           value = value.replace(param, data[param])
+          value = value.replace("@TOOLDIR", TOOLDIR)
           value = value.replace("@USERNAME", USERNAME)
           value = value.replace("@DBHOSTNAME", DBHOSTNAME)
           value = value.replace("@WKEY", WKEY)
@@ -79,7 +80,7 @@ def main():
 
     config=getConfig(CONFIG)
    
-    edir        = config['tooldir']
+    TOOLDIR     = config['tooldir']
     python      = "python ";
     
     if (config['params_section'] != "Docker"):
@@ -106,7 +107,7 @@ def main():
        params = InputParams(INPUTPARAM)
 
     if (PARAMFILE != None and path.isfile(PARAMFILE) and access(PARAMFILE, R_OK)):
-       params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR)
+       params = Params(params, PARAMFILE, DBHOSTNAME, USERNAME, WKEY, SERVICENAME, OUTDIR, TOOLDIR)
 
    
     if (len(params)>0):
@@ -160,7 +161,7 @@ def main():
     f.close()
     os.system("chmod +x " + bash_script_file)
    
-    command = python+" " + edir  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
+    command = python+" " + TOOLDIR  + "/src/"+ config['runjobcmd']+" -f " + CONFIG + " -d "+ DBHOSTNAME + " -u "+ USERNAME + " -k "+ WKEY + " -o "+ OUTDIR + " -c " + bash_script_file + " -n " + SERVICENAME  + " -s " + SERVICENAME
     print command
     logging.info(command)
     ## PUT TRY CATCH HERE
