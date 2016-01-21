@@ -83,7 +83,6 @@ def main():
    try:
         parser = OptionParser()
         parser.add_option('-u', '--username', help='defined user in the cluster', dest='username')
-        parser.add_option('-d', '--dbhostname', help='defined hostname for the db', dest='dbhostname')
         parser.add_option('-k', '--key', help='defined key for the workflow', dest='wkey')
         parser.add_option('-s', '--servicename', help='service name', dest='servicename')
         parser.add_option('-c', '--command', help='command that is goinf to be run', dest='com')
@@ -95,7 +94,6 @@ def main():
         print "OptionParser Error:for help use --help"
         sys.exit(2)
    USERNAME    = options.username
-   DBHOST      = options.dbhostname
    WKEY        = options.wkey 
    OUTDIR      = options.outdir 
    SERVICENAME = options.servicename
