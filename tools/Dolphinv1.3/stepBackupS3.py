@@ -208,6 +208,8 @@ def main():
     processedLibs=[]
     amazon_bucket=""
     for sample in samplelist:
+        if (type(sample) is str):
+            sample = samplelist
        
         sample_id=sample['sample_id']
         file_id=sample['file_id']
