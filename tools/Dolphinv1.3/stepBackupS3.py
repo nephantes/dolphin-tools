@@ -2,7 +2,6 @@
  
 import os, re, string, sys, commands
 import warnings
-import MySQLdb
 import itertools
 import json
 
@@ -10,9 +9,6 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from sys import argv, exit, stderr
 from optparse import OptionParser
-
-warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
-                        DeprecationWarning, 'MySQLdb')
 
 sys.path.insert(0, sys.path[0]+"/../../src")
 from config import *
@@ -54,25 +50,25 @@ class stepBackup:
 
   def updateInitialFileCounts(self, file_id, tablename, inputdir, filename, paired):
    try: 
-    count=-1
-    if (paired):
-    	files=filename.split(',')
-    	firstCount=self.getValfromFile(inputdir+'/tmp/'+files[0]+'.count')
-    	secondCount=self.getValfromFile(inputdir+'/tmp/'+files[1]+'.count')
-
-    	if (firstCount == secondCount):
-    	    count=firstCount
-    	else:
-    	    print "ERROR 85: The # of reads in paired end libary not equal"
-    	    print "%s"%(inputdir+'/tmp/'+files[0]+'.count')
-    	    print "%s"%(inputdir+'/tmp/'+files[1]+'.count')
-    	    sys.exit(85)
-    else:
-        count=self.getValfromFile(inputdir+'/tmp/'+filename+'.count')
-        data = urllib.urlencode({'func':'updateInitialFileCounts', 'tablename':str(tablename), 'total_reads':str(count), 'file_id':str(file_id)})
-        ret = eval(self.f.queryAPI(self.url, data, "updateInitialFileCounts:"+str(count)))
+      count=-1
+      if (paired):
+          files=filename.split(',')
+          firstCount=self.getValfromFile(inputdir+'/tmp/'+files[0]+'.count')
+          secondCount=self.getValfromFile(inputdir+'/tmp/'+files[1]+'.count')
+  
+          if (firstCount == secondCount):
+              count=firstCount
+          else:
+              print "ERROR 85: The # of reads in paired end libary not equal"
+              print "%s"%(inputdir+'/tmp/'+files[0]+'.count')
+              print "%s"%(inputdir+'/tmp/'+files[1]+'.count')
+              sys.exit(85)
+      else:
+          count=self.getValfromFile(inputdir+'/tmp/'+filename+'.count')
+          data = urllib.urlencode({'func':'updateInitialFileCounts', 'tablename':str(tablename), 'total_reads':str(count), 'file_id':str(file_id)})
+          ret = eval(self.f.queryAPI(self.url, data, "updateInitialFileCounts:"+str(count)))
    except Exception, ex:
-    self.stop_err('Error (line:%s)running stepBackupS3.py updateInitialFileCounts\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
+      self.stop_err('Error (line:%s)running stepBackupS3.py updateInitialFileCounts\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
 
 
 
@@ -86,28 +82,29 @@ class stepBackup:
     return val
 
   def getFastqFileId(self, sample):
-    sample_id=sample['sample_id']
-    data = urllib.urlencode({'func':'getFastqFileId', 'sample_id':str(sample_id)})
-    ret = eval(self.f.queryAPI(self.url, data, "getFastqFileId:"+str(sample_id)))
-    return ret
+    data = urllib.urlencode({'func':'getFastqFileId', 'file_id':str(sample['file_id'])})
+    ret = json.loads(self.f.queryAPI(self.url, data, "getFastqFileId:"+str(sample['file_id'])))
+    return ret['id']
 
   def upadateFastqFile(self, fastq_id, md5sum, count, filename, sample):
-    sample_id=sample[0]
-    owner_id=sample[8]
+    sample_id=sample['sample_id']
+    owner_id=sample['owner_id']
     data = urllib.urlencode({'func':'upadateFastqFile', 'sample_id':str(sample_id), 'owner_id':str(owner_id), 'md5sum':str(md5sum), 'total_reads':str(count), 'fastq_id':str(fastq_id)})
-    ret = eval(self.f.queryAPI(self.url, data, "getFastqFileId:"+str(sample_id)))
+    ret = eval(self.f.queryAPI(self.url, data, "upadateFastqFile:"+str(sample_id)))
 
     
   def insertFastqFile(self, checksum, total_reads, filename, sample):
-    (sample_id, sf_id, dir_id, lane_id, libname, org_file_name, backup_dir, amazon_bucket, owner_id, group_id, perms) = sample
-    data = urllib.urlencode({'func':'insertFastqFile', 'filename':str(filename),'total_reads':str(total_reads),'checksum':str(checksum), 'sample_id':str(sample_id),'lane_id':str(lane_id),'dir_id': str(dir_id),'owner_id':str(owner_id), 'group_id':str(group_id), 'perms':str(perms)})
-    ret = eval(self.f.queryAPI(self.url, data, "insertFastqFile:"+str(sample_id)))
+    data = urllib.urlencode({'func':'insertFastqFile', 'filename':str(filename),'total_reads':str(total_reads),'checksum':str(checksum), 'sample_id':str(sample['sample_id']),'lane_id':str(sample['lane_id']),'dir_id': str(sample['dir_id']),'owner_id':str(sample['owner_id']), 'group_id':str(sample['group_id']), 'perms':str(sample['perms'])})
+    ret = eval(self.f.queryAPI(self.url, data, "insertFastqFile:"+str(sample['sample_id'])))
 
     
   def checkReadCounts(self, sample_id, tablename):
     data = urllib.urlencode({'func':'checkReadCounts', 'sample_id':str(sample_id), 'tablename':str(tablename)})
-    ret = eval(self.f.queryAPI(self.url, data, "checkReadCounts:"+str(sample_id)))
-    return ret
+    print data
+    ret = self.f.queryAPI(self.url, data, "checkReadCounts:"+str(sample_id))
+    ret = json.loads(ret)
+    print ret
+    return ret['Result']
     
     
   def processFastqFiles(self, sample, paired):
@@ -117,7 +114,7 @@ class stepBackup:
       libname=sample['samplename']
       backup_dir=sample['backup_dir']
       filename=''
-   
+
       if (paired):
           firstCount=self.getValfromFile(backup_dir+'/'+libname+'.1.fastq.gz.count')
           secondCount=self.getValfromFile(backup_dir+'/'+libname+'.2.fastq.gz.count')
@@ -136,14 +133,14 @@ class stepBackup:
           count=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.count')
           md5sum=self.getValfromFile(backup_dir+'/'+libname+'.fastq.gz.md5sum')
       fastq_id=self.getFastqFileId(sample)
+      
       if (fastq_id>0):
           self.upadateFastqFile(fastq_id, md5sum, count, filename, sample)
       else:
           self.insertFastqFile(md5sum, count, filename, sample)
 
     except Exception, ex:
-      self.stop_err('Error (line:%s)running stepBackupS3.py updateInitialFileCounts\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
-
+      self.stop_err('Error (line:%s)running stepBackupS3.py processFastqFiles\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
 
 
   # error
@@ -228,10 +225,11 @@ def main():
             processedLibs.append([libname, sample_id])
 
     if (AMAZONUPLOAD.lower() != "no" and amazon!=() and amazon_bucket!=""):
-      amazon_bucket = re.sub('s3://'+amazon[0][3]+'/', '', amazon_bucket)
+      amazon_bucket = re.sub('s3://'+amazon['bucket']+'/', '', amazon_bucket)
+      print amazon_bucket
       for libname, sample_id in processedLibs:
+        print libname + ":" + str(sample_id)
         if (backup.checkReadCounts(sample_id, tablename)):
-
             if (filename.find(',')!=-1):
                 files=filename.split(',')
                 backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.1.fastq.gz' )

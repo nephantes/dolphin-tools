@@ -2,52 +2,27 @@
  
 import os, re, string, sys, commands
 import warnings
-import MySQLdb
+import json
 from sys import argv, exit, stderr
 from optparse import OptionParser
- 
-warnings.filterwarnings('ignore', '.*the sets module is deprecated.*',
-                        DeprecationWarning, 'MySQLdb')
+
 
 sys.path.insert(0, sys.path[0]+"/../../src")
 from config import *
+from funcs import *
+
 
 class stepGetTotalReads:
-  config=''
-  url=''
-  def runSQL(self, sql):
+  url=""
+  f=""
+  def __init__(self, url, f ):
+      self.url = url
+      self.f = f
 
-    db = MySQLdb.connect(
-      host = self.config['dbhost'],
-      user = self.config['dbuser'],
-      passwd = self.config['dbpass'],
-      db = self.config['db'],
-      port = int(self.config['dbport']))
-    try:
-        cursor = db.cursor()
-        cursor.execute(sql)
-        #print sql
-        results = cursor.fetchall()
-        cursor.close()
-        del cursor
-
-    except Exception, err:
-        print "ERROR DB:for help use --help"
-        db.rollback()
-        sys.stderr.write('ERROR: %s\n' % str(err))
-        sys.exit(2)
-    finally:
-        db.commit()
-        db.close()
-    return results
-
-  def getFileList(self, runparamsid, barcode):
-    if (barcode != "NONE"):
-        sql = "SELECT DISTINCT ns.id, ns.samplename, sf.file_name, d.fastq_dir, d.backup_dir FROM ngs_runlist nr, ngs_samples ns, ngs_temp_lane_files sf, ngs_dirs d where sf.lane_id=ns.lane_id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
-    else:
-        sql = "SELECT DISTINCT ns.id, ns.samplename, sf.file_name, d.fastq_dir, d.backup_dir FROM ngs_runlist nr, ngs_samples ns, ngs_temp_sample_files sf, ngs_dirs d where sf.sample_id=ns.id and d.id=sf.dir_id and ns.id=nr.sample_id and nr.run_id='"+str(runparamsid)+"';"
-    print sql
-    return self.runSQL(sql)
+  def getFileList(self, runparamsid, barcode):  
+    data = urllib.urlencode({'func':'getSampleList', 'runparamsid':str(runparamsid), 'barcode':str(barcode)})
+    ret = eval(self.f.queryAPI(self.url, data, "getSampleList:"+runparamsid))
+    return ret
 
   def submitJob(self, JOBSUBMIT, name, command):
     child = os.popen(JOBSUBMIT+' -n stepGetTotalReads_'+name+' -c "'+command+'"')
@@ -83,7 +58,7 @@ def main():
         parser.print_help()
         print "for help use --help"
         sys.exit(2)
-
+ 
     BARCODE                 = options.barcode
     PAIRED                  = options.paired
     USERNAME                = options.username
@@ -92,11 +67,10 @@ def main():
     OUTDIR                  = options.outdir
     CONFIG                  = options.config
 
-    totalReads = stepGetTotalReads()
-    totalReads.config = getConfig(CONFIG)
-    totalReads.url = totalReads.config['url']
-
-
+    f = funcs()
+    config = getConfig(CONFIG)
+    totalReads = stepGetTotalReads(config['url'], f)
+    
     if (OUTDIR == None or JOBSUBMIT == None):
         print "for help use --help"
         sys.exit(2)
@@ -116,14 +90,11 @@ def main():
     
     processedLibs=[]
     for sample in filelist:
+        libname=sample['samplename']  
+        filename=sample['file_name']
+        fastq_dir=sample['fastq_dir']
+        backup_dir=sample['backup_dir']
         
-        libid=sample[0]
-        libname=sample[1]
-        filename=sample[2]
-        fastq_dir=sample[3]
-        backup_dir=sample[4]
-        
-        print libid
         print libname
         print filename
         print fastq_dir

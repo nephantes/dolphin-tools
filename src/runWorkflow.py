@@ -121,11 +121,7 @@ def main():
     f = funcs()
     config = getConfig(CONFIG)
     workflow = runWorkflow(config['url'], f)
-
-    DBHOST=config['dbhost']
     LOGPATH=config['logpath']
-    print LOGPATH
-
 
     #This section is just for username conversion in the cluster can be removed in the future
     if (CONFIG != "Docker"):
@@ -133,7 +129,7 @@ def main():
        USERNAME=str(os.popen(com).readline().rstrip())
     ########
 
-    if (len(USERNAME)<3): 
+    if (USERNAME and len(USERNAME)<3): 
         print "Error:Username doesn't exist"
         sys.exit(2)
     
