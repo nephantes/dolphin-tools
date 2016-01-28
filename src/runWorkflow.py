@@ -174,6 +174,7 @@ def main():
         while ( br==1):
             ret=workflow.startService(service, wkey, logging)
             print ret + "\n"
+            time.sleep(5)
             if (ret.startswith("RUNNING") and float(service.waittime)>0):
                 time.sleep(float(service.waittime))
             elif (ret.startswith("ERROR")):
