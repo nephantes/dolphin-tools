@@ -130,8 +130,8 @@ foreach my $d (@files){
     $com .= "&& mkdir -p $outd/".$libname."_multi && mv $outd/$libname*.pdf $outd/".$libname."_multi/. ";
   }
   
-  print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  print "\n\n=====\n$job\n======\n\n";
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }

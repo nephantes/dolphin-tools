@@ -132,7 +132,7 @@ sub write_results
   open(OUT, ">$outfile");
   print OUT "$name\t".join("\t", @{$libs})."\n";
   my $size=0;
-  $size=scalar(@{${$vals}{${$libs}[0]}}) if(exists ${$libs}[0]);
+  $size=scalar(@{${$vals}{${$libs}[0]}}) if(exists ${$libs}[0] and exists ${$vals}{${$libs}[0]} );
 
   for (my $i=0; $i<$size;$i++)
   { 
