@@ -93,6 +93,7 @@ def main():
    except:
         print "OptionParser Error:for help use --help"
         sys.exit(2)
+        
    USERNAME    = options.username
    WKEY        = options.wkey 
    OUTDIR      = options.outdir 
@@ -105,6 +106,7 @@ def main():
    config=getConfig(CONFIG)
    f = funcs()
    submitjobs = submitJobs(config['url'], f)
+   submitCommand = f.getCommand(sys.argv)
 
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    #print "EXECDIR" + exec_dir
@@ -129,7 +131,8 @@ def main():
       
    #print "getJobParams\n";
    (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
-   logging.info("QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU))
+   resources = "QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU)
+   logging.info("resources => :%s"%(resources))
    #print "getJobParams[DONE]\n";
    
    python = submitjobs.moduleload(python)
@@ -156,7 +159,7 @@ def main():
 
 
    success_file = track+"/"+str(NAME)+".success";
-   jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s"
+   jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
   
    if not os.path.exists(success_file):
      f=open(src+"/"+NAME+".tmp.bash", 'w')
@@ -219,7 +222,7 @@ def main():
 
      MESSAGE="1"
      TYPE="dbSubmitJob"
-     jobstatus_cmd = jobstatus_cmd + " -n %(num)s -c '%(src)s/%(NAME)s.submit.bash'"
+     jobstatus_cmd = jobstatus_cmd + " -n %(num)s -c '"+submitCommand+"'"
      command = jobstatus_cmd % locals()
      f.write("RUN COMMAND:\n" + str(command) + "\n")
      if num>0:

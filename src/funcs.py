@@ -38,6 +38,13 @@ class funcs:
                 return '%s<a href="%s">%s</a>%s' % (prefix, url, url, last)
         return re.sub(self.re_string, do_sub, text)
     
+    def getCommand(self,argv):
+       cmd=""
+       for arg in sys.argv:
+          arg = ( "\\\""+arg+"\\\"" if " " in arg else arg )
+          cmd=cmd + str(arg) + " "
+       return cmd
+          
     def queryAPI(self, url, data, name=None, logging=None):
         opener = urllib2.build_opener(urllib2.HTTPHandler())
         trials=0
@@ -68,7 +75,10 @@ class funcs:
                  print name + ":" + ret + "\n"
               sys.exit(2);
         return ret
-        
+    # error
+    def stop_err(self, msg ):
+        sys.stderr.write( "%s\n" % msg )
+        sys.exit(2)
 
 def main():
 
