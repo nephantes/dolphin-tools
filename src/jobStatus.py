@@ -27,12 +27,13 @@ class jobStatus:
         self.f.queryAPI(self.url, data, servicename, logging)
         logging.info("checkAllJobsFinished:END")
     
-    def insertJob(self,  username, wkey, com, jobname, servicename, jobnum, result, logging):
+    def insertJob(self,  username, wkey, com, jobname, servicename, jobnum, resources, result, logging):
         logging.info("JOB insert:START")
         data = urllib.urlencode({'func':'insertJob', 'username':username, 
-                                 'wkey':wkey, 'servicename':servicename, 
+                                 'wkey':wkey, 'servicename':servicename, 'resources': resources,
                                  'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
+        print data
         self.f.queryAPI(self.url, data, "INSERT"+jobname, logging)
         logging.info("JOB insert:END")
    
@@ -79,6 +80,7 @@ def main():
         parser.add_option('-m', '--message', help='resulting message of the job', dest='message')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
         parser.add_option('-f', '--config', help='config parameters section', dest='config')
+        parser.add_option('-r', '--resources', help='used resources in the job submission', dest='resources')
 
         (options, args) = parser.parse_args()
    except:
@@ -97,6 +99,7 @@ def main():
    MESSAGE                 = options.message
    OUTDIR                  = options.outdir
    CONFIG                  = options.config
+   RESOURCES               = options.resources
         
 
    f = funcs()
@@ -111,7 +114,7 @@ def main():
    logging.info("TYPE:"+str(TYPE))
 
    if (TYPE == "dbSubmitJob"):
-        jobStat.insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, MESSAGE, logging)
+        jobStat.insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, RESOURCES, MESSAGE, logging)
    elif (TYPE == "dbSetStartTime"):
         jobStat.updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "start_time", JOBNUM, MESSAGE, logging)  	
    elif (TYPE == "dbSetEndTime"):
