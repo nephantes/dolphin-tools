@@ -114,6 +114,8 @@ def main():
     COM = COM.replace("@WKEY", WKEY)
     COM = COM.replace("@SERVICENAME", SERVICENAME)
     COM = COM.replace("@OUTDIR", OUTDIR)
+    COM = COM.replace("@TOOLDIR", TOOLDIR)
+    COM = COM.replace("@CONFIG", CONFIG )
     COM = COM.replace('\n', ' ')
     COM = COM.replace(r'([\t\s]+)', " ")
 
