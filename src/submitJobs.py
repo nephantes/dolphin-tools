@@ -64,21 +64,6 @@ class submitJobs:
            return 'ERROR: %s failed w/ exit code %d' % (command, err)
         return data
  
-    def moduleload(self, python):
-        com="module list 2>&1 |grep python/2.7.5"
-        pythonload=str(os.popen(com).readline().rstrip())
-        if (len(pythonload)<5):
-           com     = "module load python/2.7.5;";
-           pythonload=str(os.popen(com).readline().rstrip())
-           python      = "module load python/2.7.5;" + python;
-
-        com="module list 2>&1 |grep openssl/1.0.1g"
-        sslload=str(os.popen(com).readline().rstrip())
-        if (len(sslload)<5):
-           com = "module load openssl/1.0.1g;"
-           sslload=str(os.popen(com).readline().rstrip())
-        return python 
-
 def main():
    try:
         parser = OptionParser()
@@ -135,8 +120,6 @@ def main():
    logging.info("resources => :%s"%(resources))
    print "getJobParams["+resources+"]\n";
    
-   python = submitjobs.moduleload(python)
-   
    if (USERNAME==None):
         USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
    
@@ -165,19 +148,6 @@ def main():
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
-     f.write("a=$( module list 2>&1)\n")
-     f.write("echo $a\n")
-
-     f.write("if [[ $a != *python/2.7.5* ]];\n")
-     f.write("then\n")
-     f.write("  module load python/2.7.5\n")
-     f.write("fi\n")
-
-     f.write("if [[ $a != *openssl/1.0.1g* ]];\n")
-     f.write("then\n")
-     f.write("  module load openssl/1.0.1g\n")
-     f.write("fi\n")
-
      f.write("cd " + exec_dir + "\n")
      MESSAGE="2"
      TYPE="dbSetStartTime"
