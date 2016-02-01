@@ -122,18 +122,18 @@ def main():
    logfile="%s/JOB.%s.log"%(logs, NAME)
    logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
    logging.info("File Path:%s"%os.getcwd())
-   #print "checkJob\n";
+   print "checkJob\n";
    result = submitjobs.checkJob(NAME, WKEY, logging)
-   #print result+"\n"
+   print result+"\n"
    if (result != "START"):
         sys.exit(0)
-   #print "checkJob[DONE]\n";
+   print "checkJob[DONE]\n";
       
-   #print "getJobParams\n";
+   print "getJobParams\n";
    (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
-   resources = "QUEUE:%s,TIME:%s,MEMORY:%s,CPU:%s"%(QUEUE, TIME, MEMORY, CPU)
+   resources = "\'{\\\"queue\\\":\\\"%s\\\",\\\"cputime\\\":\\\"%s\\\",\\\"memory\\\":\\\"%s\\\",\\\"cpu\\\":\\\"%s\\\"}\'"%(QUEUE, TIME, MEMORY, CPU)
    logging.info("resources => :%s"%(resources))
-   #print "getJobParams[DONE]\n";
+   print "getJobParams["+resources+"]\n";
    
    python = submitjobs.moduleload(python)
    
