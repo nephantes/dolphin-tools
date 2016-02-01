@@ -143,6 +143,7 @@ def main():
      
           MESSAGE="1"
           TYPE="dbSubmitJob"
+          submitCommand=re.sub(r"'",r"''", submitCommand)
           jobstatus_cmd = jobstatus_cmd + " -n %(pid)s -c 'python "+submitCommand+"'"
            
           command = jobstatus_cmd % locals()

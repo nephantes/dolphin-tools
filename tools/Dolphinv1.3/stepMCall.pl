@@ -39,7 +39,7 @@ $Data::Dumper::Indent = 1;
 # using hash option of GetOpt, must declare optional args or check exists()
 my %args = (
 	'params'     => '',
-	'verbose'    => 0,
+	'verbose'    => 1,
 );
 
 ################### PARAMETER PARSING ####################
@@ -132,8 +132,7 @@ foreach my $file ( @file_list ) {
     print $file."\n";
     $file=~/(.*).bam/;
     my $samplename=$1;
-	$samplename=~s/\.sorted//g;
-    print $samplename."\n";
+    $samplename=~s/\.sorted//g;
     do_job( $samplename, $inputdir."/".$file, $outdir, $strand );
 }
 
@@ -152,8 +151,7 @@ sub do_job {
 # TODO this can be used to copy files to web dir
 	my $mvcom = '';
 # $mvcom .= "&& mv x y";
-        my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$samplename.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 !~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$samplename.G.bed | sort -k1,1 -k2,2n >> $outdir/$samplename.methylkit.txt ";
-
+        my $convmethylkit = " && echo -e \\\"chrBase\\tchr\\tbase\\tstrand\\tcoverage\\tfreqC\\tfreqT\\\" > $outdir/$samplename.methylkit.txt && awk '{if(\\\$5>0 && \\\$1 \\\!\\\~ /^#/ ){print \\\$1\\\".\\\"\\\$2\\\"\\\\t\\\"\\\$1\\\"\\\\t\\\"\\\$2\\\"\\\\t$strand\\\\t\\\"\\\$5\\\"\\\\t\\\"(100*\\\$4)\\\"\\\\t\\\"100*(1-\\\$4)}}' $outdir/$samplename.G.bed | sort -k1,1 -k2,2n >> $outdir/$samplename.methylkit.txt ";
 #construct the command
 	# e.g. mcall -m ko_r1.bam -m ko_r2.bam --sampleName ko -p 4 -r hg19.fa
 	my $logfile = "$args{outdir}/tmp/logs/$samplename.$binname.log";
@@ -162,7 +160,7 @@ sub do_job {
 	$com .= " $filelist";
 	$com .= " --sampleName $samplename";
 	$com .= " -r $args{ref}";
-	$com .= " $args{params}" if ( exists $args{params} );
+	$com .= " $args{params}" if ( exists $args{params} && lc($args{params}) !~/^no/);
 	$com .= " > $logfile 2>&1";
 	$com .= $convmethylkit;
 	$com .= " $mvcom";
