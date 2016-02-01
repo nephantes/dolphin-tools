@@ -42,8 +42,8 @@ class submitJobs:
            if(cputime_pred>240):
               queue = "long"
               cputime=cputime_pred
-           if(cputime_pred>=10000):
-              cputime = 10000
+           if(cputime_pred>=20000):
+              cputime = 20000
            if(memory>=32000):
               memory = 32000
         alist = (queue, str(cputime), str(memory), str(cpu))
@@ -192,6 +192,7 @@ def main():
 
      MESSAGE="1"
      TYPE="dbSubmitJob"
+     submitCommand=re.sub(r"'",r"''", submitCommand)
      jobstatus_cmd = jobstatus_cmd + " -n %(num)s -c '"+submitCommand+"'"
      command = jobstatus_cmd % locals()
      f.write("RUN COMMAND:\n" + str(command) + "\n")
