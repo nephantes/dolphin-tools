@@ -74,6 +74,7 @@ def main():
         parser.add_option('-n', '--name', help='name of the run', dest='name')
         parser.add_option('-o', '--outdir', help='output directory', dest='outdir')
         parser.add_option('-f', '--config', help='configuration parameter section', dest='config')
+        parser.add_option('-r', '--force', help='force subission', dest='force')
         (options, args) = parser.parse_args()
    except:
         print "OptionParser Error:for help use --help"
@@ -86,6 +87,7 @@ def main():
    NAME        = options.name
    COM         = options.com
    CONFIG      = options.config
+   FORCE       = (options.force if (options.force) else "no" )
    python      = "python"
 
    config=getConfig(CONFIG)
@@ -110,7 +112,7 @@ def main():
    print "checkJob\n";
    result = submitjobs.checkJob(NAME, WKEY, logging)
    print result+"\n"
-   if (result != "START"):
+   if (result != "START" and FORCE == "no" ):
         sys.exit(0)
    print "checkJob[DONE]\n";
       
@@ -144,7 +146,7 @@ def main():
    success_file = track+"/"+str(NAME)+".success";
    jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
   
-   if not os.path.exists(success_file):
+   if (not os.path.exists(success_file) or FORCE != "no"):
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
