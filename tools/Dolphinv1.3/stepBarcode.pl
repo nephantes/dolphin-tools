@@ -110,8 +110,8 @@ my $cmdPE=$cmds[1];
     for (my $i=0; $i<@names; $i++)
     {
       if ($names[$i]!~/^$/){
-       $mvcom.="&& mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq &&";
-       $mvcom.="rmdir $outdir/$barcodes[$i];";
+       $mvcom.="&& mv $outdir/$barcodes[$i]/$nm.$ext $outdir/$names[$i].fastq && ";
+       $mvcom.="rmdir $outdir/$barcodes[$i] ";
       }
     }
     $com="$cmdPE -b $outdir/barcode.fa -f $filename -d $outdir > /dev/null $mvcom";  
@@ -144,9 +144,6 @@ my $cmdPE=$cmds[1];
       $com="$cmdPE -b $outdir/barcode.fa -f $file1 $file2 -d $outdir > /dev/null $mvcom";  
       #$com="$mvcom";  
  }
- #print $com."\n\n";
- #`$com`;
- 
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
