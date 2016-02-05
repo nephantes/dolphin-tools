@@ -48,8 +48,10 @@ class stepBackup:
   def getAmazonCredentials(self, username):
     data = urllib.urlencode({'func':'getAmazonCredentials', 'username':username})
     ret = self.f.queryAPI(self.url, data, "getAmazonCredentials:"+str(username))
-    if (len(ret)>0):
+    if (len(ret)>2):
       ret=json.loads(ret)[0]
+    else:
+      ret=''
     return ret
 
   def updateInitialFileCounts(self, file_id, tablename, inputdir, filename, paired):

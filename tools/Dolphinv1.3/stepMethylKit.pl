@@ -33,7 +33,7 @@
  my $stepsize         = "";
  my $bedfile          = "";
  my $topN             = "";
- my $maxcoverage      = "";
+ my $mincoverage      = "";
  my $rscriptCMD       = "";
  my $pubdir           = "";
  my $wkey             = "";
@@ -53,7 +53,7 @@ GetOptions(
     'gbuild=s'       => \$gbuild,
     'outdir=s'       => \$outdir,
     'topN=s'         => \$topN,
-    'maxcoverage=s'  => \$maxcoverage,
+    'mincoverage=s'  => \$mincoverage,
     'strand=s'       => \$strand,
     'name=s'         => \$name,
     'tilesize=s'     => \$tilesize,
@@ -87,7 +87,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($
 
 my $inputdir = "$outdir/mcall";
 my $input_file_suffix = ".methylkit.txt";
-$maxcoverage=5 if ($maxcoverage=/^$/);
+$mincoverage=5 if ($mincoverage=/^$/);
 $topN = 2000 if ($topN=/^$/);
 $tilesize=300 if ($tilesize=/^$/);
 $stepsize=300 if ($stepsize=/^$/);
@@ -114,16 +114,16 @@ else{
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
-runMethylKit($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize,  $stepsize,$maxcoverage, $topN, $puboutdir, $wkey);
+runMethylKit($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize,  $stepsize,$mincoverage, $topN, $puboutdir, $wkey);
 
 `cp -R $outdir $puboutdir/.`;
 
 sub runMethylKit
 {
-my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $stepsize, $maxcoverage, $topN, $puboutdir, $wkey)=@_;
+my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $stepsize, $mincoverage, $topN, $puboutdir, $wkey)=@_;
 my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; maxcoverage<-$maxcoverage; topN<-$topN";
+print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; mincoverage<-$mincoverage; topN<-$topN";
 
 open(OUT, ">$output");
 my $rscript = qq/
@@ -136,7 +136,7 @@ outerJoin <- function(data1, data2,data3, fields)
   d2 <- merge(data3, d1,  by=fields, all=TRUE)
   d2[,fields]
 }
-runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, maxcoverage, topN)
+runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, mincoverage, topN)
 {
   conds<-conds-1
   bedfile<-"$bedfile"
@@ -226,10 +226,10 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   colnames(norm_data) <- c("Cov", "Cpg", samplenames)
   snames<-samplenames
   
-  filtmaxcoverage<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>maxcoverage,3:dim(norm_data)[2]], 1, function(x) max(x)),1)
+  filtmincoverage<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>mincoverage,3:dim(norm_data)[2]], 1, function(x) max(x)),1)
   
-  #plot(density( filtmaxcoverage[,1]))
-  lowelim<-norm_data[filtmaxcoverage[,1]>0.6, ]
+  #plot(density( filtmincoverage[,1]))
+  lowelim<-norm_data[filtmincoverage[,1]>0.6, ]
   
   write.table(lowelim, paste(outdir,"\/after_elimination.tsv",sep=""))
   
@@ -264,7 +264,7 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
 }
 
-runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $stepsize, $maxcoverage, $topN)
+runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $stepsize, $mincoverage, $topN)
 /;
 print $rscript; 
 
@@ -273,8 +273,11 @@ print OUT $rscript;
 close(OUT);
 
 my $com="$rscriptCMD $output > $sessioninfo 2>&1";
-`$com`;
-die "Error 22: Cannot run Rscript:" if ($?);
+
+my $job=$jobsubmit." -n ".$servicename."_".$name." -c \"$com\"";
+print $job."\n";   
+`$job`;
+die "Error 25: Cannot run the job:".$job if ($?);
 my $verstring =`grep methylKit_ $sessioninfo`;
 $verstring =~/(methylKit[^\s]+)/;
 my $methtylit_ver=$1;
