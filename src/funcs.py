@@ -46,25 +46,29 @@ class funcs:
        return cmd
           
     def queryAPI(self, url, data, name=None, logging=None):
+        print ("DATA:"+str(data))
+        if logging:
+           logging.info("DATA:"+str(data))
         opener = urllib2.build_opener(urllib2.HTTPHandler())
         trials=0
+        ret = ""
         while trials<5:
            try:
               mesg = opener.open(url, data=data).read()
-              #print mesg
-              #print url+":"+data
-              #print "Trial:"+str(trials)
-              trials=5
+              ret=str(json.loads(mesg))
+              ret = re.sub (r'u\'', '\'', ret)
+              ret = re.sub (r'\'', '\"', ret)
+              print("RESULT[%s]:[%s]"%(str(trials), str(mesg)) )
+              if logging:
+                  logging.info("RESULT[%s]:[%s]"%(str(trials), str(mesg)) )
+              if mesg:
+                 trials=5
            except:
               print "Couldn't connect to dolphin server (%s)"%trials
               if logging:
                  logging.info("Couldn't connect to dolphin server (%s)"%trials)
               time.sleep(5)
            trials=trials+1
-        ret=str(json.loads(mesg))
-        #ret = re.sub (r'[\[|\]]', '', ret)
-        ret = re.sub (r'u\'', '\'', ret)
-        ret = re.sub (r'\'', '\"', ret)
         if logging and name: 
            logging.info("%s:%s"%(name,ret))
     

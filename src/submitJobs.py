@@ -95,58 +95,61 @@ def main():
    submitjobs = submitJobs(config['url'], f)
    submitCommand = f.getCommand(sys.argv)
 
+
    exec_dir=os.path.dirname(os.path.abspath(__file__))
    #print "EXECDIR" + exec_dir
    sdir=config['tooldir']+"/src"
    track=OUTDIR + "/tmp/track"
    src=OUTDIR + "/tmp/src"
    logs=OUTDIR + "/tmp/logs"
-  
-   os.system("mkdir -p "+track)
-   os.system("mkdir -p "+src)
-   os.system("mkdir -p "+logs)
-
-   logfile="%s/JOB.%s.log"%(logs, NAME)
-   logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-   logging.info("File Path:%s"%os.getcwd())
-   print "checkJob\n";
-   result = submitjobs.checkJob(NAME, WKEY, logging)
-   print result+"\n"
-   if (result != "START" and FORCE == "no" ):
-        sys.exit(0)
-   print "checkJob[DONE]\n";
-      
-   print "getJobParams\n";
-   (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
-   resources = "\'{\\\"queue\\\":\\\"%s\\\",\\\"cputime\\\":\\\"%s\\\",\\\"memory\\\":\\\"%s\\\",\\\"cpu\\\":\\\"%s\\\"}\'"%(QUEUE, TIME, MEMORY, CPU)
-   logging.info("resources => :%s"%(resources))
-   print "getJobParams["+resources+"]\n";
-   
-   if (USERNAME==None):
-        USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
-   
-   print "USER:"+str(USERNAME)+"\n";
 
    if (NAME == None):
         NAME="job";
-   if (OUTDIR == None):
-        OUTDIR="~/out";
-   if (QUEUE == None):
-        queue="-q short"
-   else: 
-        queue="-q "+str(QUEUE)
-  
-   COM.replace('\"{','\'{')
-   COM.replace('}\"','}\'')
-   print "COMMAND: [" + COM + "]\n"
-   print "NAME: [" + NAME + "]\n"
-   print "cpu: [" + CPU + "]\n"
-
 
    success_file = track+"/"+str(NAME)+".success";
-   jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
-  
    if (not os.path.exists(success_file) or FORCE != "no"):
+  
+     os.system("mkdir -p "+track)
+     os.system("mkdir -p "+src)
+     os.system("mkdir -p "+logs)
+
+     logfile="%s/JOB.%s.log"%(logs, NAME)
+     logging.basicConfig(filename=logfile, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+     logging.info("File Path:%s"%os.getcwd())
+     print "checkJob\n";
+     result = submitjobs.checkJob(NAME, WKEY, logging)
+     print result+"\n"
+     if (result != "START" and FORCE == "no" ):
+        sys.exit(0)
+     print "checkJob[DONE]\n";
+      
+     print "getJobParams\n";
+     (QUEUE, TIME, MEMORY, CPU) = submitjobs.getJobParams(SERVICENAME, NAME,WKEY, logging)
+     resources = "\'{\\\"queue\\\":\\\"%s\\\",\\\"cputime\\\":\\\"%s\\\",\\\"memory\\\":\\\"%s\\\",\\\"cpu\\\":\\\"%s\\\"}\'"%(QUEUE, TIME, MEMORY, CPU)
+     logging.info("resources => :%s"%(resources))
+     print "getJobParams["+resources+"]\n";
+   
+     if (USERNAME==None):
+        USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
+   
+     print "USER:"+str(USERNAME)+"\n";
+
+     if (OUTDIR == None):
+        OUTDIR="~/out";
+     if (QUEUE == None):
+        queue="-q short"
+     else: 
+        queue="-q "+str(QUEUE)
+  
+     COM.replace('\"{','\'{')
+     COM.replace('}\"','}\'')
+     print "COMMAND: [" + COM + "]\n"
+     print "NAME: [" + NAME + "]\n"
+     print "cpu: [" + CPU + "]\n"
+
+
+     jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
+  
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
