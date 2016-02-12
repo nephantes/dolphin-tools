@@ -82,30 +82,40 @@ $outdir  = "$outdir/macs";
 die "Error 15: Cannot create the directory:$outdir" if ($?);
 
 my @chiplibs=split(/:/,$chipinput);
-
+my $bname="";
 foreach my $chipline (@chiplibs)
 {
- my @chips=split(/,/,$chipline);
- my $first=$chips[0];
- my $bname=$first;
- my $file1=$inputdir."/".$first.".bam";
- die "Error 64: please check the file:".$file1 unless (checkFile($file1));
- my $com="$acmd -t $file1 --name=$outdir/$first\n";
+ my @chipinput=split(/[;\t\s]+/,$chipline);
+ $bname=$chipinput[0];
+
+ my $chipfiles=getFiles($chipinput[1]);
+ my $com="$acmd -t $chipfiles ";
  
- if (@chips>1 && length($chips[1])>=1)
+ if (@chipinput>2 && length($chipinput[2])>=1)
  {
-    my $second=$chips[1];
-    my $file2=$inputdir."/".$second.".bam";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    $bname="$first.vs.$second";
-    $bname=~s/\.sorted//g;
-    $com="$acmd -t $file1 -c $file2 --name=$outdir/$bname\n";
+   my $inputfiles=getFiles($chipinput[2]);
+   $com.="-c $inputfiles "; 
  }
+ $com .= " --name=$outdir/$bname";
 
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
  `$job`;
  die "Error 25: Cannot run the job:".$job if ($?);
+}
+
+sub getFiles
+{
+ my ($inputdir, $libs)=@_; 
+ my @libnames = split(",",$libs);
+ my @files=();
+ foreach my $lib (@libnames)
+ {
+   my $file= $inputdir."/".$lib.".bam";
+   die "Error 64: please check the file:".$file unless (checkFile($file));
+   push(@files, $file);
+ }
+ return join(',', @files);
 }
 
 sub checkFile

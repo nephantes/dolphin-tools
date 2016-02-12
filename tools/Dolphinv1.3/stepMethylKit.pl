@@ -110,7 +110,6 @@ else{
     $strand ="F";
 }
 
-
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
