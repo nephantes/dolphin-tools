@@ -21,35 +21,26 @@ class jobStatus:
         self.f = f
     
     def checkAllJobsFinished(self, username, wkey, servicename, logging):
-        logging.info("checkAllJobsFinished:START")
         data = urllib.urlencode({'func':'checkAllJobsFinished', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename})
-        self.f.queryAPI(self.url, data, servicename, logging)
-        logging.info("checkAllJobsFinished:END")
+        result=self.f.queryAPI(self.url, data, servicename, logging)
     
     def insertJob(self,  username, wkey, com, jobname, servicename, jobnum, resources, result, logging):
-        logging.info("JOB insert:START")
         data = urllib.urlencode({'func':'insertJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 'resources': resources,
                                  'com':com , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        print data
-        self.f.queryAPI(self.url, data, "INSERT"+jobname, logging)
-        logging.info("JOB insert:END")
+        result=self.f.queryAPI(self.url, data, "INSERT"+jobname, logging)
    
     def updateJob(self,  username, wkey, jobname, servicename, field, jobnum, result, logging):
-        logging.info("JOB update:START")
         data = urllib.urlencode({'func':'updateJob', 'username':username, 
                                  'wkey':wkey, 'servicename':servicename, 
                                  'field':field , 'jobname':jobname, 'jobnum':str(jobnum), 
                                  'result':str(result)})
-        self.f.queryAPI(self.url, data, "UPDATE"+jobname, logging)
-        logging.info("JOB update:END")
+        result = self.f.queryAPI(self.url, data, "UPDATE"+jobname, logging)
     
     def insertJobOut(self, username, wkey, jobnum, outdir, edir, logging):
-        logging.info("insertJobOut:START")
         file=str(outdir)+"/tmp/logs/"+str(jobnum)+".std"
-        print "insertJobOut file:"+file
         if os.path.isfile(file) and os.access(file, os.R_OK):
             command="python " + edir  + "/readJOBout.py -f "+file
             child = os.popen(command)
@@ -63,8 +54,7 @@ class jobStatus:
            
             data = urllib.urlencode({'func':'insertJobOut', 'username':username, 
                                  'wkey':wkey, 'jobnum':str(jobnum), 'jobout':jobout})
-            self.f.queryAPI(self.url, data, "jobnum:"+str(jobnum), logging) 
-        logging.info("insertJobOut:END")
+            result= self.f.queryAPI(self.url, data, "jobnum:"+str(jobnum), logging) 
         
 def main():
    try:
@@ -114,14 +104,19 @@ def main():
    logging.info("TYPE:"+str(TYPE))
 
    if (TYPE == "dbSubmitJob"):
-        jobStat.insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, RESOURCES, MESSAGE, logging)
+        res=jobStat.insertJob(USERNAME, WKEY, COM, JOBNAME, SERVICENAME, JOBNUM, RESOURCES, MESSAGE, logging)
+        logging.info("\n\nInsert Job => SUBMIT JOB:\nres:"+str(res)+" wkey:"+str(WKEY)+" servicename:"+str(SERVICENAME)+ " jobnum:"+str(JOBNUM)+"\n\n" )
    elif (TYPE == "dbSetStartTime"):
-        jobStat.updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "start_time", JOBNUM, MESSAGE, logging)  	
+        res=jobStat.updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "start_time", JOBNUM, MESSAGE, logging)  	
+        logging.info("\n\nUpdate Job => START JOB:\nres:"+str(res)+" wkey:"+str(WKEY)+" servicename:"+str(SERVICENAME)+ " jobnum:"+str(JOBNUM)+"\n\n" )
    elif (TYPE == "dbSetEndTime"):
-        jobStat.updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "end_time", JOBNUM, MESSAGE, logging) 	
-        jobStat.insertJobOut(USERNAME, WKEY, JOBNUM, OUTDIR, edir, logging)
+        res=jobStat.updateJob(USERNAME, WKEY, JOBNAME, SERVICENAME, "end_time", JOBNUM, MESSAGE, logging) 	
+        logging.info("\n\nUpdate Job => END JOB:\nres:"+str(res)+" wkey:"+str(WKEY)+" servicename:"+str(SERVICENAME)+ " jobnum:"+str(JOBNUM)+"\n\n" )
+        resJobOut=jobStat.insertJobOut(USERNAME, WKEY, JOBNUM, OUTDIR, edir, logging)
 
-   jobStat.checkAllJobsFinished(USERNAME, WKEY, SERVICENAME, logging)
+   resALL=jobStat.checkAllJobsFinished(USERNAME, WKEY, SERVICENAME, logging)
+   logging.info("\n\nCheck if All JOBS finished\nres:"+str(resALL)+" wkey:"+str(WKEY)+" servicename:"+str(SERVICENAME))
+           
 
 if __name__ == "__main__":
     main()

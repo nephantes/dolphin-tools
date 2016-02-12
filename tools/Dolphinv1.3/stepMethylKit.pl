@@ -110,7 +110,6 @@ else{
     $strand ="F";
 }
 
-
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
@@ -123,7 +122,6 @@ sub runMethylKit
 my ($inputdir, $bedfile, $input_file_suffix, $samplenames, $conds, $gbuild, $outdir, $strand, $tilesize, $stepsize, $mincoverage, $topN, $puboutdir, $wkey)=@_;
 my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
-print "inputdir<-\"$inputdir\";input_file_suffix<-\"$input_file_suffix\"; samplenames<-$samplenames; conds<-$conds; gbuild<-\"$gbuild\"; outdir<-\"$outdir\"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; mincoverage<-$mincoverage; topN<-$topN";
 
 open(OUT, ">$output");
 my $rscript = qq/
@@ -136,8 +134,7 @@ outerJoin <- function(data1, data2,data3, fields)
   d2 <- merge(data3, d1,  by=fields, all=TRUE)
   d2[,fields]
 }
-runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild, outdir, strand, tilesize, stepsize, mincoverage, topN)
-{
+inputdir<-"$inputdir";input_file_suffix<-"$input_file_suffix"; samplenames<-$samplenames; conds<-$conds; gbuild<-"$gbuild"; outdir<-"$outdir"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; mincoverage<-$mincoverage; topN<-$topN
   conds<-conds-1
   bedfile<-"$bedfile"
   statspdf<-paste(outdir,"\/stats.pdf", sep="")
@@ -262,9 +259,6 @@ runMethylSeq <- function(inputdir, input_file_suffix, samplenames, conds, gbuild
   
   promoters=regionCounts(meth_tiles,gene.obj\$promoters)
   write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
-}
-
-runMethylSeq("$inputdir","$input_file_suffix", $samplenames, $conds, "$gbuild", "$outdir", $strand, $tilesize, $stepsize, $mincoverage, $topN)
 /;
 print $rscript; 
 

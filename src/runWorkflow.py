@@ -70,9 +70,9 @@ class runWorkflow:
                    'workflow':wfname, 'wkey':wkey, 'outdir':outdir, 'services':slen})
         return self.f.queryAPI(self.url, data, "workflow started:"+wkey, logging)
 
-    def startService(self, service, wkey, logging):
+    def startService(self, service, wkey, username, logging):
         data = urllib.urlencode({'func':'startService', 'servicename':service.servicename, 
-                 'wkey':wkey, 'command':service.command})
+                 'wkey':wkey, 'command':service.command, 'username':username})
         return self.f.queryAPI(self.url, data, "service started:"+service.servicename, logging)
 
     def endWorkflow(self, wkey, logging):
@@ -172,7 +172,7 @@ def main():
         br=1
         checkcount=0
         while ( br==1):
-            ret=workflow.startService(service, wkey, logging)
+            ret=workflow.startService(service, wkey, USERNAME, logging)
             print ret + "\n"
             time.sleep(5)
             if (ret.startswith("RUNNING") and float(service.waittime)>0):

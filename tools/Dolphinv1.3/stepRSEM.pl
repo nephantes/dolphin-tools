@@ -99,7 +99,7 @@ else
 {
   $com=`ls $inputdir/*.1.fastq 2>&1`;
 }
-die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
+die "Error 64: please check the if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);

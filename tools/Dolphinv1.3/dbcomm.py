@@ -21,7 +21,7 @@ class dbcomm:
         
   def getJobNums(self, wkey):
     data = urllib.urlencode({'func':'getJobNums', 'wkey':wkey})
-    ret = eval(self.f.queryAPI(self.url, data, "getJobNums:"+wkey))
+    ret = json.loads(self.f.queryAPI(self.url, data, "getJobNums:"+wkey))
     return ret
     
   def insertJobStats(self, username, wkey, jobnum, outdir):
