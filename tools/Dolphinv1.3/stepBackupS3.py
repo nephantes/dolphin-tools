@@ -175,20 +175,20 @@ def main():
         sys.exit(2)
 
 
-  try:
-    BARCODE                 = options.barcode
-    PAIRED                  = options.paired
-    USERNAME                = options.username
-    RUNPARAMSID             = options.runparamsid
-    JOBSUBMIT               = options.jobsubmit
-    OUTDIR                  = options.outdir
-    AMAZONUPLOAD            = options.amazonupload
-    CONFIG                  = options.config
+  BARCODE                 = options.barcode
+  PAIRED                  = options.paired
+  USERNAME                = options.username
+  RUNPARAMSID             = options.runparamsid
+  JOBSUBMIT               = options.jobsubmit
+  OUTDIR                  = options.outdir
+  AMAZONUPLOAD            = options.amazonupload
+  CONFIG                  = options.config
 
-    f = funcs()
-    config = getConfig(CONFIG)
-    backup = stepBackup(config['url'], f)
+  f = funcs()
+  config = getConfig(CONFIG)
+  backup = stepBackup(config['url'], f)
    
+  try:
     if (OUTDIR == None or JOBSUBMIT == None):
         print "for help use --help"
         sys.exit(2)
