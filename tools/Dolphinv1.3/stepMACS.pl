@@ -85,15 +85,15 @@ my @chiplibs=split(/:/,$chipinput);
 my $bname="";
 foreach my $chipline (@chiplibs)
 {
- my @chipinput=split(/[;\t\s]+/,$chipline);
+ print $chipline."\n";
+ my @chipinput=split(/[\|\t\s]+/,$chipline);
  $bname=$chipinput[0];
-
- my $chipfiles=getFiles($chipinput[1]);
+ my $chipfiles=getFiles($inputdir,$chipinput[1]);
  my $com="$acmd -t $chipfiles ";
  
  if (@chipinput>2 && length($chipinput[2])>=1)
  {
-   my $inputfiles=getFiles($chipinput[2]);
+   my $inputfiles=getFiles($inputdir,$chipinput[2]);
    $com.="-c $inputfiles "; 
  }
  $com .= " --name=$outdir/$bname";
@@ -115,7 +115,8 @@ sub getFiles
    die "Error 64: please check the file:".$file unless (checkFile($file));
    push(@files, $file);
  }
- return join(',', @files);
+ #return join(',', @files);
+ return $files[0];
 }
 
 sub checkFile
