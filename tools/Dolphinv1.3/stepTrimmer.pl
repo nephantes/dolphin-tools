@@ -85,7 +85,6 @@ die "Error 15: Cannot create the directory:".$outdir if ($?);
 my $com="";
 if (lc($spaired)=~/^no/)
 {
- print "JERE";
  $com=`ls $inputdir/*.fastq 2>&1`;
  print $com;
 }
@@ -105,8 +104,8 @@ foreach my $file (@files)
  {
     $file=~/.*\/(.*).fastq/;
     my $bname=$1;
-    my $format=getFormat($file);
-    trimFiles($file, $trim, $bname, $format);
+    my ($format, $len)=getFormat($file);
+    trimFiles($file, $trim, $bname, $format, $len);
  }
  else
  {
@@ -115,70 +114,65 @@ foreach my $file (@files)
     my $bname=$2;
     my $file2=$1.".2.fastq";
     die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    $trim=~/([\d]*,[\d]*),([\d]*,[\d]*)/;
+    $trim=~/([\d]*[:,][\d]*)[:,]([\d]*[:,][\d]*)/;
     my $trim1=$1;
     my $trim2=$2;
-    my $format=getFormat($file);
-    trimFiles($file, $trim1, $bname.".1", $format);
-    trimFiles($file2, $trim2, $bname.".2", $format);
+    my ($format, $len)=getFormat($file);
+    print "[$len]\n";
+    trimFiles($file, $trim1, $bname.".1", $format, $len);
+    trimFiles($file2, $trim2, $bname.".2", $format, $len);
  }
 }
 
 sub trimFiles
 {
-  my ($file, $trim, $bname, $format)=@_;
-    my @nts=split(/[,\s\t]+/,$trim);
+  my ($file, $trim, $bname, $format, $len)=@_;
+    my @nts=split(/[,:\s\t]+/,$trim);
     print "\n$bname\n\n";
     my $inpfile="";
     my $com="";
     my $i=1;
     my $outfile="";
-    my $param="-f";
+    my $param="";
     my $quality="";
     if ($format eq "sanger")
     {   
       $quality="-Q33";
     }
-    foreach my $nt (@nts)
+    if (scalar(@nts)==2)
     {
-      if ($nt!~/^$/ && $nt>=0)
-      {
-        $nt++;
-        if ($i%2==0)
-        {
-           $param="-t";
-           $nt--;
-        }
-        if ($nt>0)
-        {
-         $outfile="$outdir/$bname.fastq.$i.tmp";
-         $com.="$cmd $quality -v $param $nt -o $outfile -i $file && ";
-         $file=$outfile;
-        }
-      }
-      $i++;
+      $param = "-f ".($nts[0]+1) if (exists($nts[0]) && $nts[0] >= 0 );
+      $param .= " -l ".($len-$nts[1]) if (exists($nts[0]) && $nts[1] > 0 );
+      $outfile="$outdir/$bname.fastq.$i.tmp";  
+      $com="$cmd $quality -v $param -o $outfile -i $file && " if ((exists($nts[0]) && $nts[0] > 0) || (exists($nts[0]) && $nts[1] > 0 ));
+      $file=$outfile;
     }
-    $com.="mv $outfile $outdir/$bname.fastq && rm -rf $outdir/*.tmp";
-
-    my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-    print $job."\n";   
-    `$job`;
+    if ($com!~/^$/)
+    {
+      $com.="mv $outfile $outdir/$bname.fastq";
+      my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+      print $job."\n";   
+      `$job`;
 	die "Error 25: Cannot run the job:".$job if ($?);
+    }
 }
 
 # automatic format detection
 sub getFormat
 {
    my ($filename)=@_;
-
    # set function variables
    open (IN, $filename);
    my $j=1;
    my $qualities="";
-   while(my $line=<IN> && $j<10 )
+   my $len=0;
+   while((my $line=<IN>) && $j<10  )
    {
+     chomp($line);
      if ($j%4==0)
      {
+        $len=length($line);
+  
         $qualities.=$line;
      }
      $j++;
@@ -219,7 +213,7 @@ sub getFormat
     }
 
     # return file format
-    return( $format );
+    return( $format, $len );
 }
 
 
