@@ -68,7 +68,7 @@
 
 #StepRSEM
 @RUNRSEM            = @PERL @DOLPHIN/stepRSEM.pl
-@RSEMCMD            = "@PERL @BIN/RSEM/rsem-calculate-expression"
+@RSEMCMD            = "module load samtools/0.0.19 && @PERL @BIN/RSEM_v1.2.28/rsem-calculate-expression"
 @BOWTIEPATH         = @BIN/bowtie-0.12.9
 @RSEMREF            = @GDB/rsem_ref
 

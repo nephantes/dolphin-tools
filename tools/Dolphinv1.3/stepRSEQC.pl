@@ -72,6 +72,8 @@ if ($type eq "RSEM")
 { 
    $indir   = "$outdir/rsem";
    @files = <$indir/pipe*/*.genome.sorted.bam>;
+   @files = <$indir/pipe*/*.genome.bam> if (@files==0);
+
 }
 elsif($type eq "tophat")
 {
@@ -89,7 +91,7 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-  my $com="read_distribution.py -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
+  my $com="module unload python/2.7.5 && module load python/2.7.5_packages/RSeQC/2.6.2 && read_distribution.py -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";

@@ -69,7 +69,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($adapter eq "") or ($outd
 
 my $inputdir="";
 print "$previous\n";
-if ($previous=~/NONE/g)
+if ($previous=~/NONE/g || $previous=~/^\@/)
 {
   $inputdir = "$outdir/input";
 }
