@@ -135,10 +135,10 @@ sub trimFiles
     my $outfile="";
     my $param="";
     my $quality="";
-    if ($format eq "sanger")
-    {   
+    #if ($format eq "sanger")
+    #{   
       $quality="-Q33";
-    }
+    #}
     if (scalar(@nts)==2)
     {
       $param = "-f ".($nts[0]+1) if (exists($nts[0]) && $nts[0] >= 0 );
