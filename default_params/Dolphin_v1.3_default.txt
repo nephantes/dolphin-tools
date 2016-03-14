@@ -127,6 +127,10 @@
 @RUNMCALL         = @PERL @DOLPHIN/stepMCall.pl
 @RUNMETHYLKIT     = @PERL @DOLPHIN/stepMethylKit.pl
 
+#Step Haplotype
+@RUNHAPLOTYPE     = @PERL @DOLPHIN/stepHaplotype.pl
+@HAPLOTYPECMD     = @JAVA -jar @bin/GenomeAnalysisTK.jar
+
 #RunCleaning Step
 @RUNCLEAN         = @PERL @DOLPHIN/stepClean.pl
 
