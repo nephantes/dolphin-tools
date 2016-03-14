@@ -25,10 +25,14 @@ use Pod::Usage;
 #################### VARIABLES ######################
 my $outdir           = "";
 my $genome           = "";
-my $paramshaplo     = "";
 my $previous         = "";
 my $haploCmd         = "";
 my $picardCmd        = "";
+my $smctfc           = "";
+my $smctfe           = "";
+my $mbqs             = "";
+my $mrpas            = "";
+my $mrirps           = "";
 my $jobsubmit        = "";
 my $servicename      = "";
 my $help             = "";
@@ -42,12 +46,16 @@ my $command=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions( 
 	'outdir=s'       => \$outdir,
 	'genome=s'       => \$genome,
-	'haplocmd=s'     => \$haploCmd,
-	'paramshaplo=s'  => \$paramshaplo,
 	'previous=s'     => \$previous,
+	'haplocmd=s'     => \$haploCmd,
+	'picardCmd=s'    => \$picardCmd,
+	'smctfc=s'       => \$smctfc,
+    'smctfe=s'       => \$smctfe,
+    'mbqs=s'         => \$mbqs,
+    'mrpas=s'        => \$mrpas,
+    'mrirps=s'       => \$mrirps,
 	'jobsubmit=s'    => \$jobsubmit,
 	'servicename=s'  => \$servicename,
-	'picardCmd=s'    => \$picardCmd,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized options.\nFor help, run this script with -help option.\n");
@@ -64,7 +72,7 @@ if($print_version){
 	exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($genome eq "") or ($outdir eq "") or ($haploCmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($genome eq "") or ($outdir eq "") or ($haploCmd eq "") or ($picardCmd eq ""));	
 
  
 ################### MAIN PROGRAM ####################
@@ -85,8 +93,6 @@ $outdir   = "$outdir/variant_calls";
 `mkdir -p $outdir`;
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
-$paramshaplo =~s/,/ /g;
-$paramshaplo=~s/_/--/g;
 my $com="";
 $com=`ls $inputdir/*.bam 2>&1`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
@@ -94,10 +100,6 @@ die "Error 64: please check the if you defined the parameters right:" unless ($c
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
-if (lc($paramshaplo)=~/^no/ || $paramshaplo=~/^$/)
-{
-	$paramshaplo="";
-}
 foreach my $file (@files)
 { 
 	$file=~/.*\/(.*).bam/;
@@ -115,7 +117,7 @@ foreach my $file (@files)
 	$com.=" && rm $outdir/hg_$file " if ($com!~/^$/);
 	$com.=" && " if ($com!~/^$/);
 	##	Run HaplotypeCaller
-	$com="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$file -O $outdir/$file.vcf $paramshaplo --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
+	$com="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$file -O $outdir/$file.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
 	############	End Program Calls
 	
 	my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
@@ -143,8 +145,8 @@ stepHaplotype.pl
 stepHaplotype.pl 
             -o outdir <output directory> 
             -g genome <genome fasta file> 
-            -c cmdhaplo <haplotypecaller Command> 
-            -p paramshaplo <haplotypecaller parameters>
+            -c cmdhaplo <haplotypecaller command>
+			-p picardCmd <picard command>
 
 stepHaplotype.pl -help
 
@@ -187,8 +189,8 @@ This program finds SNP variants using GATK HaplotypeCaller
 stepHaplotype.pl 
             -o outdir <output directory> 
             -g genome <genome fasta file> 
-            -c haploCmd <haplotypecaller dir and file> 
-            -p paramshaplo <haplotypecaller additional params>
+            -c haploCmd <haplotypecaller dir and file>
+			-p picardCmd <picard dir and file>
 
 =head1 AUTHORS
 
