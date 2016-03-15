@@ -78,15 +78,23 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($genome eq "") or ($outdi
 ################### MAIN PROGRAM ####################
 my $inputdir="";
 print "$previous\n";
-my $tophat_test = `ls $outdir/tdf_tophat`;
+
+my $tophat_test = `ls $outdir/tophat`;
+my $tdf_tophat_test = `ls $outdir/tdf_tophat`;
+my $chip_test = `ls $outdir/seqmapping/chip`;
+my $input_file_cmd = "";
+
 if ($tophat_test !~/No such file or directory/) {
+	$inputdir = "$outdir/tophat";
+	$input_file_cmd = "ls $inputdir/*/*.sorted.bam 2>&1";
+}elsif ($tdf_tophat_test !~/No such file or directory/) {
 	$inputdir = "$outdir/tdf_tophat";
+	$input_file_cmd = "ls $inputdir/*/*.sorted.bam 2>&1";
+}elsif ($chip_test !~/No such file or directory/){
+	$inputdir = "$outdir/seqmapping/chip";
+	$input_file_cmd = "ls $inputdir/*.sorted.bam 2>&1";
 }else{
-	my $chip_test = `ls $outdir/macs`;
-	if ($chip_test !~/No such file or directory/) {
-		$inputdir = "$outdir/macs";
-	}
-	die "Error 256: cannot find bam file directory:" unless ($chip_test !~/No such file or directory/);
+	die "Error 256: cannot find bam file directory:";
 }
 
 $outdir   = "$outdir/variant_calls";
@@ -94,30 +102,39 @@ $outdir   = "$outdir/variant_calls";
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my $com="";
-$com=`ls $inputdir/*.bam 2>&1`;
+$com=`$input_file_cmd`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 foreach my $file (@files)
-{ 
-	$file=~/.*\/(.*).bam/;
-	my $bname=$1;
-	my $str_files=$file;
+{
+	my $input_file = $file;
+	$file=~/.*\/(.*)/;
+	my $str_file=$1;
 	die "Error 64: please check the file:".$file unless (checkFile($file));
+	
+	$str_file=~/(.*).*\./;
+	my $bname=$1;
 	
 	############	Start Program Calls
 	my $com="";
 	##	Make sure bam isn't malformed
-	$com.="$picardCmd AddOrReplaceReadGroups I=$inputdir/$file O=$outdir/hg_$file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
+	$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
 	$com.=" && " if ($com!~/^$/);
 	##	Make sure bam is ordered properly
-	$com.=" $picardCmd ReorderSam I=$outdir/hg_$file O=$outdir/reordered_$file R=$genome CREATE_INDEX=TRUE";
-	$com.=" && rm $outdir/hg_$file " if ($com!~/^$/);
+	$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
+	##	Remove hg_file
+	$com.=" && rm $outdir/hg_$str_file " if ($com!~/^$/);
 	$com.=" && " if ($com!~/^$/);
 	##	Run HaplotypeCaller
-	$com="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$file -O $outdir/$file.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
+	$com.="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$str_file -o $outdir/$bname.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
+	$com.=" --standard_min_confidence_threshold_for_calling $smctfc --standard_min_confidence_threshold_for_emitting $smctfe --min_base_quality_score $mbqs";
+	$com.=" --minReadsPerAlignmentStart $mrpas --maxReadsInRegionPerSample $mrirps";
+	##	Remove reordered bam files
+	$com.=" && rm $outdir/reordered_$str_file " if ($com!~/^$/);
+	$com.=" && rm $outdir/reordered_$bname.bai " if ($com!~/^$/);
 	############	End Program Calls
 	
 	my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
@@ -145,8 +162,8 @@ stepHaplotype.pl
 stepHaplotype.pl 
             -o outdir <output directory> 
             -g genome <genome fasta file> 
-            -c cmdhaplo <haplotypecaller command>
-			-p picardCmd <picard command>
+            -ha haploCmd <haplotypecaller command>
+			-pi picardCmd <picard command>
 
 stepHaplotype.pl -help
 
@@ -164,13 +181,13 @@ the output files will be "$outdir/variant_calls"
 
 Genome fasta file. (Full path)
 
-=head2 -c CmdHaplo <Haplotypecaller dir and file> 
+=head2 -ha haploCmd <Haplotypecaller dir and file> 
 
-Fullpath of tophat-calculate-expression file. Ex: /isilon_temp/garber/bin/RSEM/tophat-calculate-expression
+Full path of haplotypecaller
 
-=head2  -p haploparams <haplotypecaller additional params>
+=head2  -pi picardCmd <picard dir and file>
 
-tophat reference file
+Full path of picard
 
 =head2 -help
 
@@ -189,8 +206,8 @@ This program finds SNP variants using GATK HaplotypeCaller
 stepHaplotype.pl 
             -o outdir <output directory> 
             -g genome <genome fasta file> 
-            -c haploCmd <haplotypecaller dir and file>
-			-p picardCmd <picard dir and file>
+            -ha haploCmd <haplotypecaller dir and file>
+			-pi picardCmd <picard dir and file>
 
 =head1 AUTHORS
 

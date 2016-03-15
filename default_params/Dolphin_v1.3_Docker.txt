@@ -125,7 +125,7 @@
 
 #Step Haplotype
 @RUNHAPLOTYPE     = @PERL @DOLPHIN/stepHaplotype.pl
-@HAPLOTYPECMD     = @JAVA -jar @bin/GenomeAnalysisTK.jar
+@HAPLOTYPECMD     = "@JAVA -jar @BIN/GenomeAnalysisTK.jar"
 
 #RunCleaning Step
 @RUNCLEAN         = @PERL @DOLPHIN/stepClean.pl
