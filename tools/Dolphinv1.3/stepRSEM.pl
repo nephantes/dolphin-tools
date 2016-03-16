@@ -27,6 +27,7 @@
  my $outdir           = "";
  my $params_rsem      = "";
  my $previous         = "";
+ my $genome_bam       = "";
  my $bowtiepath       = "";
  my $spaired          = "";
  my $rsemCmd          = "/project/umw_biocore/bin/rsem-1.2.3/rsem-calculate-expression";
@@ -42,14 +43,15 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'cmdrsem=s'      => \$rsemCmd,
-        'bowtiepath=s'   => \$bowtiepath,
-        'dspaired=s'       => \$spaired,
-        'paramsrsem=s'   => \$params_rsem,
-        'previous=s'     => \$previous,
-        'jobsubmit=s'    => \$jobsubmit,
-        'servicename=s'  => \$servicename,
-        'rsemref=s'      => \$rsemref,
+    'cmdrsem=s'      => \$rsemCmd,
+    'bowtiepath=s'   => \$bowtiepath,
+    'dspaired=s'     => \$spaired,
+	'genome_bam=s'   => \$genome_bam,
+    'paramsrsem=s'   => \$params_rsem,
+    'previous=s'     => \$previous,
+    'jobsubmit=s'    => \$jobsubmit,
+    'servicename=s'  => \$servicename,
+    'rsemref=s'      => \$rsemref,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -101,12 +103,20 @@ else
 }
 die "Error 64: please check the if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
 
-print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 if ($params_rsem=~/NONE/)
 {
    $params_rsem="";
+}
+
+if (lc($genome_bam) eq "yes") {
+	print "HERE[$genome_bam]";
+    $genome_bam=" --output-genome-bam ";
+}
+else
+{
+	$genome_bam="";
 }
 
 foreach my $file (@files)
@@ -127,12 +137,12 @@ foreach my $file (@files)
     die "Error 64: please check the file:".$file2 unless (checkFile($file2));
     my $str_files ="$file $file2";
 
-    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
+    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
    
   }
   else
   {
-    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem --output-genome-bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
+    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
   }
   my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
   print $job."\n";

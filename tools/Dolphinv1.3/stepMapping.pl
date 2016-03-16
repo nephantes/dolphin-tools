@@ -81,7 +81,6 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 
-my $fasta=createIndex($indexfile, $bowtiecmd);
 $indexpar=~s/_/ /g;
 
 if ($advparams ne "NONE")
@@ -105,11 +104,18 @@ else
   $inputdir = "$outdir/seqmapping/".lc($previous);
 }
 $outdir   = "$outdir/seqmapping/".lc($indexname);
+
+
 print "I:$inputdir\n";
 print "O:$outdir\n";
 
 `mkdir -p $outdir`;
+
 die "Error 15: Cannot create the directory:".$outdir  if ($?);
+
+my $fasta=createIndex($indexfile, $bowtiecmd, $inputdir, $outdir);
+
+
 my $com="";
 
 if (lc($spaired) =~ /^no/)
@@ -133,18 +139,7 @@ foreach my $file (@files)
   if (lc($spaired) =~ /^no/)
   {
        die "Error 64: please check the file:".$file unless (checkFile($file)); 
-
-       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
-       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
-       $com.="awk -v name=$bname -f $awkdir/single.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="$samtoolscmd sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="$samtoolscmd index $outdir/$bname.sorted.bam;";
-       $com.="rm -rf $outdir/$bname.sam;";
-       $com.="rm -rf $outdir/$bname.bam;";
-       $com.="rm -rf $outdir/$bname.fastq.mapped;";
-       # $com.="rm -rf $file";
+       $com="$bowtiecmd $indexpar --no-unal --un $outdir/$bname.fastq -x $indexfile $file --al $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
   }
   else
   {
@@ -153,22 +148,17 @@ foreach my $file (@files)
        my $str_file="-1 $inputdir/$bname.1.fastq -2 $inputdir/$bname.2.fastq";
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.1.fastq")); 
        die "Error 64: please check the file: $inputdir/$bname.1.fastq" unless (checkFile("$inputdir/$bname.2.fastq")); 
-
-       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1;";
-       $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp;";
-       $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow;";
-       $com.="awk -v name=$bname -f $awkdir/paired.awk $outdir/$bname.bow > $outdir/$bname.sum;";
-       $com.="$samtoolscmd view -bT $indexfile.fasta $outdir/$bname.sam > $outdir/$bname.bam;"; 
-       $com.="samtools sort $outdir/$bname.bam $outdir/$bname.sorted;";
-       $com.="samtools index $outdir/$bname.sorted.bam;";
-       $com.="rm -rf $outdir/$bname.sam;";
-       $com.="rm -rf $outdir/$bname.bam;";
-       $com.="rm -rf $outdir/$bname*.mapped;";
- #      $com.="rm -rf $inputdir/$bname.1.fastq";
- #      $com.="rm -rf $inputdir/$bname.2.fastq";
+       $com="$bowtiecmd $indexpar --no-unal --un-conc $outdir/$bname.fastq -x $indexfile $str_file --al-conc $outdir/$bname.fastq.mapped -S $outdir/$bname.sam > $outdir/$bname.bow 2>&1 && ";
   }
- #print $com."\n\n";
- #`$com`;
+ $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
+ $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
+ $com.="$awkdir/parseBow.pl -n $bname -f $outdir/$bname.bow -p $spaired> $outdir/$bname.sum && ";
+ $com.=": \\\$( $samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.bam ) && "; 
+ $com.=": \\\$(samtools sort $outdir/$bname.bam $outdir/$bname.sorted ) && ";
+ $com.=": \\\$(samtools index $outdir/$bname.sorted.bam ) && ";
+ $com.="rm -rf $outdir/$bname.sam && ";
+ $com.="rm -rf $outdir/$bname.bam && ";
+ $com.="rm -rf $outdir/$bname*.mapped";
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";   
@@ -178,7 +168,7 @@ die "Error 25: Cannot run the job:".$job if ($?);
 
 sub createIndex
 {
-  my ($ind, $cmd) = @_;
+  my ($ind, $cmd, $inputdir, $outdir) = @_;
      my $fasta=$ind;
      if(checkFile("$ind.fasta"))
      {
@@ -190,7 +180,9 @@ sub createIndex
      }
      else
      {
-      die "Error 64: please check the file: $ind.fa or $ind.fasta ";
+      $com="ln -s $inputdir/*.fastq $outdir/.";
+      `$com`;
+      exit(0);
      }
      if(!checkFile("$ind.4.bt2"))
      {
