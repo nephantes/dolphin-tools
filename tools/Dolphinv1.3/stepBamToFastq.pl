@@ -1,17 +1,19 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepPicard.pl
+#                                      bamToFastq.pl
 #########################################################################################
 # 
-#  This program runs the picard 
+# Converts bam files to Fastq
 #
 #########################################################################################
 # AUTHORS:
 #
-# Alper Kucukural, PhD 
+# Alper Kucukural, PhD
+# 13/03/2015
 # 
 #########################################################################################
+
 
 ############## LIBRARIES AND PRAGMAS ################
 
@@ -22,36 +24,30 @@
  use Pod::Usage; 
  
 #################### VARIABLES ######################
- my $refflat          = "";
  my $outdir           = "";
  my $type             = "";
- my $picardCmd        = "";
+ my $paired           = "";
  my $samtools         = "";
- my $cmdname          = "";
- my $pubdir           = "";
- my $wkey             = "";
+ my $cmd              = "";
  my $jobsubmit        = "";
  my $servicename      = "";
- my $help             = "";
  my $print_version    = "";
+ my $help             = "";
  my $version          = "1.0.0";
 ################### PARAMETER PARSING ####################
 
-my $cmd=$0." ".join(" ",@ARGV); ####command line copy
+my $command=$0." ".join(" ",@ARGV); ####command line copy
 
-GetOptions(
-    'outdir=s'        => \$outdir,
-    'refflat=s'       => \$refflat,
-    'type=s'          => \$type,
-    'picardCmd=s'     => \$picardCmd,
-    'name=s'          => \$cmdname,
-    'samtools=s'      => \$samtools,
-    'pubdir=s'        => \$pubdir,
-    'wkey=s'          => \$wkey,
-    'jobsubmit=s'     => \$jobsubmit,
-    'servicename=s'   => \$servicename,
-    'help'            => \$help, 
-    'version'         => \$print_version,
+GetOptions( 
+    'type=s'         => \$type,
+    'outdir=s'       => \$outdir,
+    'cmd=s'          => \$cmd,
+    'samtools=s'     => \$samtools,
+    'paired=s'       => \$paired,
+    'jobsubmit=s'    => \$jobsubmit,
+    'servicename=s'  => \$servicename,
+    'help'           => \$help, 
+    'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
 
 if($help){
@@ -66,15 +62,12 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($refflat eq "") or ($outdir eq "") or ($picardCmd eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($type eq "") or ($outdir eq "")  );	
 
 ################### MAIN PROGRAM ####################
 # runs the picard program
 
-my $outd  = "$outdir/picard_$type";
-if ($cmdname eq 'MarkDuplicates'){
-    $outd  = "$outdir/dedup$type";
-}
+my $outd  = "$outdir/seqmapping/$type";
 
 `mkdir -p $outd`;
 
@@ -107,69 +100,60 @@ foreach my $d (@files){
   my $dirname=dirname($d);
   my $libname=basename($d, ".bam");
   $libname=~s/\.sorted//g;
-  
-  my $com="$picardCmd $cmdname"; 
-  
-  if ($cmdname eq "CollectRnaSeqMetrics") {
-    $com.=" REF_FLAT=$refflat STRAND_SPECIFICITY=NONE MINIMUM_LENGTH=0 ";
-    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
-  }
-  elsif ($cmdname eq "MarkDuplicates") {
-    $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/$libname.PCR_duplicates REMOVE_DUPLICATES=true ";
-  }
-  else {
-    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
-  }
+ 
+  my $com= " samtools sort -n $d $outd/$libname.sorted && ";
+  $com .= " $cmd -i $outd/$libname.sorted.bam ";
 
-  $com.=" INPUT=$d > /dev/null";
-  
-  if ($cmdname eq "MarkDuplicates") {
-    $com .= "&& $samtools index $outd/".$libname.".bam ";
-    $com .= "&& $samtools flagstat $outd/".$libname.".bam > $outd/".$libname.".flagstat.txt ";
-    $com .= "&& md5sum $outd/".$libname.".bam > $outd/".$libname.".bam.md5sum ";
+  if (lc($paired) eq "paired" ) {
+         $com .= " -fq $outd/$libname.1.fastq ";
+         $com .= " -fq2 $outd/$libname.2.fastq && ";
   }
-  elsif ($cmdname eq "CollectMultipleMetrics") {
-    $com .= "&& mkdir -p $outd/".$libname."_multi && mv $outd/$libname*.pdf $outd/".$libname."_multi/. ";
+  else
+  {
+     $com .= " -fq $outd/$libname.fastq && ";
   }
+  $com .= " rm -rf $outd/$libname*.bam";
   
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print "\n\n=====\n$job\n======\n\n";
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }
+
 __END__
 
 
 =head1 NAME
 
-stepPicard.pl
+bam2Fastq.pl
 
 =head1 SYNOPSIS  
 
-stepPicard.pl 
-            -o outdir <output directory> 
-            -r refflat <ucsc gtf files> 
-            -p picardCmd <picard full path> 
+bamToFastq.pl 
+            -o outdir <outdir> 
+            -t type <type dedup|merged|tophat>
+            -c cmd <bedtols bamToFastq>
+            -p paired <paired|no> 
 
-stepPicard.pl -help
+bamToFastq.pl -help
 
-stepPicard.pl -version
+bamToFastq.pl -version
 
 For help, run this script with -help option.
 
 =head1 OPTIONS
 
-=head2 -o outdir <output directory>
+=head2 -f filename <output directory>
 
-the output files will be stored "$outdir/after_ribosome/cuffdiff" 
+bowtie std output
 
-=head2 -p picardCmd <picard running line> 
+=head2 -n name <picard running line> 
 
-Fullpath of picard running line. Ex: ~/cuffdiff_dir/cuffdiff
+sample name
 
-=head2  -r refflat <refflat file>  
+=head2  -p <paired>  
 
-ucsc refflat file
+paired end library or not <yes|no>
 
 =head2 -help
 
@@ -185,10 +169,11 @@ This program runs the cufflinks after tophat mappings
 
 =head1 EXAMPLE
 
-stepPicard.pl 
-            -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -c cufflinksCmd <cufflinks full path> 
+bamToFastq.pl 
+            -o outdir <outdir> 
+            -t type <type dedup|merged|tophat>
+            -c cmd <bedtols bamToFastq
+            -p paired <paired|no> 
 
 =head1 AUTHORS
 

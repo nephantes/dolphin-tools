@@ -25,16 +25,19 @@
 
 #################### VARIABLES ######################
  my $samplenames      = "";
+ my $conds            = "";
  my $gbuild           = "";
  my $outdir           = "";
  my $strand           = "";
  my $tilesize         = "";
  my $stepsize         = "";
+ my $bedfile          = "";
  my $topN             = "";
  my $mincoverage      = "";
  my $rscriptCMD       = "";
  my $pubdir           = "";
  my $wkey             = "";
+ my $name             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -46,13 +49,10 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
     'samplenames=s'  => \$samplenames,
-    'gbuild=s'       => \$gbuild,
+    'conds=s'        => \$conds,
     'outdir=s'       => \$outdir,
-    'topN=s'         => \$topN,
-    'mincoverage=s'  => \$mincoverage,
-    'strand=s'       => \$strand,
-    'tilesize=s'     => \$tilesize,
-    'stepsize=s'     => \$stepsize,
+    'name=s'         => \$name,
+    'bedfile=s'      => \$bedfile,
     'rscriptCMD=s'   => \$rscriptCMD,
     'pubdir=s'       => \$pubdir,
     'wkey=s'         => \$wkey,
@@ -74,31 +74,21 @@ if($print_version){
   exit;
 }
 
-pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($outdir eq "") );	
+pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samplenames eq "") or ($conds eq "") or ($outdir eq "") );	
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
-
-my $inputdir = "$outdir/mcall";
-my $input_file_suffix = ".methylkit.txt";
-$mincoverage=5 if ($mincoverage=/^$/);
-$topN = 2000 if ($topN=/^$/);
-$tilesize=300 if ($tilesize=/^$/);
-$stepsize=300 if ($stepsize=/^$/);
-
-$outdir   = "$outdir/methylKit";
+my $inputdir   = "$outdir/methylKit";
+$outdir   = "$outdir/diffmeth_".$name;
 `mkdir -p $outdir`;
 $samplenames=~s/[\s\t]+//g;
-my @inputarr=split(/:/,$samplenames);
-my @sarr=();
-foreach my $line (@inputarr)
-{
-   my @samples=split(/,/,$line);
-   push(@sarr, $samples[0]);
-}
-$samplenames=join(',', @sarr);
+$conds=~s/[\s\t]+//g;
 $samplenames=~s/,/\",\"/g;
 $samplenames="c(\"$samplenames\")";
+$conds=~s/,/\",\"/g;
+$conds=~s/Cond//g;
+$conds=~s/\"//g;
+$conds="c($conds)";
 
 if (lc($strand) !~/^no/) {
     $strand = "T";
@@ -110,129 +100,53 @@ else{
 my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 
-runMethylKit($inputdir, $input_file_suffix, $samplenames, $gbuild, $outdir, $strand, $tilesize,  $stepsize,$mincoverage, $topN, $puboutdir, $wkey);
+runMethylKit($inputdir, $bedfile, $samplenames, $conds, $outdir, $puboutdir, $wkey);
 
 `cp -R $outdir $puboutdir/.`;
 
 sub runMethylKit
 {
-my ($inputdir, $input_file_suffix, $samplenames, $gbuild, $outdir, $strand, $tilesize, $stepsize, $mincoverage, $topN, $puboutdir, $wkey)=@_;
-my $output = "$outdir/rscript_methylKit.R";
+my ($inputdir, $bedfile, $samplenames, $conds, $outdir, $puboutdir, $wkey)=@_;
+my $output = "$outdir/rscript_$name.R";
 my $sessioninfo = "$outdir/sessionInfo.txt";
 
 open(OUT, ">$output");
 my $rscript = qq/
 library("methylKit")
-
-push <- function(l, ...) c(l, list(...))
-outerJoin <- function(data1, data2,data3, fields)
-{
-  d1 <- merge(data1, data2, by=fields, all=TRUE)
-  d2 <- merge(data3, d1,  by=fields, all=TRUE)
-  d2[,fields]
-}
-inputdir<-"$inputdir";input_file_suffix<-"$input_file_suffix"; samplenames<-$samplenames; gbuild<-"$gbuild"; outdir<-"$outdir"; strand<-$strand; tilesize<-$tilesize; stepsize<-$stepsize; mincoverage<-$mincoverage; topN<-$topN
-  statspdf<-paste0(outdir,"\/stats.pdf")
-  analysispdf<-paste0(outdir,"\/analysis.pdf")
-  file.list<-list()
-
-  for (i in seq(samplenames))
-  {
-    file.list<-push(file.list, paste0(inputdir, "\/", samplenames[i], input_file_suffix))
-  }
-  snames<-list()
-  for (i in seq(samplenames))
-  {
-    snames<-push(snames, samplenames[i])
-  }
-  conds<-rep(0,length(samplenames))
-  myobj=read( file.list,
-              sample.id=snames,assembly=gbuild,treatment=conds)
+  inputdir<-$inputdir; samplenames<-$samplenames; conds<-$conds; outdir<-"$outdir";
+  conds<-conds-1
+  bedfile<-"$bedfile"
   
-  myobj.cpgcov<-myobj
-  for (i in seq(samplenames))
-  {
-    myobj.cpgcov[[i]]\$coverage<-1
-  }
-  
-  pdf(statspdf) 
-  for (i in seq(samplenames))
-  {
-    getMethylationStats(myobj[[i]],plot=T,both.strands=F)
-    getCoverageStats(myobj[[i]],plot=T,both.strands=F)
-  }
-  
-  dev.off()
-  meth=unite(myobj)
-  
-  tiles<-tileMethylCounts(myobj,win.size=tilesize,step.size=stepsize)
-  tiles_cpgcov<-tileMethylCounts(myobj.cpgcov,win.size=tilesize,step.size=stepsize)
-  
-  meth_tiles<-unite(tiles)
-  meth_tiles_cpgcov<-unite(tiles_cpgcov)
-  
-  try({
-   pdf(analysispdf) 
-   getCorrelation(meth_tiles,plot=T)
-   clusterSamples(meth_tiles, dist="correlation", method="ward", plot=T)
-   PCASamples(meth_tiles, screeplot=T)
-   PCASamples(meth_tiles,screeplot=FALSE, adj.lim=c(0.0004,0.1),
-             scale=TRUE,center=TRUE,comp=c(1,2),transpose=TRUE,sd.filter=TRUE,
-             sd.threshold=0.5,filterByQuantile=TRUE,obj.return=FALSE)
-   dev.off()
-  },  silent = TRUE)
+  load(file=paste(inputdir,"\/calcdata.rda"))
   
   tiles_comp=reorganize(meth_tiles,sample.ids=samplenames,
                         treatment=conds )
-   
+  
+  myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,weigthed.mean=TRUE,num.cores=4)
+  
+  myDiff_25p.hyper<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hyper")
+  myDiff_25p.hypo<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hypo")
+  
   data<-getData(meth_tiles)
   data_cpgcov<-getData(meth_tiles_cpgcov)
   
-  rownames(data)<-paste(data\$chr,data\$start, data\$end,sep="_")
+  difftiles.hyper<-getData(myDiff_25p.hyper)
+  difftiles.hypo<-getData(myDiff_25p.hypo)
+  difftiles<-getData(myDiff)
   
-  cols<-c()
-  for (i in seq(samplenames))
-  {
-    cols<-c(cols, paste0("coverage", i) )
-  }
+  write.table(difftiles.hyper, paste(outdir,"\/difftiles.hyper.tsv",sep=""))
+  write.table(difftiles.hypo, paste(outdir,"\/difftiles.hypo.tsv",sep=""))
+  write.table(difftiles, paste(outdir,"\/difftiles.tsv",sep=""))
   
-  norm_data<-cbind(rowSums(data[, cols]),
-                   rowSums(data_cpgcov[, cols]))
-  for (i in seq(samplenames))
-  {
-    norm_data<-cbind(norm_data, data[,paste0("numCs", i)]\/data[, paste0("coverage", i) ] )
-  }
+  gene.obj=read.transcript.features(bedfile)
+  ann<-annotate.WithGenicParts(myDiff,gene.obj)
   
-  rownames(norm_data) <- rownames(data)
-  colnames(norm_data) <- c("Cov", "Cpg", samplenames)
-  snames<-samplenames
+  pdf(paste(outdir, "\/geneannot.pdf", sep=""))
+  plotTargetAnnotation(ann,precedence=TRUE)
+  dev.off()
   
-  filtmincoverage<-cbind(apply(norm_data[norm_data[,"Cov"]\/norm_data[,"Cpg"]>mincoverage,3:dim(norm_data)[2]], 1, function(x) max(x)),1)
-  
-  lowelim<-norm_data[filtmincoverage[,1]>0.6, ]
-  
-  write.table(lowelim, paste0(outdir,"\/after_elimination.tsv"))
-  
-  cv<-cbind(apply(lowelim, 1, function(x) (sd(x,na.rm=TRUE)\/mean(x,na.rm=TRUE))), 1)
-  colnames(cv)<-c("coeff", "a")
-  
-  withcvlowelim<-cbind(cv[,1], lowelim)
-  colnames(withcvlowelim)[1]<-"Coeff"
-  write.table(withcvlowelim, paste0(outdir,"\/after_elimination_with_coeff.tsv"))
-  
-  cvsort<-cv[order(cv[,1],decreasing=TRUE),]
-  topindex<-dim(cvsort)[1]
-  if (topindex>topN)
-  {
-     topindex<-topN
-  }
-  cvsort_top <- cvsort[1:topindex,]
-  
-  selected<-data.frame(norm_data[rownames(cvsort_top),snames])
-  colnames(selected) <- snames
-  write.table(selected, paste0(outdir,"\/most_cv_top.tsv"))
-  
-  save(meth_tiles, meth_tiles_cpgcov, file=paste0(outdir,"\/calcdata.rda"))
+  promoters=regionCounts(meth_tiles,gene.obj\$promoters)
+  write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
 /;
 print $rscript; 
 
@@ -242,7 +156,7 @@ close(OUT);
 
 my $com="$rscriptCMD $output > $sessioninfo 2>&1";
 
-my $job=$jobsubmit." -n $servicename -c \"$com\"";
+my $job=$jobsubmit." -n ".$servicename."_".$name." -c \"$com\"";
 print $job."\n";   
 `$job`;
 die "Error 25: Cannot run the job:".$job if ($?);

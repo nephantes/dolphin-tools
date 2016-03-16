@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepPicard.pl
+#                                       stepRSEQC.pl
 #########################################################################################
 # 
-#  This program runs the picard 
+#  This program runs the RSeQC 
 #
 #########################################################################################
 # AUTHORS:
@@ -24,6 +24,7 @@
 #################### VARIABLES ######################
  my $bed12file        = "";
  my $outdir           = "";
+ my $rseqccmd         = "";
  my $type             = "";
  my $jobsubmit        = "";
  my $servicename      = "";
@@ -37,6 +38,7 @@ my $cmd=$0." ".join(" ",@ARGV); ####command line copy
 GetOptions(
     'outdir=s'        => \$outdir,
     'bed12file=s'     => \$bed12file,
+    'rseqccmd=s'      => \$rseqccmd,
     'type=s'          => \$type,
     'jobsubmit=s'     => \$jobsubmit,
     'servicename=s'   => \$servicename,
@@ -91,7 +93,7 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-  my $com="module unload python/2.7.5 && module load python/2.7.5_packages/RSeQC/2.6.2 && read_distribution.py -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
+  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
@@ -103,18 +105,18 @@ __END__
 
 =head1 NAME
 
-stepPicard.pl
+stepRSEQC.pl
 
 =head1 SYNOPSIS  
 
-stepPicard.pl 
+stepRSEQC.pl 
             -o outdir <output directory> 
-            -r refflat <ucsc gtf files> 
-            -p picardCmd <picard full path> 
+            -b bedfile <bed file> 
+            -r rseqccmd <picard full path> 
 
-stepPicard.pl -help
+stepRSEQC.pl -help
 
-stepPicard.pl -version
+stepRSEQC.pl -version
 
 For help, run this script with -help option.
 
@@ -122,13 +124,11 @@ For help, run this script with -help option.
 
 =head2 -o outdir <output directory>
 
-the output files will be stored "$outdir/after_ribosome/cuffdiff" 
+the output files will be stored
 
-=head2 -p picardCmd <picard running line> 
+=head2 -r rseqccmd <rseqc command> 
 
-Fullpath of picard running line. Ex: ~/cuffdiff_dir/cuffdiff
-
-=head2  -r refflat <refflat file>  
+=head2  -b bedile <bedfile>  
 
 ucsc refflat file
 
@@ -142,15 +142,15 @@ Display the version
 
 =head1 DESCRIPTION
 
-This program runs the cufflinks after tophat mappings
+This program runs RSEQC program
 
 =head1 EXAMPLE
 
-stepPicard.pl 
+stepRSEQC.pl 
             -o outdir <output directory> 
-            -g gtf <ucsc gtf files> 
-            -c cufflinksCmd <cufflinks full path> 
-
+            -b bedfile <bed file> 
+            -r rseqccmd <picard full path>
+            
 =head1 AUTHORS
 
  Alper Kucukural, PhD
