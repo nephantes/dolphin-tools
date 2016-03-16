@@ -127,6 +127,7 @@
 @BSMAPCMD         = @BIN/bsmap
 @RUNMCALL         = @PERL @DOLPHIN/stepMCall.pl
 @RUNMETHYLKIT     = @PERL @DOLPHIN/stepMethylKit.pl
+@RUNDIFFMETH      = @PERL @DOLPHIN/stepDiffMeth.pl
 
 #Step Haplotype
 @RUNHAPLOTYPE     = @PERL @DOLPHIN/stepHaplotype.pl
