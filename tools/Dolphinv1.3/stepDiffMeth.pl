@@ -38,8 +38,6 @@
  my $pubdir           = "";
  my $wkey             = "";
  my $name             = "";
- my $jobsubmit        = "";
- my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
  my $version          = "1.0.0";
@@ -56,8 +54,6 @@ GetOptions(
     'rscriptCMD=s'   => \$rscriptCMD,
     'pubdir=s'       => \$pubdir,
     'wkey=s'         => \$wkey,
-    'servicename=s'  => \$servicename,
-    'jobsubmit=s'    => \$jobsubmit,
     'help'           => \$help, 
     'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -113,16 +109,16 @@ my $sessioninfo = "$outdir/sessionInfo.txt";
 open(OUT, ">$output");
 my $rscript = qq/
 library("methylKit")
-  inputdir<-$inputdir; samplenames<-$samplenames; conds<-$conds; outdir<-"$outdir";
+  inputdir<-"$inputdir"; samplenames<-$samplenames; conds<-$conds; outdir<-"$outdir";
   conds<-conds-1
   bedfile<-"$bedfile"
   
-  load(file=paste(inputdir,"\/calcdata.rda"))
+  load(file=paste0(inputdir,"\/calcdata.rda"))
   
   tiles_comp=reorganize(meth_tiles,sample.ids=samplenames,
                         treatment=conds )
   
-  myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,weigthed.mean=TRUE,num.cores=4)
+  myDiff<-calculateDiffMeth(tiles_comp,slim=TRUE,num.cores=4)
   
   myDiff_25p.hyper<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hyper")
   myDiff_25p.hypo<-get.methylDiff(myDiff,difference=1,qvalue=0.01,type="hypo")
@@ -134,19 +130,19 @@ library("methylKit")
   difftiles.hypo<-getData(myDiff_25p.hypo)
   difftiles<-getData(myDiff)
   
-  write.table(difftiles.hyper, paste(outdir,"\/difftiles.hyper.tsv",sep=""))
-  write.table(difftiles.hypo, paste(outdir,"\/difftiles.hypo.tsv",sep=""))
-  write.table(difftiles, paste(outdir,"\/difftiles.tsv",sep=""))
+  write.table(difftiles.hyper, paste0(outdir,"\/difftiles.hyper.tsv"))
+  write.table(difftiles.hypo, paste0(outdir,"\/difftiles.hypo.tsv"))
+  write.table(difftiles, paste0(outdir,"\/difftiles.tsv"))
   
   gene.obj=read.transcript.features(bedfile)
   ann<-annotate.WithGenicParts(myDiff,gene.obj)
   
-  pdf(paste(outdir, "\/geneannot.pdf", sep=""))
+  pdf(paste0(outdir, "\/geneannot.pdf"))
   plotTargetAnnotation(ann,precedence=TRUE)
   dev.off()
   
   promoters=regionCounts(meth_tiles,gene.obj\$promoters)
-  write.table(promoters, paste(outdir,"\/promoters.tsv",sep=""))
+  write.table(promoters, paste0(outdir,"\/promoters.tsv"))
 /;
 print $rscript; 
 
@@ -155,11 +151,8 @@ print OUT $rscript;
 close(OUT);
 
 my $com="$rscriptCMD $output > $sessioninfo 2>&1";
-
-my $job=$jobsubmit." -n ".$servicename."_".$name." -c \"$com\"";
-print $job."\n";   
-`$job`;
-die "Error 25: Cannot run the job:".$job if ($?);
+`$com`;
+die "Error 25: Cannot run the job:".$com if ($?);
 my $verstring =`grep methylKit_ $sessioninfo`;
 $verstring =~/(methylKit[^\s]+)/;
 my $methtylit_ver=$1;
