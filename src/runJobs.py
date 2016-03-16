@@ -145,8 +145,9 @@ def main():
           TYPE="dbSubmitJob"
           submitCommand=re.sub(r"'",r"''", submitCommand)
           jobstatus_cmd = jobstatus_cmd + " -n %(pid)s -c 'python "+submitCommand+"'"
-           
+          
           command = jobstatus_cmd % locals()
+          print command
           #PUT TRY CATCH HERE 
           if pid>0:
              return submitjobs.runcmd(command, logging)
