@@ -1,12 +1,11 @@
 #!/usr/bin/env python
- 
+
 import os, re, string, sys, commands
 import warnings
-import itertools
 import json
 
-from boto.s3.connection import S3Connection
-from boto.s3.key import Key
+from libcloud.storage.types import Provider, ContainerDoesNotExistError, ObjectDoesNotExistError
+from libcloud.storage.providers import get_driver
 from sys import argv, exit, stderr
 from optparse import OptionParser
 
@@ -28,22 +27,35 @@ class stepBackup:
        ret=json.loads(ret)
     return ret
   
-  def uploadFile(self, pb, amazon_bucket, fastq_dir, filename ):
-    k = Key(pb)
-    inputfile = "%s/%s"%(fastq_dir.strip(), filename.strip())
-    s3file = "%s/%s"%(amazon_bucket.strip(), filename.strip())
-   
-    print inputfile
-    print s3file
-    m=pb.get_key(s3file)
-    
-    if m and m.exists():
-        print "Already uploaded %s" % s3file
-    else:
-        print 'Upload started=>'
-        k.name = s3file
-        k.set_contents_from_filename(inputfile)
+  def uploadFile(self, amazon, amazon_bucket, fastq_dir, filename ):
+    try:
+       cls = get_driver(Provider.S3)
+       driver = cls(amazon['aws_access_key_id'], amazon['aws_secret_access_key'])
+       filename=filename.strip()
+       inputfile = "%s/%s"%(fastq_dir.strip(), filename)
+       container_name = amazon_bucket.strip()
 
+       print 'Upload started[%s]=>[%s]'%(inputfile, container_name)
+       try:
+          container = driver.get_container(container_name=container_name)
+       except ContainerDoesNotExistError:
+          container = driver.create_container(container_name=container_name)
+
+       uploaded = False
+       while not uploaded:
+          try: 
+             driver.get_object(container_name, str(filename))
+             uploaded = True
+          except ObjectDoesNotExistError:
+             extra = {'content_type': 'application/octet-stream'}
+
+             with open(str(inputfile), 'rb') as iterator:
+                 obj = driver.upload_object_via_stream(iterator=iterator,
+                                          container=container,
+                                          object_name=str(filename),
+                                          extra=extra)
+    except Exception, ex:
+        self.stop_err('Error (line:%s)running stepBackupS3.py\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
 
   def getAmazonCredentials(self, username):
     data = urllib.urlencode({'func':'getAmazonCredentials', 'username':username})
@@ -190,7 +202,12 @@ def main():
   f = funcs()
   config = getConfig(CONFIG)
   backup = stepBackup(config['url'], f)
-   
+  
+  fastq_dir = '/s4s/s4s_manuel_garber/mouse/mm_embryo/Maehr.RNASeq/05JUN15_PE100_C6W35AC-B/fastq/'
+  amazon_bucket1 = 'biocorebackup/maehrlab/mouse/mm_embryo/RNASeq/05JUN15_PE100_C6W35AC-B'
+
+  fname='E9_5_1.1.fastq.gz'
+  
   try:
     if (OUTDIR == None or JOBSUBMIT == None):
         print "for help use --help"
@@ -203,9 +220,6 @@ def main():
     print USERNAME
     
     amazon = backup.getAmazonCredentials(USERNAME)
-    if (amazon):
-       conn = S3Connection(amazon['aws_access_key_id'], amazon['aws_secret_access_key'])
-       pb = conn.get_bucket(amazon['bucket'])
      
     samplelist=backup.getSampleList(RUNPARAMSID, BARCODE)
     
@@ -224,6 +238,7 @@ def main():
         filename=sample['file_name']
         backup_dir=sample['backup_dir']
         amazon_bucket=sample['amazon_bucket']
+
         PAIRED=None
         if (filename.find(',')!=-1):
            PAIRED="Yes"
@@ -233,18 +248,18 @@ def main():
             backup.processFastqFiles(sample, PAIRED)
             processedLibs.append([libname, sample_id])
 
+
     if (AMAZONUPLOAD.lower() != "no" and amazon!=() and amazon_bucket!=""):
-      amazon_bucket = re.sub('s3://'+amazon['bucket']+'/', '', amazon_bucket)
-      print amazon_bucket
+      amazon_bucket = str(re.sub('s3://', '', amazon_bucket))
       for libname, sample_id in processedLibs:
         print libname + ":" + str(sample_id)
-        if (backup.checkReadCounts(sample_id, tablename)):
+        if (backup.checkReadCounts(sample_id, tablename) and amazon):
             if (filename.find(',')!=-1):
                 files=filename.split(',')
-                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.1.fastq.gz' )
-                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.2.fastq.gz' )
+                backup.uploadFile(amazon, amazon_bucket, backup_dir, libname+'.1.fastq.gz' )
+                backup.uploadFile(amazon, amazon_bucket, backup_dir, libname+'.2.fastq.gz' )
             else:
-                backup.uploadFile(pb, amazon_bucket, backup_dir, libname+'.fastq.gz' )
+                backup.uploadFile(amazon, amazon_bucket, backup_dir, libname+'.fastq.gz' )
         else:
             print "ERROR 86: The # of read counts doesn't match: %s",libname
             sys.exit(86)
