@@ -86,7 +86,7 @@ my $bname="";
 foreach my $chipline (@chiplibs)
 {
  print $chipline."\n";
- my @chipinput=split(/[\|\t\s]+/,$chipline);
+ my @chipinput=split(/[,\|\t\s]+/,$chipline);
  $bname=$chipinput[0];
  my $chipfiles=getFiles($inputdir,$chipinput[1]);
  my $com="$acmd -t $chipfiles ";
@@ -112,11 +112,12 @@ sub getFiles
  foreach my $lib (@libnames)
  {
    my $file= $inputdir."/".$lib.".bam";
+   $file=$inputdir."/".$lib.".sorted.bam" unless (checkFile($file));
    die "Error 64: please check the file:".$file unless (checkFile($file));
    push(@files, $file);
  }
- #return join(',', @files);
- return $files[0];
+ return join(',', @files);
+ #return $files[0];
 }
 
 sub checkFile
