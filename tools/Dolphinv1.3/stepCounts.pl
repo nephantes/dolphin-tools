@@ -44,7 +44,7 @@ my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
         'mapnames=s'     => \$mapnames,
-	'outdir=s'       => \$outdir,
+	    'outdir=s'       => \$outdir,
         'cmd=s'          => \$cmd,
         'bedmake=s'      => \$bedmake,
         'indexcmd=s'     => \$indexcmd,
@@ -168,7 +168,7 @@ sub countCov
   $com="mkdir -p $outd/tmp && "; 
   $com.=$precom." && " if($precom !~/^$/);
   $com.="echo \"$header\">$outd/tmp/$name.header.tsv &&"; 
-  $com.= "$cmd -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp && ";
+  $com.= "$cmd -p -bams $filestr -bed $bedfile -F >$outd/tmp/$name.counts.tmp && ";
   $com.= "awk -F \"\\t\" \'{a=\"\";for (i=7;i<=NF;i++){a=a\"\\t\"\$i;} print \$4\"\\t\"(\$3-\$2)\"\"a}\' $outd/tmp/$name.counts.tmp> $outd/tmp/$name.counts.tsv && ";
   $com.= "sort -k3,3nr $outd/tmp/$name.counts.tsv>$outd/tmp/$name.sorted.tsv && ";
   $com.= "cat $outd/tmp/$name.header.tsv $outd/tmp/$name.sorted.tsv>$outd/$name.counts.tsv && ";
