@@ -82,7 +82,7 @@ while(my $line=<IN>)
 
   $i++;
 }
-print "$name $RDS_T $RDS_P $RDS_C1 $RDS_C2 $ALGN_T\n";
+print "$name\t$RDS_T\t$RDS_P\t$RDS_C1\t$RDS_C2\t$ALGN_T\n";
 
 __END__
 
