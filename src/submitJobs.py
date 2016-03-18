@@ -88,7 +88,7 @@ def main():
    COM         = options.com
    CONFIG      = options.config
    FORCE       = (options.force if (options.force) else "no" )
-   python      = "python"
+   python      = "env -i bash && module load python/2.7.5 && python"
 
    config=getConfig(CONFIG)
    f = funcs()
@@ -148,11 +148,12 @@ def main():
      print "cpu: [" + CPU + "]\n"
 
 
-     jobstatus_cmd = "python %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
+     jobstatus_cmd = python + " %(sdir)s/jobStatus.py -f %(CONFIG)s -u %(USERNAME)s -k %(WKEY)s -s %(SERVICENAME)s -t %(TYPE)s -o %(OUTDIR)s -j %(NAME)s -m %(MESSAGE)s -r %(resources)s"
   
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
+     f.write("env -i bash\n")
      f.write("cd " + exec_dir + "\n")
      MESSAGE="2"
      TYPE="dbSetStartTime"
