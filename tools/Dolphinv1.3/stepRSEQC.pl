@@ -93,7 +93,7 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
+  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out && module unload python/2.7.5_packages/RSeQC/2.6.2 && module load python/2.7.5"; 
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
