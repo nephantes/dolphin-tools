@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #########################################################################################
-#                                       stepMapping.pl
+#                                       stepBow.pl
 #########################################################################################
 # 
 #  This program maps the reads to Ribosomal RNAs, if there is no Ribosomal RNA for this
@@ -31,7 +31,7 @@
  my $cmd              = "";
  my $spaired          = "";
  my $jobsubmit        = "";
- my $awkdir           = "";
+ my $bindir           = "";
  my $bowtiePar        = "";
  my $advparams        = "";
  my $bowtiecmd        = ""; 
@@ -50,7 +50,7 @@ GetOptions(
     'outdir=s'       => \$outdir,
     'cmd=s'          => \$bowtiecmd,
     'msamtoolscmd=s' => \$samtoolscmd,
-    'awkdir=s'       => \$awkdir,
+    'adir=s'         => \$bindir,
     'dspaired=s'     => \$spaired,
     'bowtiePar=s'    => \$bowtiePar,
     'servicename=s'  => \$servicename,
@@ -81,15 +81,14 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 my ($indexfile, $indexname, $indexpar, $description, $filterout, $previous)=split(/,/, $bowtiePar);
 
-$indexpar=~s/__tc__/,/g;
 $indexpar=~s/_/ /g;
 
-#if ($advparams ne "NONE")
-#{
-#  $indexpar=$advparams;
-#  $indexpar=~s/,/ /g; 
-#  $indexpar=~s/_/-/g; 
-#}
+if ($advparams ne "NONE")
+{
+  $indexpar=$advparams;
+  $indexpar=~s/,/ /g; 
+  $indexpar=~s/_/-/g; 
+}
 
 print "indexpar=$indexpar\n\n";
 
@@ -153,14 +152,12 @@ foreach my $file (@files)
   }
  $com.="grep -v Warning $outdir/$bname.bow > $outdir/$bname.tmp && ";
  $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
- $com.="$awkdir/parseBow.pl -n $bname -f $outdir/$bname.bow -p $spaired> $outdir/$bname.sum && ";
- $com.=": \\\$( $samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.tmp1.bam ) && ";
- $com.=": \\\$( $samtoolscmd sort -n $outdir/$bname.tmp1.bam $outdir/$bname.tmp2 ) && "; 
- $com.=": \\\$( $samtoolscmd view  -bf 0x02 $outdir/$bname.tmp2.bam > $outdir/$bname.tmp3.bam ) && "; 
- $com.=": \\\$(samtools sort $outdir/$bname.tmp3.bam $outdir/$bname.sorted ) && ";
+ $com.="$bindir/parseBow.pl -n $bname -f $outdir/$bname.bow -p $spaired> $outdir/$bname.sum && ";
+ $com.=": \\\$( $samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.bam ) && "; 
+ $com.=": \\\$(samtools sort $outdir/$bname.bam $outdir/$bname.sorted ) && ";
  $com.=": \\\$(samtools index $outdir/$bname.sorted.bam ) && ";
  $com.="rm -rf $outdir/$bname.sam && ";
- $com.="rm -rf $outdir/$bname.tmp*.bam && ";
+ $com.="rm -rf $outdir/$bname.bam && ";
  $com.="rm -rf $outdir/$bname*.mapped";
  
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";

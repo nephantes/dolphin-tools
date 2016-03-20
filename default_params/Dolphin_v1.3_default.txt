@@ -25,7 +25,7 @@
 #StepMapping
 @DEFBOWTIE2PARAM  = "-p 2 -N 1"
 @DEFDESCRIPTION   = "multiple mappers upto 1 mismatch"
-@RUNRECMAPPING    = @PERL @DOLPHIN/stepMapping.pl
+@RUNSEQMAPPING    = @PERL @DOLPHIN/stepMapping.pl
 @AWKDIR           = @DOLPHIN
 @BOWTIE2CMD       = @BIN/bowtie2-2.2.3/bowtie2
 @ADVPARAMS        = "-N 1"
@@ -69,6 +69,7 @@
 #StepRSEM
 @RUNRSEM            = @PERL @DOLPHIN/stepRSEM.pl
 @RSEMCMD            = "module load samtools/0.0.19 && @PERL @BIN/RSEM_v1.2.28/rsem-calculate-expression"
+@CONVERTRSEM        = "@PERL @BIN/RSEM_v1.2.28/convert-sam-for-rsem"
 @BOWTIEPATH         = @BIN/bowtie-0.12.9
 @RSEMREF            = @GDB/rsem_ref
 
@@ -116,7 +117,7 @@
 #Step RSeQC
 @RUNRSEQC           = module load python/2.7.5_packages/RSeQC/2.6.2 && @DOLPHIN/stepRSEQC.pl
 @RUNMERGERSEQC      = @DOLPHIN/stepMergeRSeQC.pl
-@RSEQCCMD           = "module unload python/2.7.5 && module load python/2.7.5_packages/RSeQC/2.6.2 && read_distribution.py"
+@RSEQCCMD           = "module unload python/2.7.5 && module load python/2.7.5_packages/RSeQC/2.6.2 && read_distribution.py:module unload python/2.7.5_packages/RSeQC/2.6.2 && module load python/2.7.5"
 @BED12FILE          = @GDB/@VERSION.bed
 
 #RunAggregation

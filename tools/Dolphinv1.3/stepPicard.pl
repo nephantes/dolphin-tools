@@ -85,9 +85,9 @@ if ($type eq "RSEM")
    my $indir   = "$outdir/rsem";
    @files = <$indir/pipe*/*.genome.sorted.bam>;
 }
-elsif ($type eq "chip")
+elsif ($type eq "chip" or $type eq "rsem_ref.transcripts")
 { 
-   my $indir   = "$outdir/seqmapping/chip";
+   my $indir   = "$outdir/seqmapping/$type";
    @files = <$indir/*.sorted.bam>;
 }
 elsif (lc($type) eq "tophat")
@@ -118,10 +118,10 @@ foreach my $d (@files){
     $com.=" OUTPUT=$outd/".$libname.".bam METRICS_FILE=$outd/$libname.PCR_duplicates REMOVE_DUPLICATES=true ";
   }
   else {
-    $com.=" OUTPUT=$outd/".$libname."_multiple.out";
+    $com.=" OUTPUT=$outd/".$libname."_multiple.out ";
   }
 
-  $com.=" INPUT=$d > /dev/null";
+  $com.=" INPUT=$d > /dev/null ";
   
   if ($cmdname eq "MarkDuplicates") {
     $com .= "&& $samtools index $outd/".$libname.".bam ";

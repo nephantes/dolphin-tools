@@ -4,7 +4,7 @@
 #                                       stepRSEM.pl
 #########################################################################################
 # 
-#  This program quantify the genes using RSEM 
+#  This program quantify the genes/transcripts using RSEM 
 #
 #########################################################################################
 # AUTHORS:
@@ -28,9 +28,11 @@
  my $params_rsem      = "";
  my $previous         = "";
  my $genome_bam       = "";
+ my $bamsupport       = "no";
  my $bowtiepath       = "";
+ my $convertcmd       = "";
  my $spaired          = "";
- my $rsemCmd          = "/project/umw_biocore/bin/rsem-1.2.3/rsem-calculate-expression";
+ my $rsemCmd          = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
@@ -48,7 +50,9 @@ GetOptions(
     'dspaired=s'     => \$spaired,
 	'genome_bam=s'   => \$genome_bam,
     'paramsrsem=s'   => \$params_rsem,
+	'bamsupport=s'   => \$bamsupport,
     'previous=s'     => \$previous,
+	'convertcmd=s'   => \$convertcmd,
     'jobsubmit=s'    => \$jobsubmit,
     'servicename=s'  => \$servicename,
     'rsemref=s'      => \$rsemref,
@@ -72,14 +76,17 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($bowtiepath eq "") or ($o
 
  
 ################### MAIN PROGRAM ####################
-#    maps the reads to the the genome and put the files under $outdir directory
-
+#  maps and/or quantifies the reads and put the files under $outdir/rsem directory
 
 my $inputdir="";
 print "$previous\n";
 if ($previous=~/NONE/g)
 {
   $inputdir = "$outdir/input";
+}
+elsif ($previous =~/deduprsem_ref.transcripts/ )
+{
+   $inputdir = "$outdir/$previous";
 }
 else
 {
@@ -93,62 +100,75 @@ $params_rsem=~s/:+/ /g;
 $params_rsem=~s/[\s\t]+/ /g;
 $params_rsem=~s/_/-/g;
 my $com="";
-if (lc($spaired) =~ /^no/)
-{
-  $com=`ls $inputdir/*.fastq 2>&1`;
+my $paired="--paired-end";
+$paired="" if (lc($spaired) =~ /^no/);
+
+if ($bamsupport =~/^no/) {
+  if (lc($spaired) =~ /^no/){
+    $com=`ls $inputdir/*.fastq 2>&1`;
+  }
+  else {
+    $com=`ls $inputdir/*.1.fastq 2>&1`;
+  }
 }
-else
-{
-  $com=`ls $inputdir/*.1.fastq 2>&1`;
+else {
+	$com=`ls $inputdir/*.bam 2>&1`;
 }
-die "Error 64: please check the if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
+die "Error 64: please check if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
 
 my @files = split(/[\n\r\s\t,]+/, $com);
 
-if ($params_rsem=~/NONE/)
-{
+if ($params_rsem=~/NONE/) {
    $params_rsem="";
 }
 
 if (lc($genome_bam) eq "yes") {
-	print "HERE[$genome_bam]";
     $genome_bam=" --output-genome-bam ";
 }
-else
-{
+else{
 	$genome_bam="";
 }
 
 foreach my $file (@files)
-{ 
- $file=~/.*\/(.*).fastq/;
- my $bname=$1;
- $bname=~s/[\s\t\n]+//g;
- if (length($bname) > 1 )
- {
-  die "Error 64: please check the file:".$file unless (checkFile($file));
-  print "spaired = $spaired\n";
-  
-  if (lc($spaired) !~ /^no/)
+{
+  my $bname="";
+  if ($bamsupport=~/^no/)
   {
-    $file=~/(.*\/(.*)).1.fastq/;
-    $bname=$2;
-    my $file2=$1.".2.fastq";
-    die "Error 64: please check the file:".$file2 unless (checkFile($file2));
-    my $str_files ="$file $file2";
-
-    $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
-   
+	$file=~/.*\/(.*).fastq/;
+	my $bname=$1;
+	$bname=~s/[\s\t\n]+//g;
+	if (length($bname) > 1 )
+	{
+		die "Error 64: please check the file:".$file unless (checkFile($file));
+		print "spaired = $spaired\n";
+		
+		if (lc($spaired) !~ /^no/){
+		  $file=~/(.*\/(.*)).1.fastq/;
+		  $bname=$2;
+		  my $file2=$1.".2.fastq";
+		  die "Error 64: please check the file:".$file2 unless (checkFile($file2));
+		  my $str_files ="$file $file2";
+		 
+		  $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
+		}
+		else{
+		  $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
+		}
+	}
   }
   else
   {
-    $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
+	  $file=~/.*\/(.*).bam/;
+	  $bname=$1;
+	  $bname=~s/.sorted//;
+	  $com="mkdir -p $outdir/pipe.rsem.$bname; $convertcmd $file $outdir/pipe.rsem.$bname/$bname && ";
+	  $com.="$rsemCmd $paired --bam $outdir/pipe.rsem.$bname/$bname.bam $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname"; 
   }
   my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
   print $job."\n";
   `$job`;
- }
 }
+
 
 
 sub checkFile

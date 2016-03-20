@@ -23,8 +23,7 @@
 #StepMapping
 @DEFBOWTIE2PARAM  = "-p 2 -N 1"
 @DEFDESCRIPTION   = "multiple mappers upto 1 mismatch"
-@RUNRECMAPPING    = @PERL @DOLPHIN/stepMapping.pl
-@AWKDIR           = @DOLPHIN
+@RUNSEQMAPPING    = @PERL @DOLPHIN/stepMapping.pl
 @BOWTIE2CMD       = @BIN/bowtie2
 @ADVPARAMS        = "-N 1"
 
@@ -64,7 +63,8 @@
 
 #StepRSEM
 @RUNRSEM            = @PERL @DOLPHIN/stepRSEM.pl
-@RSEMCMD            = "@PERL @BIN/rsem-calculate-expression"
+@RSEMCMD            = "@PERL @BIN/RSEM-1.2.29/rsem-calculate-expression"
+@CONVERTRSEM        = "@PERL @BIN/RSEM-1.2.29/convert-sam-for-rsem"
 @BOWTIEPATH         = @BIN
 @RSEMREF            = @GDB/rsem_ref
 
