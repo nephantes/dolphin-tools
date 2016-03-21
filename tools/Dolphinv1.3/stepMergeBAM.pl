@@ -64,6 +64,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($samtools eq "") or ($out
 ################### MAIN PROGRAM ####################
 
 my $sorted=".sorted";
+$sorted = "" if ($type=~/^dedup/);
 my $inputfiles = "$outdir/$type/*$sorted.bam";
 my $outd = "$outdir/merge$type";
 print "TYPE:$type\n";
@@ -71,8 +72,8 @@ if ($type eq "tophat") {
     $inputfiles = "$outdir/$type/*/*$sorted.bam";
     $outd="$outdir/merge$type";
 }
-elsif ($type eq "chip") {
-    $inputfiles = "$outdir/seqmapping/chip/*$sorted.bam";
+elsif ($type eq "chip" || $type =~ /^rsem_ref.transcripts/) {
+    $inputfiles = "$outdir/seqmapping/$type/*$sorted.bam";
     $outd="$outdir/merge$type";
 }
 
