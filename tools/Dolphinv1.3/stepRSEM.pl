@@ -135,7 +135,7 @@ foreach my $file (@files)
   if ($bamsupport=~/^no/)
   {
 	$file=~/.*\/(.*).fastq/;
-	my $bname=$1;
+    $bname=$1;
 	$bname=~s/[\s\t\n]+//g;
 	if (length($bname) > 1 )
 	{
