@@ -155,10 +155,15 @@ foreach my $file (@files)
  $com.="mv $outdir/$bname.tmp  $outdir/$bname.bow && ";
  $com.="$awkdir/parseBow.pl -n $bname -f $outdir/$bname.bow -p $spaired> $outdir/$bname.sum && ";
  $com.=": \\\$( $samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.tmp1.bam ) && ";
- $com.=": \\\$( $samtoolscmd sort -n $outdir/$bname.tmp1.bam $outdir/$bname.tmp2 ) && "; 
- $com.=": \\\$( $samtoolscmd view  -bf 0x02 $outdir/$bname.tmp2.bam > $outdir/$bname.tmp3.bam ) && "; 
- $com.=": \\\$(samtools sort $outdir/$bname.tmp3.bam $outdir/$bname.sorted ) && ";
- $com.=": \\\$(samtools index $outdir/$bname.sorted.bam ) && ";
+ my $lasttmp="tmp1";
+ if (lc($spaired) =~ /^no/)
+ {
+   $com.=": \\\$( $samtoolscmd sort -n $outdir/$bname.tmp1.bam $outdir/$bname.tmp2 ) && "; 
+   $com.=": \\\$( $samtoolscmd view  -bf 0x02 $outdir/$bname.tmp2.bam > $outdir/$bname.tmp3.bam ) && "; 
+   $lasttmp="tmp3";
+ }
+ $com.=": \\\$($samtoolscmd sort $outdir/$bname.$lasttmp.bam $outdir/$bname.sorted ) && ";
+ $com.=": \\\$($samtoolscmd index $outdir/$bname.sorted.bam ) && ";
  $com.="rm -rf $outdir/$bname.sam && ";
  $com.="rm -rf $outdir/$bname.tmp*.bam && ";
  $com.="rm -rf $outdir/$bname*.mapped";

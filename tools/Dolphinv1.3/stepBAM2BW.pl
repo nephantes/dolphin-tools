@@ -31,6 +31,7 @@
  my $pubdir           = "";
  my $wkey             = "";
  my $jobsubmit        = "";
+ my $samtools         = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
@@ -44,6 +45,7 @@ GetOptions(
     'type=s'         => \$type,
     'coverage=s'     => \$GCB,
     'wig2bigwig=s'   => \$W2BW,
+    'samtools=s'     => \$samtools,
     'pubdir=s'       => \$pubdir,
     'wkey=s'         => \$wkey,
     'jobsubmit=s'    => \$jobsubmit,
@@ -82,11 +84,15 @@ die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 my $indir="";
-
+my $sorted=".sorted";
 if ($type eq "RSEM")
 {
    $indir   = "$outdir/rsem";
-   @files = <$indir/*/*.genome.sorted.bam>;
+   @files = <$indir/*/*.genome$sorted.bam>;
+   if (@files==0){
+     $sorted="";
+     @files = <$indir/pipe*/*.genome.bam>;
+   }
 }
 elsif ($type eq "tophat")
 {
@@ -106,9 +112,16 @@ else
 
 foreach my $d (@files){ 
   my $libname="";
+  my $com="";
   if ($type eq "RSEM")
   {
-     $libname=basename($d, ".genome.sorted.bam");
+     $libname=basename($d, ".genome$sorted.bam");
+     if ($sorted=~/^$/)
+     { 
+       $com=": \\\$( $samtools sort $d $outdir/$libname ) && ";
+       $com.=": \\\$( $samtools index $outdir/$libname.bam ) && ";
+       $d="$outdir/$libname.bam";
+     }
   }
   else
   {
@@ -118,7 +131,7 @@ foreach my $d (@files){
   my $outputbg="$outdir/ucsc_$type/$libname.bg";
   my $outputbw="$outdir/ucsc_$type/$libname.bw";
 
-  my $com = "$GCB -split -bg -ibam $d -g $genomesize > $outputbg && ";
+  $com.= "$GCB -split -bg -ibam $d -g $genomesize > $outputbg && ";
   $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw && ";
   $com.="rm -rf $outputbg && ";
   $com.="mkdir -p $puboutdir/ucsc_$type && ";

@@ -87,10 +87,15 @@ die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 print $type."\n";
+my $sorted=".sorted";
 if ($type eq "RSEM")
 { 
    my $indir   = "$outdir/rsem";
-   @files = <$indir/pipe*/*.genome.sorted.bam>;
+   @files = <$indir/pipe*/*.genome$sorted.bam>;
+   if (@files==0){
+      $sorted="";
+      @files = <$indir/pipe*/*.genome.bam> 
+   }
 }
 elsif ($type eq "tophat")
 { 
@@ -104,7 +109,7 @@ else
 }
 
 my $param="";
-if ($extfactor!~/^$/)
+if ($extfactor!~/^$/ && $extfactor>0)
 {
   $param=" -e $extfactor ";
 }
@@ -120,11 +125,19 @@ foreach my $d (@files){
 
   if ($type eq "RSEM")
   {
-     $libname=basename($d, ".genome.sorted.bam");
+     $libname=basename($d, ".genome$sorted.bam");
      $dirname=dirname($d);
      $libname=~s/rsem.out.//g;
-     $com="cp $dirname/rsem.out.$libname.genome.sorted.bam $outd/$libname.bam && ";
-     $com.="cp $dirname/rsem.out.$libname.genome.sorted.bam.bai $outd/$libname.bam.bai && ";
+     if ($sorted=~/^$/)
+     {
+       $com=": \\\$( $samtools sort $dirname/rsem.out.$libname.genome.bam $outd/$libname ) && ";
+       $com.=": \\\$( $samtools index $outd/$libname.bam ) && ";
+     }
+     else
+     {
+       $com="cp $dirname/rsem.out.$libname.genome$sorted.bam $outd/$libname.bam && ";
+       $com.="cp $dirname/rsem.out.$libname.genome$sorted.bam.bai $outd/$libname.bam.bai && ";
+     }
   }
   else
   {
