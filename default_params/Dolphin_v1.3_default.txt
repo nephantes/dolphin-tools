@@ -117,7 +117,7 @@
 #Step RSeQC
 @RUNRSEQC           = module load python/2.7.5_packages/RSeQC/2.6.2 && @DOLPHIN/stepRSEQC.pl
 @RUNMERGERSEQC      = @DOLPHIN/stepMergeRSeQC.pl
-@RSEQCCMD           = "module load python/2.7.5_packages/RSeQC/2.6.2 && read_distribution.py"
+@RSEQCCMD           = read_distribution.py
 @BED12FILE          = @GDB/@VERSION.bed
 
 #RunAggregation
