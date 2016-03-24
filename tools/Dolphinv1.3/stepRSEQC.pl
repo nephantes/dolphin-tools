@@ -65,12 +65,6 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") or ($bed12
 
 my $outd  = "$outdir/RSeQC_$type";
 
-my @cmds=split(/:/,$rseqccmd);
-my ($beforecmd, $aftercmd) = ();
-$beforecmd=$cmds[0] if (exists $cmds[0]);
-$aftercmd=$cmds[1] if (exists $cmds[1]);
-
-
 `mkdir -p $outd`;
 
 my @files=();
@@ -99,7 +93,7 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, ".sorted.bam");
-  my $com="$beforecmd -i $d -r $bed12file > $outd/RSqQC.$libname.out $aftercmd"; 
+  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
   
   print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
