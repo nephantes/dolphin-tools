@@ -86,7 +86,7 @@ my $bname="";
 foreach my $chipline (@chiplibs)
 {
  print $chipline."\n";
- my @chipinput=split(/[,\|\t\s]+/,$chipline);
+ my @chipinput=split(/__tt__/,$chipline);
  $bname=$chipinput[0];
  my $chipfiles=getFiles($inputdir,$chipinput[1]);
  my $com="$acmd -t $chipfiles ";
