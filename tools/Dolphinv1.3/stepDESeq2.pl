@@ -158,6 +158,7 @@ library("ggplot2")
 library("gplots")
 analyseDE <-  function(data,cond, fitType, tablefile )
 {
+  tryCatch({
   data1<-data.frame(data)
   cols = c(1:dim(data1)[2]);
   data1[,cols] = apply(data1[,cols], 2, function(x) as.numeric(as.integer(x)))
@@ -185,7 +186,10 @@ analyseDE <-  function(data,cond, fitType, tablefile )
   all<-cbind(data[rownames(filtd), ], res[rownames(res), c("padj", "log2FoldChange")], 2 ^ (res[rownames(res), "log2FoldChange"]) )
   colnames(all)[dim(all)[2]]<-"foldChange"
   write.table(all, "$alldetected", sep="\t", col.names=NA)
-  sessionInfo()
+  },
+  finally={
+     sessionInfo()
+  })
 }
 
 file<-"$inputfile"
@@ -203,12 +207,12 @@ close(OUT);
 
 my $com="$rscriptCMD $output > $sessioninfo 2>&1";
 `$com`;
-die "Error 22: Cannot run Rscript:" if ($?);
+#die "Error 22: Cannot run Rscript:" if ($?);
 my $verstring =`grep DESeq2_ $sessioninfo`;
 $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
-$com="sed -i 's/\"\"/name/' $selected_log2fc && sed -i 's/\"\"/name/' $alldetected &&";
-$com.="sed -i 's/\"//g' $selected_log2fc && sed -i 's/\"//g' $alldetected && ";
+$com="sed -i 's/\"\"/name/' $selected_log2fc 2>/dev/null && sed -i 's/\"\"/name/' $alldetected 2>/dev/null &&";
+$com.="sed -i 's/\"//g' $selected_log2fc 2>/dev/null && sed -i 's/\"//g' $alldetected 2>/dev/null && ";
 $com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv && ";
 $com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/selected_log2fc_$type.tsv\" >> $puboutdir/reports.tsv && ";
 $com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/rscript_$type.R\" >> $puboutdir/reports.tsv ";
@@ -217,7 +221,7 @@ if (lc($heatmap) eq "yes")
   $com.="&& echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/heatmap_$type.pdf\" >> $puboutdir/reports.tsv ";
 }
 `$com`;
-die "Error 21: Cannot run DESeq2 output files:" if ($?);
+#die "Error 21: Cannot run DESeq2 output files:" if ($?);
 }
 
 sub checkCols

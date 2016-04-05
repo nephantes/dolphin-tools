@@ -88,7 +88,7 @@ def main():
    COM         = options.com
    CONFIG      = options.config
    FORCE       = (options.force if (options.force) else "no" )
-   python      = "env -i bash && module load python/2.7.5 && python"
+   python      = "module load python/2.7.5 && python"
 
    config=getConfig(CONFIG)
    f = funcs()
@@ -153,7 +153,6 @@ def main():
      f=open(src+"/"+NAME+".tmp.bash", 'w')
      f.write("#!/bin/bash\n")
      f.write("#BEGINING-OF-FILE\n")
-     f.write("env -i bash\n")
      f.write("cd " + exec_dir + "\n")
      MESSAGE="2"
      TYPE="dbSetStartTime"

@@ -65,25 +65,22 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($outdir eq "") or ($bed12
 
 my $outd  = "$outdir/RSeQC_$type";
 
-my @cmds=split(/:/,$rseqccmd);
-my ($beforecmd, $aftercmd) = ();
-$beforecmd=$cmds[0] if (exists $cmds[0]);
-$aftercmd=$cmds[1] if (exists $cmds[1]);
-
-
 `mkdir -p $outd`;
 
 my @files=();
 print $type."\n";
 my $indir = "";
-if ($type eq "RSEM")
+my $sorted=".sorted";
+if (lc($type) eq "rsem")
 { 
    $indir   = "$outdir/rsem";
    @files = <$indir/pipe*/*.genome.sorted.bam>;
-   @files = <$indir/pipe*/*.genome.bam> if (@files==0);
-
+   if (@files==0){
+      $sorted="";
+      @files = <$indir/pipe*/*.genome.bam> 
+   }
 }
-elsif($type eq "tophat")
+elsif(lc($type) eq "tophat")
 {
    $indir   = "$outdir/tophat";
    print $indir."\n";
@@ -98,11 +95,11 @@ else
 
 foreach my $d (@files){ 
   my $dirname=dirname($d);
-  my $libname=basename($d, ".sorted.bam");
-  my $com="$beforecmd -i $d -r $bed12file > $outd/RSqQC.$libname.out $aftercmd"; 
+  my $libname=basename($d, "$sorted.bam");
+  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
   
-  print $com."\n\n";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
+  print "\n\n".$com."\n\n";
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }
