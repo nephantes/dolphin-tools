@@ -14,13 +14,6 @@ sys.path.insert(0, sys.path[0])
 from config import *
 from funcs import *
 
-#def getKey(num):
-#       return ''.join(random.choice(string.ascii_letters) for x in range(num))
-sys.path.insert(0, sys.path[0])
-from config import *
-from funcs import *
-
-
 class submitJobs:
     url = ""
     f=""
@@ -35,16 +28,17 @@ class submitJobs:
     def runcmd(self, command, logging): 
        print command
        logging.info("\n\n\nCOM:["+command+"]\n\n\n")
-       child = os.popen(command)
-       data = child.read()
-       logging.info("\n\n\ndata:["+data+"]\n\n\n")
-       print data
-       err = child.close()
-       if err:
-           logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
-           return 'ERROR: %s failed w/ exit code %d' % (command, err)
+       os.system(command + " &")
+       #data = subprocess.Popen(command)
+       #data = child.read()
+       #logging.info("\n\n\ndata:["+data+"]\n\n\n")
+       #print data
+       #err = child.close()
+       #if err:
+       #    logging.info('ERROR: %s failed w/ exit code %d' % (command, err))
+       #    return 'ERROR: %s failed w/ exit code %d' % (command, err)
            
-       return data
+       return 0
 
 def main():
 
@@ -73,9 +67,9 @@ def main():
    
    try:
         config=getConfig(CONFIG)
-        f = funcs()
-        submitjobs = submitJobs(config['url'], f)
-        submitCommand = f.getCommand(sys.argv)
+        fun = funcs()
+        submitjobs = submitJobs(config['url'], fun)
+        submitCommand = fun.getCommand(sys.argv)
         
         if (USERNAME==None):
              USERNAME=subprocess.check_output("whoami", shell=True).rstrip()
@@ -113,7 +107,8 @@ def main():
           TYPE="dbSetStartTime"
           f.write(jobstatus_cmd % locals() + " -n $JOB_NUM")
           f.write("\n   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
-          f.write("\n\n"+ str(COM) +"\n\n")
+          f.write("\n\nperl " + str(sdir) + "/runParallel.pl --command='"+ str(COM) +"'\n\n")
+          #f.write("\n\n"+ str(COM) +"\n\n")
           f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
           if (str(NAME) != str(SERVICENAME)):
             f.write("touch "+success_file+"\n")
@@ -152,7 +147,7 @@ def main():
           if pid>0:
              return submitjobs.runcmd(command, logging)
    except Exception, ex:
-        f.stop_err('Error (line:%s)running runJobs.py\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
+        fun.stop_err('Error (line:%s)running runJobs.py\n%s'%(format(sys.exc_info()[-1].tb_lineno), str(ex)))
 
  
 if __name__ == "__main__":

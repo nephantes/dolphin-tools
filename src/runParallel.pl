@@ -14,8 +14,8 @@ use File::Path qw(make_path);
 ### ARG PARSING AND VERIFICATION ###
 #
 my %args = (
-	'concurrent' => 10,
-	'lockpath'   => '/tmp/locks',
+	'concurrent' => 20,
+	'lockpath'   => '/tmp/locks2',
 	'sleep'      => 1,
 	'verbose'    => 0,
 	'command'    => '',

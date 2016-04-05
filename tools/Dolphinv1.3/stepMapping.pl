@@ -156,7 +156,7 @@ foreach my $file (@files)
  $com.="$awkdir/parseBow.pl -n $bname -f $outdir/$bname.bow -p $spaired> $outdir/$bname.sum && ";
  $com.=": \\\$( $samtoolscmd view -bT $fasta $outdir/$bname.sam > $outdir/$bname.tmp1.bam ) && ";
  my $lasttmp="tmp1";
- if (lc($spaired) =~ /^no/)
+ if (lc($spaired)!~/^no/)
  {
    $com.=": \\\$( $samtoolscmd sort -n $outdir/$bname.tmp1.bam $outdir/$bname.tmp2 ) && "; 
    $com.=": \\\$( $samtoolscmd view  -bf 0x02 $outdir/$bname.tmp2.bam > $outdir/$bname.tmp3.bam ) && "; 
@@ -167,11 +167,11 @@ foreach my $file (@files)
  $com.="rm -rf $outdir/$bname.sam && ";
  $com.="rm -rf $outdir/$bname.tmp*.bam && ";
  $com.="rm -rf $outdir/$bname*.mapped";
- 
+
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
- print $job."\n";   
+ print "\n\n".$job."\n\n";   
  `$job`;
-die "Error 25: Cannot run the job:".$job if ($?);
+ die "Error 25: Cannot run the job:".$job if ($?);
 }
 
 sub createIndex
