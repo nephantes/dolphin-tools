@@ -264,7 +264,9 @@ foreach my $file (@files)
 		##	Make sure bam isn't malformed
 		$com.= $vcf_input[$index];
 		$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
-		$com.=" && rm $input_file " if ($com!~/^$/);
+		if ($index != 0) {
+			$com.=" && rm $input_file " if ($com!~/^$/);
+		}
 		$com.=" && " if ($com!~/^$/);
 		##	Make sure bam is ordered properly
 		$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
