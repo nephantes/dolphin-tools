@@ -27,6 +27,7 @@
  my $samtools         = "";
  my $jobsubmit        = "";
  my $spaired          = "";
+ my $mergeall         = "";
  my $type             = "";
  my $servicename      = "";
  my $help             = "";
@@ -40,6 +41,7 @@ GetOptions(
     'outdir=s'       => \$outdir,
     'samtools=s'     => \$samtools,
     'dspaired=s'     => \$spaired,
+	'mergeall=s'     => \$mergeall,
     'type=s'         => \$type,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
@@ -90,22 +92,37 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 my %mergeCmd=();
 foreach my $file (@files)
 {
- $file=~/(.*)\/(.*)(_[\d]+)$sorted.bam/;
- my $bpath=$1;
- my $bname=$2;
- my $num=$3;
+ my $bpath="";
+ my $bname="";
+ my $num="";
+ if ($mergeall=~/yes/) {
+	$file=~/(.*)\/(.*)$sorted.bam/;
+	$bpath=$1;
+	$bname=$2;
+	$num=$3;
+	print 'merge all\n';
+ }else{
+	$file=~/(.*)\/(.*)(_[\d]+)$sorted.bam/;
+	$bpath=$1;
+	$bname=$2;
+	$num=$3;
+	print 'not correct\n';
+ }
  if ($bpath !~ "" && $bname !~ "") {
 	`mkdir -p $outd`;
-    $bpath=~s/$num$/\*/;
-    $mergeCmd{"$bpath/$bname*$sorted.bam"}=$bname;
+	if ($mergeall=~/yes/) {
+		$mergeCmd{"$bpath/*$sorted.bam"}=$bname;
+	}else{
+		$bpath=~s/$num$/\*/;
+		$mergeCmd{"$bpath/$bname*$sorted.bam"}=$bname;
+	}
  }
 }
 
 foreach my $filekey (keys %mergeCmd)
 {
  my $bname=$mergeCmd{$filekey};
- 
- my $outfile=$outd."/$bname.bam"; 
+ my $outfile=$outd."/$bname$sorted.bam"; 
  my $lscmd ="ls $filekey|wc -l";
  print "LS:".$lscmd."\n";
  my $fcount=`$lscmd`;

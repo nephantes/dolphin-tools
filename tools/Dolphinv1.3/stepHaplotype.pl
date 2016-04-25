@@ -26,8 +26,10 @@ use Pod::Usage;
 my $outdir           = "";
 my $genome           = "";
 my $previous         = "";
+my $samtools         = "";
 my $haplobed         = "";
 my $haploCmd         = "";
+my $multiCmd         = "";
 my $picardCmd        = "";
 my $bedCmd           = "";
 my $smctfc           = "";
@@ -41,6 +43,7 @@ my $clinical         = "";
 my $motifs           = "";
 my $enhancer         = "";
 my $promoter         = "";
+my $comparePeaks     = "";
 my $type             = "";
 my $jobsubmit        = "";
 my $servicename      = "";
@@ -56,8 +59,10 @@ GetOptions(
 	'outdir=s'       => \$outdir,
 	'genome=s'       => \$genome,
 	'previous=s'     => \$previous,
+	'samtools=s'     => \$samtools,
 	'haplobed=s'     => \$haplobed,
 	'haplocmd=s'     => \$haploCmd,
+	'multicmd=s'     => \$multiCmd,
 	'picardCmd=s'    => \$picardCmd,
 	'bedCmd=s'       => \$bedCmd,
 	'smctfc=s'       => \$smctfc,
@@ -71,6 +76,7 @@ GetOptions(
 	'motifs=s'       => \$motifs,
 	'enhancer=s'     => \$enhancer,
 	'promoter=s'     => \$promoter,
+	'comparePeaks=s' => \$comparePeaks,
 	'type=s'         => \$type,
 	'jobsubmit=s'    => \$jobsubmit,
 	'servicename=s'  => \$servicename,
@@ -99,6 +105,10 @@ print "$previous\n";
 
 my $sorted=".sorted";
 $sorted = "" if ($type=~/^dedup/);
+if ($type =~/^chip$/) {
+	$type = "seqmapping/$type";
+}
+
 my $dir_test = `ls $outdir/$type`;
 my $input_file_cmd = "";
 
@@ -109,18 +119,24 @@ if ($dir_test !~/No such file or directory/){
 	die "Error 256: cannot find bam file directory:";
 }
 
+my $peaks = "";
+
+if ($merge == "yes" && $comparePeaks == "yes") {
+	$peaks = "$multiCmd -i $outdir/macs/*peaks.bed > $inputdir/all_peaks.bed &&";
+}
+
+my $original_outdir = $outdir;
 $outdir   = "$outdir/haplotypecaller";
 `mkdir -p $outdir`;
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my $com="";
+print $input_file_cmd;
 $com=`$input_file_cmd`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
 print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
-
-
 
 foreach my $file (@files)
 {
@@ -131,120 +147,134 @@ foreach my $file (@files)
 	my @vcf_input = ("");
 	my @vcf_files = ($input_file);
 	
+	if ($comparePeaks == "yes") {
+		if ($merge == "yes") {
+			$peaks.= "$bedCmd intersect -abam $file -b $inputdir/all_peaks.bed > $outdir/peaks_$str_file &&";
+			$str_file = "peaks_$str_file";
+			$input_file = "$outdir/$str_file";
+		}else{
+			$str_file=~/(.*).sorted.bam/;
+			my $sample_name = $1;
+			$peaks = "$bedCmd intersect -abam $inputdir/".$sample_name.$sorted.".bam -b $original_outdir/macs/".$sample_name."_peaks.bed > $outdir/peaks_$str_file &&";
+			$str_file = "peaks_$str_file";
+			$input_file = "$outdir/$str_file";
+		}
+	}
+	
 	############	Start SNP File Type Calls
-	if ($motifs != "") {
-		if ($common != "" ) {
-			if ($enhancer != "") {
+	if ($motifs == "yes") {
+		if ($common == "yes" ) {
+			if ($enhancer == "yes") {
 				my $motif_common_enhancer_cmd = "";
-				$motif_common_enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_enhancer_commonSNPs.bed > $outdir/motif_common_enhancer_$str_file &&";
+				$motif_common_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_commonSNPs.bed > $outdir/motif_common_enhancer_$str_file &&";
 				push(@vcf_input, $motif_common_enhancer_cmd);
 				push(@vcf_files, "$outdir/motif_common_enhancer_$str_file");
 			}
-			if ($promoter != "") {
+			if ($promoter == "yes") {
 				my $motif_common_promoter_cmd = "";
-				$motif_common_promoter_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_promoter_commonSNPs.bed > $outdir/motif_common_promoter_$str_file &&";
+				$motif_common_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_commonSNPs.bed > $outdir/motif_common_promoter_$str_file &&";
 				push(@vcf_input, $motif_common_promoter_cmd);
 				push(@vcf_files, "$outdir/motif_common_promoter_$str_file");
 			}
 			my $motif_common_cmd = "";
-			$motif_common_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_commonSNPs.bed > $outdir/motif_common_$str_file &&";
+			$motif_common_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_commonSNPs.bed > $outdir/motif_common_$str_file &&";
 			push(@vcf_input, $motif_common_cmd);
 			push(@vcf_files, "$outdir/motif_common_$str_file");
 		}
 		
-		if($clinical != ""){
-			if ($enhancer != "") {
+		if($clinical == "yes"){
+			if ($enhancer == "yes") {
 				my $motif_clinical_enhancer_cmd = "";
-				$motif_clinical_enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_enhancer_clincial_commonSNPs.bed > $outdir/motif_clinical_enhancer_$str_file &&";
+				$motif_clinical_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_clincial_commonSNPs.bed > $outdir/motif_clinical_enhancer_$str_file &&";
 				push(@vcf_input, $motif_clinical_enhancer_cmd);
 				push(@vcf_files, "$outdir/motif_clinical_enhancer_$str_file");
 			}
 			
-			if ($promoter != "") {
+			if ($promoter == "yes") {
 				my $motif_clinical_promoter_cmd = "";
-				$motif_clinical_promoter_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_promoter_clincial_commonSNPs.bed > $outdir/motif_clinical_promoter_$str_file &&";
+				$motif_clinical_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_clincial_commonSNPs.bed > $outdir/motif_clinical_promoter_$str_file &&";
 				push(@vcf_input, $motif_clinical_promoter_cmd);
 				push(@vcf_files, "$outdir/motif_clinical_promoter_$str_file");
 			}
 			
 			my $motif_clinical_cmd = "";
-			$motif_clinical_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_clinical_commonSNPs.bed > $outdir/motif_clinical_$str_file &&";
+			$motif_clinical_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_clinical_commonSNPs.bed > $outdir/motif_clinical_$str_file &&";
 			push(@vcf_input, $motif_clinical_cmd);
 			push(@vcf_files, "$outdir/motif_clinical_$str_file");
 		}
 		
-		if ($enhancer != "") {
+		if ($enhancer == "yes") {
 			my $motif_enhancer_cmd = "";
-			$motif_enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_enhancer_regions.bed > $outdir/motif_enhancer_$str_file &&";
+			$motif_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_regions.bed > $outdir/motif_enhancer_$str_file &&";
 			push(@vcf_input, $motif_enhancer_cmd);
 			push(@vcf_files, "$outdir/motif_enhancer_$str_file");
 		}
 		
-		if ($promoter != "") {
+		if ($promoter == "yes") {
 			my $motif_promotor_cmd = "";
-			$motif_promotor_cmd.="$bedCmd -abam $input_file -b $haplobed/motif_promoter_regions.bed > $outdir/motif_promoter_$str_file &&";
+			$motif_promotor_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_regions.bed > $outdir/motif_promoter_$str_file &&";
 			push(@vcf_input, $motif_promotor_cmd);
 			push(@vcf_files, "$outdir/motif_promoter_$str_file");
 		}
 		
 		my $motif_cmd = "";
-		$motif_cmd.="$bedCmd -abam $input_file -b $haplobed/motifs_human_merged_atac_peaks.bed > $outdir/motif_$str_file &&";
+		$motif_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motifs_human_merged_atac_peaks.bed > $outdir/motif_$str_file &&";
 		push(@vcf_input, $motif_cmd);
 		push(@vcf_files, "$outdir/motif_$str_file");
 	}
 	
-	if($common != ""){
-		if ($enhancer != "") {
+	if($common == "yes"){
+		if ($enhancer == "yes") {
 			my $common_enhancer_cmd = "";
-			$common_enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/enhancer_commonSNPs.bed > $outdir/common_enhancer_$str_file &&";
+			$common_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_commonSNPs.bed > $outdir/common_enhancer_$str_file &&";
 			push(@vcf_input, $common_enhancer_cmd);
 			push(@vcf_files, "$outdir/common_enhancer_$str_file");
 		}
 		
-		if ($promoter != "") {
+		if ($promoter == "yes") {
 			my $common_promoter_cmd = "";
-			$common_promoter_cmd.="$bedCmd -abam $input_file -b $haplobed/promoter_commonSNPs.bed > $outdir/common_promoter_$str_file &&";
+			$common_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_commonSNPs.bed > $outdir/common_promoter_$str_file &&";
 			push(@vcf_input, $common_promoter_cmd);
 			push(@vcf_files, "$outdir/common_promoter_$str_file");
 		}
 		
 		my $common_cmd = "";
-		$common_cmd.="$bedCmd -abam $input_file -b $haplobed/commonSNPs.bed > $outdir/common_$str_file &&";
+		$common_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/commonSNPs.bed > $outdir/common_$str_file &&";
 		push(@vcf_input, $common_cmd);
 		push(@vcf_files, "$outdir/common_$str_file");
 	}
 	
-	if($clinical != ""){
-		if ($enhancer != "") {
+	if($clinical == "yes"){
+		if ($enhancer == "yes") {
 			my $clinical_enhancer_cmd = "";
-			$clinical_enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/enhancer_clinical_commonSNPs.bed > $outdir/clinical_enhancer_$str_file &&";
+			$clinical_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_clinical_commonSNPs.bed > $outdir/clinical_enhancer_$str_file &&";
 			push(@vcf_input, $clinical_enhancer_cmd);
 			push(@vcf_files, "$outdir/clinical_enhancer_$str_file");
 		}
 		
-		if ($promoter != "") {
+		if ($promoter == "yes") {
 			my $clinical_promoter_cmd = "";
-			$clinical_promoter_cmd.="$bedCmd -abam $input_file -b $haplobed/promoter_clinical_commonSNPs.bed > $outdir/clinical_promoter_$str_file &&";
+			$clinical_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_clinical_commonSNPs.bed > $outdir/clinical_promoter_$str_file &&";
 			push(@vcf_input, $clinical_promoter_cmd);
 			push(@vcf_files, "$outdir/clinical_promoter_$str_file");
 		}
 		
 		my $clinical_cmd = "";
-		$clinical_cmd.="$bedCmd -abam $input_file -b $haplobed/clinical_commonSNPs.bed > $outdir/clinical_$str_file &&";
+		$clinical_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/clinical_commonSNPs.bed > $outdir/clinical_$str_file &&";
 		push(@vcf_input, $clinical_cmd);
 		push(@vcf_files, "$outdir/clinical_$str_file");
 	}
 	
-	if ($enhancer != "") {
+	if ($enhancer == "yes") {
 		my $enhancer_cmd = "";
-		$enhancer_cmd.="$bedCmd -abam $input_file -b $haplobed/enhancer_atac_peaks_human.bed > $outdir/enhancer_$str_file &&";
+		$enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_atac_peaks_human.bed > $outdir/enhancer_$str_file &&";
 		push(@vcf_input, $enhancer_cmd);
 		push(@vcf_files, "$outdir/enhancer_$str_file");
 	}
 	
-	if ($promoter != "") {
+	if ($promoter == "yes") {
 		my $promotor_cmd = "";
-		$promotor_cmd.="$bedCmd -abam $input_file -b $haplobed/promoter_atac_peaks_human.bed > $outdir/promoter_$str_file &&";
+		$promotor_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_atac_peaks_human.bed > $outdir/promoter_$str_file &&";
 		push(@vcf_input, $promotor_cmd);
 		push(@vcf_files, "$outdir/promoter_$str_file");
 	}
