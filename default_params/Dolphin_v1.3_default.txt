@@ -86,7 +86,7 @@
 @RUNSPLIT           = @DOLPHIN/stepSplit.pl
 
 #stepMergeBAM
-@RUNMERGEBAM       = @DOLPHIN/stepMergeBAM.pl
+@RUNMERGEBAM        = @DOLPHIN/stepMergeBAM.pl
 
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl
@@ -137,6 +137,9 @@
 #Step Haplotype
 @RUNHAPLOTYPE     = @PERL @DOLPHIN/stepHaplotype.pl
 @HAPLOTYPECMD     = "@JAVA -jar @BIN/GenomeAnalysisTK.jar"
+@HAPLOBED         = @GDB/bed
+@BEDTOOLS         = @BIN/bedtools
+@MULTIINTER       = @BIN/multiIntersectBed
 
 #RunCleaning Step
 @RUNCLEAN         = @PERL @DOLPHIN/stepClean.pl

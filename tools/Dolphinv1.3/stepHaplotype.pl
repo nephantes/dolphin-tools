@@ -26,13 +26,25 @@ use Pod::Usage;
 my $outdir           = "";
 my $genome           = "";
 my $previous         = "";
+my $samtools         = "";
+my $haplobed         = "";
 my $haploCmd         = "";
+my $multiCmd         = "";
 my $picardCmd        = "";
+my $bedCmd           = "";
 my $smctfc           = "";
 my $smctfe           = "";
 my $mbqs             = "";
 my $mrpas            = "";
 my $mrirps           = "";
+my $merge            = "";
+my $common           = "";
+my $clinical         = "";
+my $motifs           = "";
+my $enhancer         = "";
+my $promoter         = "";
+my $comparePeaks     = "";
+my $type             = "";
 my $jobsubmit        = "";
 my $servicename      = "";
 my $help             = "";
@@ -47,13 +59,25 @@ GetOptions(
 	'outdir=s'       => \$outdir,
 	'genome=s'       => \$genome,
 	'previous=s'     => \$previous,
+	'samtools=s'     => \$samtools,
+	'haplobed=s'     => \$haplobed,
 	'haplocmd=s'     => \$haploCmd,
+	'multicmd=s'     => \$multiCmd,
 	'picardCmd=s'    => \$picardCmd,
+	'bedCmd=s'       => \$bedCmd,
 	'smctfc=s'       => \$smctfc,
     'smctfe=s'       => \$smctfe,
     'mbqs=s'         => \$mbqs,
     'mrpas=s'        => \$mrpas,
     'mrirps=s'       => \$mrirps,
+	'merge=s'        => \$merge,
+	'common=s'       => \$common,
+	'clinical=s'     => \$clinical,
+	'motifs=s'       => \$motifs,
+	'enhancer=s'     => \$enhancer,
+	'promoter=s'     => \$promoter,
+	'comparePeaks=s' => \$comparePeaks,
+	'type=s'         => \$type,
 	'jobsubmit=s'    => \$jobsubmit,
 	'servicename=s'  => \$servicename,
 	'help'           => \$help, 
@@ -79,29 +103,35 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($genome eq "") or ($outdi
 my $inputdir="";
 print "$previous\n";
 
-my $tophat_test = `ls $outdir/tophat`;
-my $tdf_tophat_test = `ls $outdir/tdf_tophat`;
-my $chip_test = `ls $outdir/seqmapping/chip`;
+my $sorted=".sorted";
+$sorted = "" if ($type=~/^dedup/);
+if ($type =~/^chip$/) {
+	$type = "seqmapping/$type";
+}
+
+my $dir_test = `ls $outdir/$type`;
 my $input_file_cmd = "";
 
-if ($tophat_test !~/No such file or directory/) {
-	$inputdir = "$outdir/tophat";
-	$input_file_cmd = "ls $inputdir/*/*.sorted.bam 2>&1";
-}elsif ($tdf_tophat_test !~/No such file or directory/) {
-	$inputdir = "$outdir/tdf_tophat";
-	$input_file_cmd = "ls $inputdir/*/*.sorted.bam 2>&1";
-}elsif ($chip_test !~/No such file or directory/){
-	$inputdir = "$outdir/seqmapping/chip";
-	$input_file_cmd = "ls $inputdir/*.sorted.bam 2>&1";
+if ($dir_test !~/No such file or directory/){
+	$inputdir = "$outdir/$type";
+	$input_file_cmd = "ls $inputdir/*$sorted.bam 2>&1";
 }else{
 	die "Error 256: cannot find bam file directory:";
 }
 
-$outdir   = "$outdir/variant_calls";
+my $peaks = "";
+
+if ($merge == "yes" && $comparePeaks == "yes") {
+	$peaks = "$multiCmd -i $outdir/macs/*peaks.bed > $inputdir/all_peaks.bed &&";
+}
+
+my $original_outdir = $outdir;
+$outdir   = "$outdir/haplotypecaller";
 `mkdir -p $outdir`;
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my $com="";
+print $input_file_cmd;
 $com=`$input_file_cmd`;
 die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 
@@ -114,33 +144,180 @@ foreach my $file (@files)
 	$file=~/.*\/(.*)/;
 	my $str_file=$1;
 	die "Error 64: please check the file:".$file unless (checkFile($file));
+	my @vcf_input = ("");
+	my @vcf_files = ($input_file);
 	
-	$str_file=~/(.*).*\./;
-	my $bname=$1;
+	if ($comparePeaks == "yes") {
+		if ($merge == "yes") {
+			$peaks.= "$bedCmd intersect -abam $file -b $inputdir/all_peaks.bed > $outdir/peaks_$str_file &&";
+			$str_file = "peaks_$str_file";
+			$input_file = "$outdir/$str_file";
+		}else{
+			$str_file=~/(.*).sorted.bam/;
+			my $sample_name = $1;
+			$peaks = "$bedCmd intersect -abam $inputdir/".$sample_name.$sorted.".bam -b $original_outdir/macs/".$sample_name."_peaks.bed > $outdir/peaks_$str_file &&";
+			$str_file = "peaks_$str_file";
+			$input_file = "$outdir/$str_file";
+		}
+	}
 	
-	############	Start Program Calls
-	my $com="";
-	##	Make sure bam isn't malformed
-	$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
-	$com.=" && " if ($com!~/^$/);
-	##	Make sure bam is ordered properly
-	$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
-	##	Remove hg_file
-	$com.=" && rm $outdir/hg_$str_file " if ($com!~/^$/);
-	$com.=" && " if ($com!~/^$/);
-	##	Run HaplotypeCaller
-	$com.="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$str_file -o $outdir/$bname.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
-	$com.=" --standard_min_confidence_threshold_for_calling $smctfc --standard_min_confidence_threshold_for_emitting $smctfe --min_base_quality_score $mbqs";
-	$com.=" --minReadsPerAlignmentStart $mrpas --maxReadsInRegionPerSample $mrirps";
-	##	Remove reordered bam files
-	$com.=" && rm $outdir/reordered_$str_file " if ($com!~/^$/);
-	$com.=" && rm $outdir/reordered_$bname.bai " if ($com!~/^$/);
-	############	End Program Calls
+	############	Start SNP File Type Calls
+	if ($motifs == "yes") {
+		if ($common == "yes" ) {
+			if ($enhancer == "yes") {
+				my $motif_common_enhancer_cmd = "";
+				$motif_common_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_commonSNPs.bed > $outdir/motif_common_enhancer_$str_file &&";
+				push(@vcf_input, $motif_common_enhancer_cmd);
+				push(@vcf_files, "$outdir/motif_common_enhancer_$str_file");
+			}
+			if ($promoter == "yes") {
+				my $motif_common_promoter_cmd = "";
+				$motif_common_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_commonSNPs.bed > $outdir/motif_common_promoter_$str_file &&";
+				push(@vcf_input, $motif_common_promoter_cmd);
+				push(@vcf_files, "$outdir/motif_common_promoter_$str_file");
+			}
+			my $motif_common_cmd = "";
+			$motif_common_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_commonSNPs.bed > $outdir/motif_common_$str_file &&";
+			push(@vcf_input, $motif_common_cmd);
+			push(@vcf_files, "$outdir/motif_common_$str_file");
+		}
+		
+		if($clinical == "yes"){
+			if ($enhancer == "yes") {
+				my $motif_clinical_enhancer_cmd = "";
+				$motif_clinical_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_clincial_commonSNPs.bed > $outdir/motif_clinical_enhancer_$str_file &&";
+				push(@vcf_input, $motif_clinical_enhancer_cmd);
+				push(@vcf_files, "$outdir/motif_clinical_enhancer_$str_file");
+			}
+			
+			if ($promoter == "yes") {
+				my $motif_clinical_promoter_cmd = "";
+				$motif_clinical_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_clincial_commonSNPs.bed > $outdir/motif_clinical_promoter_$str_file &&";
+				push(@vcf_input, $motif_clinical_promoter_cmd);
+				push(@vcf_files, "$outdir/motif_clinical_promoter_$str_file");
+			}
+			
+			my $motif_clinical_cmd = "";
+			$motif_clinical_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_clinical_commonSNPs.bed > $outdir/motif_clinical_$str_file &&";
+			push(@vcf_input, $motif_clinical_cmd);
+			push(@vcf_files, "$outdir/motif_clinical_$str_file");
+		}
+		
+		if ($enhancer == "yes") {
+			my $motif_enhancer_cmd = "";
+			$motif_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_enhancer_regions.bed > $outdir/motif_enhancer_$str_file &&";
+			push(@vcf_input, $motif_enhancer_cmd);
+			push(@vcf_files, "$outdir/motif_enhancer_$str_file");
+		}
+		
+		if ($promoter == "yes") {
+			my $motif_promotor_cmd = "";
+			$motif_promotor_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motif_promoter_regions.bed > $outdir/motif_promoter_$str_file &&";
+			push(@vcf_input, $motif_promotor_cmd);
+			push(@vcf_files, "$outdir/motif_promoter_$str_file");
+		}
+		
+		my $motif_cmd = "";
+		$motif_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/motifs_human_merged_atac_peaks.bed > $outdir/motif_$str_file &&";
+		push(@vcf_input, $motif_cmd);
+		push(@vcf_files, "$outdir/motif_$str_file");
+	}
 	
-	my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
-	print $job."\n";
-	`$job`;
-	die "Error 25: Cannot run the job:".$job if ($?);
+	if($common == "yes"){
+		if ($enhancer == "yes") {
+			my $common_enhancer_cmd = "";
+			$common_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_commonSNPs.bed > $outdir/common_enhancer_$str_file &&";
+			push(@vcf_input, $common_enhancer_cmd);
+			push(@vcf_files, "$outdir/common_enhancer_$str_file");
+		}
+		
+		if ($promoter == "yes") {
+			my $common_promoter_cmd = "";
+			$common_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_commonSNPs.bed > $outdir/common_promoter_$str_file &&";
+			push(@vcf_input, $common_promoter_cmd);
+			push(@vcf_files, "$outdir/common_promoter_$str_file");
+		}
+		
+		my $common_cmd = "";
+		$common_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/commonSNPs.bed > $outdir/common_$str_file &&";
+		push(@vcf_input, $common_cmd);
+		push(@vcf_files, "$outdir/common_$str_file");
+	}
+	
+	if($clinical == "yes"){
+		if ($enhancer == "yes") {
+			my $clinical_enhancer_cmd = "";
+			$clinical_enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_clinical_commonSNPs.bed > $outdir/clinical_enhancer_$str_file &&";
+			push(@vcf_input, $clinical_enhancer_cmd);
+			push(@vcf_files, "$outdir/clinical_enhancer_$str_file");
+		}
+		
+		if ($promoter == "yes") {
+			my $clinical_promoter_cmd = "";
+			$clinical_promoter_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_clinical_commonSNPs.bed > $outdir/clinical_promoter_$str_file &&";
+			push(@vcf_input, $clinical_promoter_cmd);
+			push(@vcf_files, "$outdir/clinical_promoter_$str_file");
+		}
+		
+		my $clinical_cmd = "";
+		$clinical_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/clinical_commonSNPs.bed > $outdir/clinical_$str_file &&";
+		push(@vcf_input, $clinical_cmd);
+		push(@vcf_files, "$outdir/clinical_$str_file");
+	}
+	
+	if ($enhancer == "yes") {
+		my $enhancer_cmd = "";
+		$enhancer_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/enhancer_atac_peaks_human.bed > $outdir/enhancer_$str_file &&";
+		push(@vcf_input, $enhancer_cmd);
+		push(@vcf_files, "$outdir/enhancer_$str_file");
+	}
+	
+	if ($promoter == "yes") {
+		my $promotor_cmd = "";
+		$promotor_cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/promoter_atac_peaks_human.bed > $outdir/promoter_$str_file &&";
+		push(@vcf_input, $promotor_cmd);
+		push(@vcf_files, "$outdir/promoter_$str_file");
+	}
+	
+	############	End SNP File Type Calls
+	
+	############	Start HaplotypeCaller Calls
+	my $index = 0;
+	foreach my $new_file (@vcf_files)
+	{
+		my $input_file = $new_file;
+		$new_file=~/.*\/(.*)/;
+		my $str_file=$1;
+		$str_file=~/(.*).*\./;
+		my $bname=$1;
+		my $com="";
+		##	Make sure bam isn't malformed
+		$com.= $vcf_input[$index];
+		$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
+		if ($index != 0) {
+			$com.=" && rm $input_file " if ($com!~/^$/);
+		}
+		$com.=" && " if ($com!~/^$/);
+		##	Make sure bam is ordered properly
+		$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
+		##	Remove hg_file
+		$com.=" && rm $outdir/hg_$str_file " if ($com!~/^$/);
+		$com.=" && " if ($com!~/^$/);
+		##	Run HaplotypeCaller
+		$com.="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/reordered_$str_file -o $outdir/$bname.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
+		$com.=" --standard_min_confidence_threshold_for_calling $smctfc --standard_min_confidence_threshold_for_emitting $smctfe --min_base_quality_score $mbqs";
+		$com.=" --minReadsPerAlignmentStart $mrpas --maxReadsInRegionPerSample $mrirps";
+		##	Remove reordered bam files
+		$com.=" && rm $outdir/reordered_$str_file " if ($com!~/^$/);
+		$com.=" && rm $outdir/reordered_$bname.bai " if ($com!~/^$/);
+		############	End HaplotypeCaller Calls
+		
+		$index++;
+		my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
+		print $job."\n";
+		`$job`;
+		die "Error 25: Cannot run the job:".$job if ($?);
+	}
 }
 
 sub checkFile

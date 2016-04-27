@@ -107,8 +107,8 @@ def main():
           TYPE="dbSetStartTime"
           f.write(jobstatus_cmd % locals() + " -n $JOB_NUM")
           f.write("\n   retval=$?\n   if [ $retval -ne 0 ]; then\n     exit 66\n   fi\n")
-          f.write("\n\nperl " + str(sdir) + "/runParallel.pl --command='"+ str(COM) +"'\n\n")
-          #f.write("\n\n"+ str(COM) +"\n\n")
+          #f.write("\n\nperl " + str(sdir) + "/runParallel.pl --command='"+ str(COM) +"'\n\n")
+          f.write("\n\n"+ str(COM) +"\n\n")
           f.write("retval=$?\necho \"[\"$retval\"]\"\nif [ $retval -eq 0 ]; then\n")
           if (str(NAME) != str(SERVICENAME)):
             f.write("touch "+success_file+"\n")
