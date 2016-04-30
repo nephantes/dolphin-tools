@@ -96,7 +96,7 @@ else
 foreach my $d (@files){ 
   my $dirname=dirname($d);
   my $libname=basename($d, "$sorted.bam");
-  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSqQC.$libname.out"; 
+  my $com="$rseqccmd -i $d -r $bed12file > $outd/RSeQC.$libname.out"; 
   
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print "\n\n".$com."\n\n";

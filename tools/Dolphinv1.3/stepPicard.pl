@@ -98,7 +98,7 @@ elsif (lc($type) eq "tophat")
 }
 else
 {
-   my $indir   = "$outdir/$type";
+   my $indir   = "$outdir/seqmapping/".lc($type);
    print $indir."\n";
    @files = <$indir/*.bam>;
 }

@@ -211,6 +211,8 @@ my $com="$rscriptCMD $output > $sessioninfo 2>&1";
 my $verstring =`grep DESeq2_ $sessioninfo`;
 $verstring =~/(DESeq[^\s]+)/;
 my $deseq_ver=$1;
+$deseq_ver = "DESeq2" if ($deseq_ver =~/^$/);
+   
 $com="sed -i 's/\"\"/name/' $selected_log2fc 2>/dev/null && sed -i 's/\"\"/name/' $alldetected 2>/dev/null &&";
 $com.="sed -i 's/\"//g' $selected_log2fc 2>/dev/null && sed -i 's/\"//g' $alldetected 2>/dev/null && ";
 $com.="echo \"$wkey\t$deseq_ver\tdeseq\t$deseqdir/alldetected_$type.tsv\" >> $puboutdir/reports.tsv && ";
