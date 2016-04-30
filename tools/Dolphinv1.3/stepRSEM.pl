@@ -84,7 +84,7 @@ if ($previous=~/NONE/g)
 {
   $inputdir = "$outdir/input";
 }
-elsif ($previous =~/deduprsem_ref.transcripts/ )
+elsif ($previous =~/dedup/ )
 {
    $inputdir = "$outdir/$previous";
 }

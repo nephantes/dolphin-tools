@@ -72,7 +72,7 @@ die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 
 my @files=();
 print $type."\n";
-my @outtypes = ("RSqQC");
+my @outtypes = ("RSeQC");
 my @order=( "Total Reads", "Total Tags" , "Total Assigned Tags", "CDS_Exons", "5'UTR_Exons", "3'UTR_Exons", "Introns", "TSS_up_1kb", "TSS_up_5kb", "TSS_up_10kb", "TES_down_1kb", "TES_down_5kb", "TES_down_10kb");
 my %lines=(
   "Total Reads" => 1,
@@ -105,7 +105,7 @@ $version="RSeQC.v2.6.2";
 
 foreach my $d (@files){
   my $libname=basename($d, $ext);
-  $libname=~s/RSqQC.//g;
+  $libname=~s/RSeQC.//g;
   $libname=~s/rsem.out.//g;
   $libname=~s/.genome//g;
   print $libname."\n";
