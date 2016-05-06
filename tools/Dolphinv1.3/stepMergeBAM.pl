@@ -78,8 +78,7 @@ elsif ($type eq "chip" || $type =~ /^rsem_ref.transcripts/) {
     $inputfiles = "$outdir/seqmapping/$type/*$sorted.bam";
     $outd="$outdir/merge$type";
 }
-
-
+`mkdir -p $outd`;
 die "Error 15: Cannot create the directory:".$outd  if ($?);
 my $com="";
 print $inputfiles."\n";
@@ -92,37 +91,20 @@ my @files = split(/[\n\r\s\t,]+/, $com);
 my %mergeCmd=();
 foreach my $file (@files)
 {
- my $bpath="";
- my $bname="";
- my $num="";
- if ($mergeall=~/yes/) {
-	$file=~/(.*)\/(.*)$sorted.bam/;
-	$bpath=$1;
-	$bname=$2;
-	$num=$3;
-	print 'merge all\n';
- }else{
 	$file=~/(.*)\/(.*)(_[\d]+)$sorted.bam/;
-	$bpath=$1;
-	$bname=$2;
-	$num=$3;
-	print 'not correct\n';
- }
- if ($bpath !~ "" && $bname !~ "") {
-	`mkdir -p $outd`;
-	if ($mergeall=~/yes/) {
-		$mergeCmd{"$bpath/*$sorted.bam"}=$bname;
-	}else{
+	my $bpath=$1;
+	my $bname=$2;
+	my $num=$3;
+	if ($bpath !~ "" && $bname !~ "") {
 		$bpath=~s/$num$/\*/;
 		$mergeCmd{"$bpath/$bname*$sorted.bam"}=$bname;
 	}
- }
 }
 
 foreach my $filekey (keys %mergeCmd)
 {
  my $bname=$mergeCmd{$filekey};
- my $outfile=$outd."/$bname$sorted.bam"; 
+ my $outfile=$outd."/$bname.bam"; 
  my $lscmd ="ls $filekey|wc -l";
  print "LS:".$lscmd."\n";
  my $fcount=`$lscmd`;
