@@ -106,7 +106,6 @@ foreach my $file (@files)
 	$bpath=$1;
 	$bname=$2;
 	$num=$3;
-	print 'not correct\n';
  }
  if ($bpath !~ "" && $bname !~ "") {
 	`mkdir -p $outd`;
@@ -122,7 +121,7 @@ foreach my $file (@files)
 foreach my $filekey (keys %mergeCmd)
 {
  my $bname=$mergeCmd{$filekey};
- my $outfile=$outd."/$bname$sorted.bam"; 
+ my $outfile=$outd."/$bname.bam"; 
  my $lscmd ="ls $filekey|wc -l";
  print "LS:".$lscmd."\n";
  my $fcount=`$lscmd`;
