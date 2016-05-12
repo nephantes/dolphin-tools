@@ -77,6 +77,9 @@ if ($type eq "tophat") {
 elsif ($type eq "chip" || $type =~ /^rsem_ref.transcripts/) {
     $inputfiles = "$outdir/seqmapping/$type/*$sorted.bam";
     $outd="$outdir/merge$type";
+} else{
+    $inputfiles = "$outdir/seqmapping/".lc($type)."/*$sorted.bam";
+    $outd="$outdir/merge".lc($type);
 }
 `mkdir -p $outd`;
 die "Error 15: Cannot create the directory:".$outd  if ($?);
