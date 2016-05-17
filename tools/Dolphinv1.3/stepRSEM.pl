@@ -29,15 +29,18 @@
  my $previous         = "";
  my $genome_bam       = "";
  my $bamsupport       = "no";
+ my $samtools         = "";
  my $bowtiepath       = "";
  my $convertcmd       = "";
  my $spaired          = "";
  my $rsemCmd          = "";
+ my $wkey             = "";
+ my $pubdir           = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
- my $version          = "1.0.0";
+ my $version          = "RSEM 1.2.29";
 
 ################### PARAMETER PARSING ####################
 
@@ -53,6 +56,9 @@ GetOptions(
 	'bamsupport=s'   => \$bamsupport,
     'previous=s'     => \$previous,
 	'convertcmd=s'   => \$convertcmd,
+	'pubdir=s'       => \$pubdir,
+	'wkey=s'         => \$wkey,
+	'samtools=s'     => \$samtools,
     'jobsubmit=s'    => \$jobsubmit,
     'servicename=s'  => \$servicename,
     'rsemref=s'      => \$rsemref,
@@ -95,6 +101,12 @@ else
 
 $outdir   = "$outdir/rsem";
 `mkdir -p $outdir`;
+die "Error 15: Cannot create the directory:".$outdir if ($?);
+
+my $puboutdir = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
+
 $params_rsem=~s/,+/ /g;
 $params_rsem=~s/:+/ /g;
 $params_rsem=~s/[\s\t]+/ /g;
@@ -162,7 +174,10 @@ foreach my $file (@files)
 	  $bname=$1;
 	  $bname=~s/.sorted//;
 	  $com="mkdir -p $outdir/pipe.rsem.$bname; $convertcmd $file $outdir/pipe.rsem.$bname/$bname && ";
-	  $com.="$rsemCmd $paired --bam $outdir/pipe.rsem.$bname/$bname.bam $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname"; 
+	  $com.="$rsemCmd $paired --bam $outdir/pipe.rsem.$bname/$bname.bam $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname && ";
+	  $com.="$samtools flagstat $outdir/pipe.rsem.$bname/$bname.bam > $outdir/".$bname.".flagstat.txt && ";
+	  $com.="mkdir -p $puboutdir/rsem && cp $outdir/".$bname.".flagstat.txt $puboutdir/rsem/. && ";
+	  $com.="echo \\\"$wkey\t$version\tsummary\trsem/$bname.flagstat.txt\\\" >> $puboutdir/reports.tsv ";
   }
   my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
   print $job."\n";

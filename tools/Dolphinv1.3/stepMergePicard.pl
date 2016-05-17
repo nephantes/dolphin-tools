@@ -73,10 +73,6 @@ my $puboutdir   = "$pubdir/$wkey";
 `mkdir -p $puboutdir`;
 die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 $version="picard_tools_1.131";
-if ($outd =~/dedup/){
-   print "DEDUP merge\n";
-   mergePCRdups("$outdir/$type", $outd, $puboutdir, $version, $wkey, $type);
-}
 
 my @files=();
 print $type."\n";
@@ -129,19 +125,6 @@ $com.= $pdffile;
 print $com."\n"; 
 `$com`;
 $c++;
-}
-
-sub mergePCRdups{
-  my ($indir, $outdir, $puboutdir, $version, $wkey, $type)=@_;
-  print "INDIR:$indir\n";
-  print "OUTDIR:$outdir\n";
-  my $com='head -8 '.$indir.'/*.PCR_duplicates|grep -v  "#"|grep -v "LIB" | sed "s/==> //" |sed "s/.*0\./0\./"|sed "s/\t.*//"|sed ":a;{N;s/<==\n\n//g};ba" | grep " " > '.$outdir.'/pcrdups.txt';
-
-  $com.= " && mkdir -p $puboutdir/picard_$type/pcrdups.tsv"; 
-  $com.= " && cp outdir/picard_$type/pcrdups.tsv $puboutdir/picard_$type/."; 
-  $com.= " && echo \"$wkey\t$version\tpicard_$type\tpicard_$type/pcrdups.tsv\" >> $puboutdir/reports.tsv "; 
-  print $com."\n";
-  `$com > /dev/null`;
 }
 
 sub write_results
