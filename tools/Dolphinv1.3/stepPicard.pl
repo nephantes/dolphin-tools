@@ -78,6 +78,10 @@ if ($cmdname eq 'MarkDuplicates'){
 
 `mkdir -p $outd`;
 
+my $puboutdir   = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
+
 my @files=();
 print $type."\n";
 if ($type eq "RSEM")
@@ -124,9 +128,12 @@ foreach my $d (@files){
   $com.=" INPUT=$d > /dev/null ";
   
   if ($cmdname eq "MarkDuplicates") {
-    $com .= "&& $samtools index $outd/".$libname.".bam ";
-    $com .= "&& $samtools flagstat $outd/".$libname.".bam > $outd/".$libname.".flagstat.txt ";
-    $com .= "&& md5sum $outd/".$libname.".bam > $outd/".$libname.".bam.md5sum ";
+    $com.= "&& $samtools index $outd/".$libname.".bam ";
+    $com.= "&& $samtools flagstat $outd/".$libname.".bam > $outd/".$libname.".flagstat.txt ";
+    $com.= "&& md5sum $outd/".$libname.".bam > $outd/".$libname.".bam.md5sum ";
+	$com.= "&& mkdir -p $puboutdir/dedup$type ";
+	$com.= "&& cp $outd/".$libname.".flagstat.txt $puboutdir/dedup$type/. ";
+	$com.= "&& echo \\\"$wkey\t$version\tsummary\tdedup$type/$libname.flagstat.txt\\\" >> $puboutdir/reports.tsv ";
   }
   elsif ($cmdname eq "CollectMultipleMetrics") {
     $com .= "&& mkdir -p $outd/".$libname."_multi && mv $outd/$libname*.pdf $outd/".$libname."_multi/. ";
@@ -137,6 +144,7 @@ foreach my $d (@files){
   `$job`;
   die "Error 25: Cannot run the job:".$job if ($?);
 }
+
 __END__
 
 

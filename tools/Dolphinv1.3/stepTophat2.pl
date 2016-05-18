@@ -30,12 +30,14 @@
  my $bowtie2Ind       = "";
  my $spaired          = "";
  my $tophatCmd        = "";
- my $samtools         = ""; 
+ my $samtools         = "";
+ my $wkey             = "";
+ my $pubdir           = "";
  my $jobsubmit        = "";
  my $servicename      = "";
  my $help             = "";
  my $print_version    = "";
- my $version          = "1.0.0";
+ my $version          = "Tophat2 v2.0.12";
 
 ################### PARAMETER PARSING ####################
 
@@ -43,15 +45,17 @@ my $command=$0." ".join(" ",@ARGV); ####command line copy
 
 GetOptions( 
 	'outdir=s'       => \$outdir,
-        'tophatcmd=s'    => \$tophatCmd,
-        'dspaired=s'     => \$spaired,
-        'paramstophat=s' => \$params_tophat,
-        'bowtie2Ind=s'   => \$bowtie2Ind,
-        'previous=s'     => \$previous,
-        'jobsubmit=s'    => \$jobsubmit,
-        'samtools=s'     => \$samtools,
-        'servicename=s'  => \$servicename,
-        'gtf=s'          => \$gtf,
+	'tophatcmd=s'    => \$tophatCmd,
+	'dspaired=s'     => \$spaired,
+	'paramstophat=s' => \$params_tophat,
+	'bowtie2Ind=s'   => \$bowtie2Ind,
+	'previous=s'     => \$previous,
+	'pubdir=s'       => \$pubdir,
+	'wkey=s'         => \$wkey,
+	'jobsubmit=s'    => \$jobsubmit,
+	'samtools=s'     => \$samtools,
+	'servicename=s'  => \$servicename,
+	'gtf=s'          => \$gtf,
 	'help'           => \$help, 
 	'version'        => \$print_version,
 ) or die("Unrecognized optioins.\nFor help, run this script with -help option.\n");
@@ -89,6 +93,10 @@ else
 $outdir   = "$outdir/tophat";
 `mkdir -p $outdir`;
 die "Error 15: Cannot create the directory:".$outdir if ($?);
+
+my $puboutdir = "$pubdir/$wkey";
+`mkdir -p $puboutdir`;
+die "Error 15: Cannot create the directory:".$puboutdir if ($?);
 
 $params_tophat =~s/,/ /g;
 $params_tophat=~s/_/-/g;
@@ -133,13 +141,19 @@ foreach my $file (@files)
 
     $str_files ="$file $file2";
  }
+ chomp($wkey);
  my $com="";
  $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
  $com.=" && " if ($com!~/^$/);
  $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam"));
  $com.=" && " if ($com!~/^$/);
- $com.=" $samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam.bai"));
- 
+ $com.="$samtools index $outdir/pipe.tophat.$bname/$bname.sorted.bam " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam.bai"));
+ $com.=" && " if ($com!~/^$/);
+ $com.="$samtools flagstat $outdir/pipe.tophat.$bname/$bname.sorted.bam > $outdir/".$bname.".flagstat.txt ";
+ $com.=" && " if ($com!~/^$/);
+ $com.="mkdir -p $puboutdir/tophat && cp $outdir/".$bname.".flagstat.txt $puboutdir/tophat/. ";
+ $com.=" && " if ($com!~/^$/);
+ $com.="echo \\\"$wkey\t$version\tsummary\ttophat/".$bname.".flagstat.txt\\\" >> $puboutdir/reports.tsv ";
 
  my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
  print $job."\n";
