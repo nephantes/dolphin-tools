@@ -161,10 +161,10 @@ foreach my $file (@files)
 		  die "Error 64: please check the file:".$file2 unless (checkFile($file2));
 		  my $str_files ="$file $file2";
 		 
-		  $com="mkdir -p $outdir/pipe.rsem.$bname/;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
+		  $com="mkdir -p $outdir/pipe.rsem.$bname/ && $rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --paired-end $str_files $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname";  
 		}
 		else{
-		  $com="mkdir -p $outdir/pipe.rsem.$bname;$rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
+		  $com="mkdir -p $outdir/pipe.rsem.$bname && $rsemCmd --bowtie-path $bowtiepath -p 4 $params_rsem $genome_bam --calc-ci $file $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname\n"; 
 		}
 	}
   }
@@ -173,7 +173,7 @@ foreach my $file (@files)
 	  $file=~/.*\/(.*).bam/;
 	  $bname=$1;
 	  $bname=~s/.sorted//;
-	  $com="mkdir -p $outdir/pipe.rsem.$bname; $convertcmd $file $outdir/pipe.rsem.$bname/$bname && ";
+	  $com="mkdir -p $outdir/pipe.rsem.$bname && $convertcmd $file $outdir/pipe.rsem.$bname/$bname && ";
 	  $com.="$rsemCmd $paired --bam $outdir/pipe.rsem.$bname/$bname.bam $rsemref $outdir/pipe.rsem.$bname/rsem.out.$bname && ";
 	  $com.="$samtools flagstat $outdir/pipe.rsem.$bname/$bname.bam > $outdir/".$bname.".flagstat.txt && ";
 	  $com.="mkdir -p $puboutdir/rsem && cp $outdir/".$bname.".flagstat.txt $puboutdir/rsem/. && ";
