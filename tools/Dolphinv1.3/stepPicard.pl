@@ -101,6 +101,11 @@ else
    my $indir   = "$outdir/".lc($type);
    print $indir."\n";
    @files = <$indir/*.bam>;
+   if (@files==0){
+      $indir   = "$outdir/seqmapping/".lc($type);
+      print $indir."\n";
+      @files = <$indir/*.sorted.bam>;
+   }
 }
 
 foreach my $d (@files){ 
