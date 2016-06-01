@@ -37,6 +37,9 @@ class submitJobs:
            if(servicename=="stepTophat2" or servicename=="stepRSEM" or servicename=="stepBSMap"):
                cpu=4
                cputime_pred=cputime_pred*2
+           if("picard" in servicename.lower() or "rseqc" in servicename.lower()):
+               cputime_pred = 2000
+               memory = 64000
         
            # Set cputime and queue
            if(cputime_pred>240):
