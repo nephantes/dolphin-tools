@@ -116,8 +116,8 @@ sub getFiles
    die "Error 64: please check the file:".$file unless (checkFile($file));
    push(@files, $file);
  }
- return join(',', @files);
- #return $files[0];
+ return join(' ', @files);
+ return $files[0];
 }
 
 sub checkFile
