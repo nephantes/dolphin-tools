@@ -74,38 +74,40 @@ my $inputdir = "$outdir/$type";
 $inputdir = "$outdir/seqmapping/chip" if ($type eq "chip");
 if ($type eq "tophat" || $type eq "rsem") {
 	my $com=`ls -d $outdir/$type/pipe* 2>&1`;
-	die "Error 64: please check if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
 	my @dirs = split(/[\n\r\s\t,]+/, $com);
 	my $bamfile = "accepted_hits.bam";
 	$bamfile = "*transcript.bam" if ($type eq "rsem");
-	foreach my $dir (@dirs)
-	{       
-		my @samplename = split(/\./, $dir);
-		my $bname=$samplename[-1];
-		$com ="$samtools flagstat $dir/$bamfile > $inputdir/".$bname.".flagstat.txt && ";
-		$com.="mkdir -p $pubdir/$wkey/$type && cp $inputdir/".$bname.".flagstat.txt $pubdir/$wkey/$type && ";
-		$com.="echo \"$wkey\t$version\tsummary\t$type/$bname.flagstat.txt\" >> $reportfile ";
-		my $retval=`$com`;
-		die "Error 25: Cannot run the command:".$com if ($?);
-    }
+	print Dumper($com);
+	print Dumper(@dirs);
+	
+	if ($com !~ /No such file or directory/) {
+		foreach my $dir (@dirs)
+		{
+			my @samplename = split(/pipe\.$type\./, $dir);
+			my $bname=$samplename[-1];
+			$com ="$samtools flagstat $dir/$bamfile > $inputdir/".$bname.".flagstat.txt && ";
+			$com.="mkdir -p $pubdir/$wkey/$type && cp $inputdir/".$bname.".flagstat.txt $pubdir/$wkey/$type && ";
+			$com.="echo \"$wkey\t$version\tsummary\t$type/$bname.flagstat.txt\" >> $reportfile ";
+			my $retval=`$com`;
+		}
+	}
 
 }else{
 	my $com=`ls $inputdir/*.bam 2>&1`;
-	die "Error 64: please check if you defined the parameters right:$inputdir" unless ($com !~/No such file or directory/);
-	
 	my @files = split(/[\n\r\s\t,]+/, $com);
 	
-	foreach my $file (@files)
-	{
-		$file=~/.*\/(.*).bam/;
-		my $bname=$1;
-		my $bname2 = $bname;
-		$bname2=~s/\.sorted//;
-		$com ="$samtools flagstat $inputdir/$bname.bam > $inputdir/".$bname2.".flagstat.txt && ";
-		$com.="mkdir -p $pubdir/$wkey/$type && cp $inputdir/".$bname2.".flagstat.txt $pubdir/$wkey/$type && ";
-		$com.="echo \"$wkey\t$version\tsummary\t$type/$bname2.flagstat.txt\" >> $reportfile ";
-		my $retval = `$com`;
-		die "Error 25: Cannot run the command:".$com if ($?);
+	if ($com !~ /No such file or directory/) {
+		foreach my $file (@files)
+		{
+			$file=~/.*\/(.*).bam/;
+			my $bname=$1;
+			my $bname2 = $bname;
+			$bname2=~s/\.sorted//;
+			$com ="$samtools flagstat $inputdir/$bname.bam > $inputdir/".$bname2.".flagstat.txt && ";
+			$com.="mkdir -p $pubdir/$wkey/$type && cp $inputdir/".$bname2.".flagstat.txt $pubdir/$wkey/$type && ";
+			$com.="echo \"$wkey\t$version\tsummary\t$type/$bname2.flagstat.txt\" >> $reportfile ";
+			my $retval = `$com`;
+		}
 	}
 }
 
