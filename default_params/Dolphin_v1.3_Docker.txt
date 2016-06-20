@@ -86,7 +86,7 @@
 
 #Step MACS
 @RUNMACS            = @PERL @DOLPHIN/stepMACS.pl
-@MACSCMD            = "macs14 --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
+@MACSCMD            = "macs2 callpeak --tsize=@TSIZE --bw=@BWIDTH -g @GSIZE"
 
 #StepIGVTDF
 @RUNIGVTDF          = @PERL @DOLPHIN/stepIGVTDF.pl

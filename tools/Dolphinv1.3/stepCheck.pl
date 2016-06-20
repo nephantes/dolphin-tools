@@ -115,6 +115,7 @@ if(lc($trim) ne "none")
       }
    }   
 }
+my $trackdir   = "$outdir/tmp/track";
 $outdir   = "$outdir/input";
 `mkdir -p $outdir`;
 die "Error 15: Cannot create the directory:".$outdir if ($?);
@@ -140,10 +141,10 @@ foreach my $line (@pfiles)
   {
       my $file=$files[$i];
       print "[$file]\n";
-      die "Error 64: please check the file:".$file unless (checkFile($file));
       my $pairedstr="";
       $pairedstr=".".($i+$offset) if (scalar(@files)>($maxindex-1));
       $prefiles{$libname.$pairedstr}.=$file." ";
+      die "Error 64: please check the file:".$file unless (checkFile($file, "$trackdir/".$servicename.$libname.$pairedstr.".success"));
   }
 }
 my $i=1;
@@ -183,7 +184,9 @@ if(lc($barcode) ne "none")
 
 sub checkFile
 {
- my ($file) = $_[0];
+ my ($file, $success_file) = @_;
+ print "$success_file\n";
+ return 1 if (-e $success_file);
  return 1 if (-e $file);
  return 0;
 }
