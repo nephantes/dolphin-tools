@@ -206,7 +206,7 @@ sub checkAlignmentType
 	}elsif(grep( /^$outdir\/dedup$deduptype$/, @dirs )){
 		dedupReadsAligned("$outdir/dedup$deduptype", $type);
 	}elsif(grep( /^$outdir\/merge$type$/, @dirs )){
-		readsAligned("$outdir/merge$type", $type);
+		searchAligned("$outdir/merge$type", $type, "*.bam");
 	}elsif(grep( /^$outdir\/$type$/, @dirs )){
 		if ($type eq "tophat"){
 			alteredAligned("$outdir/$type", $type, "*/accepted_hits.bam");
@@ -218,30 +218,10 @@ sub checkAlignmentType
 				alteredAligned("$outdir/$type", $type, "*/*transcript.bam");
 			}
 		}else{
-			readsAligned("$outdir/$type", $type);
+			searchAligned("$outdir/$type", $type, "*.bam");
 		}
 	}elsif($type eq "chip"){
-		readsAligned("$outdir/seqmapping/chip", $type);
-	}
-}
-
-sub readsAligned
-{
-	my ($directory) = $_[0];
-	my ($type) = $_[1];
-	chomp(my $contents = `ls $directory/*flagstat*`);
-	print $contents;
-	my @files = split(/[\n]+/, $contents);
-	push(@headers, "Reads Aligned $type");
-	foreach my $file (@files){
-		my @split_name = split(/[\/]+/, $file);
-		my @namelist = split(/[\.]+/, $split_name[-1]);
-		my $name = $namelist[0];
-		 chomp(my $aligned = `cat $file | awk '{print \$2}'`);
-			if ($aligned eq ""){
-				chomp($aligned = `cat $file | awk '{print \$1}'`);
-			}
-		push($tsv{$name}, $aligned);
+		searchAligned("$outdir/seqmapping/chip", $type, "*.bam");
 	}
 }
 
@@ -252,19 +232,53 @@ sub dedupReadsAligned
 	chomp(my $contents = `ls $directory/*PCR_duplicates`);
 	print $contents;
 	my @files = split(/[\n]+/, $contents);
-	push(@headers, "Duplicated Reads $type", "Reads Aligned $type");
+	push(@headers, "Duplicated Reads $type");
+	push(@headers, "Multimapped Reads Aligned $type");
+	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
 		my @split_name = split(/[\/]+/, $file);
 		my @namelist = split(/[\.]+/, $split_name[-1]);
 		my $name = $namelist[0];
 		my @namelist2 = split(/_PCR_duplicates/, $name);
 		$name = $namelist2[0];
+		chomp(my $multimapped = `$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l`);
 		chomp(my $aligned = `cat $file | grep -A 1 \"LIB\" | grep -v \"LIB\"`);
 		my @values = split("\t", $aligned);
-		my $dedup = ($values[2] * $values[7]);
-		my $total = $values[2] - int($dedup);
-		push($tsv{$name}, int($dedup).'');
+		my $dedup = int($values[5]) + int($values[4]);
+		my $total = int($values[2]) + int($values[1]) - $dedup - int($multimapped);
+		push($tsv{$name}, $dedup.'');
+		push($tsv{$name}, $multimapped.'');
 		push($tsv{$name}, $total.'');
+	}
+}
+
+sub searchAligned
+{
+	my ($directory) = $_[0];
+	my ($type) = $_[1];
+	my ($filetype) = $_[2];
+	chomp(my $contents = `ls $directory/$filetype`);
+	print $contents;
+	my @files = split(/[\n]+/, $contents);
+	push(@headers, "Multimapped Reads Aligned $type");
+	push(@headers, "Unique Reads Aligned $type");
+	foreach my $file (@files){
+		my @split_name = split(/[\/]+/, $file);
+		my @namelist = split(/[\.]+/, $split_name[-1]);
+		my $name = $namelist[0];
+		chomp(my $aligned = `$samtools flagstat $file`);
+		my @aligned_split = split(/[\n]+/, $aligned);
+		my @paired = split(/[\s]+/, $aligned_split[9]);
+		my @singleton = split(/[\s]+/, $aligned_split[10]);
+		chomp(my $multimapped = `$samtools view -f 256 $file | awk '{print \$1}' | sort -u | wc -l`);
+		if (int($paired[0])/2 == 0) {
+			chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, (int($aligned) - int($multimapped))."");
+		}else{
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
+		}
 	}
 }
 
@@ -276,7 +290,8 @@ sub alteredAligned
 	chomp(my $contents = `ls $directory/$filetype`);
 	print $contents;
 	my @files = split(/[\n]+/, $contents);
-	push(@headers, "Reads Aligned $type");
+	push(@headers, "Multimapped Reads Aligned $type");
+	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
 		my @split_name = split(/[\/]+/, $file);
 		my @namelist = split(/[\.]+/, $split_name[-2]);
@@ -285,11 +300,14 @@ sub alteredAligned
 		my @aligned_split = split(/[\n]+/, $aligned);
 		my @paired = split(/[\s]+/, $aligned_split[9]);
 		my @singleton = split(/[\s]+/, $aligned_split[10]);
-		if ((int($paired[0])/2) + int($singleton[0]) == 0) {
+		chomp(my $multimapped = `$samtools view -f 256 $file | awk '{print \$1}' | sort -u | wc -l`);
+		if (int($paired[0])/2 == 0) {
 			chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
-			push($tsv{$name}, $aligned);
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, (int($aligned) - int($multimapped))."");
 		}else{
-			push($tsv{$name}, (int($paired[0])/2) + int($singleton[0])."");
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
 		}
 	}
 }
