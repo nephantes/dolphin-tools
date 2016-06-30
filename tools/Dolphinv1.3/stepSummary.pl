@@ -80,8 +80,6 @@ my $count_files = `ls $outdir/counts/*.summary.tsv 2>/dev/null`;
 push(@headers, 'Sample');
 push(@headers, 'Total Reads');
 
-print $count_files+"\n";
-
 if ( $count_files ne ""){
 	my @files = split(/[\n\r\s\t,]+/, $count_files);
 	my $filestr="";
@@ -202,26 +200,26 @@ sub checkAlignmentType
 	$deduptype = $type."_ref.transcripts" if ($type eq "rsem");
 	my @dirs = split(/[\n]+/, $directories);
 	if(grep( /^$outdir\/dedupmerge$deduptype$/, @dirs )) {
-		dedupReadsAligned("$outdir/dedupmerge$deduptype", $type);
+		dedupReadsAligned("$outdir/dedupmerge$deduptype", $type, "merge");
 	}elsif(grep( /^$outdir\/dedup$deduptype$/, @dirs )){
-		dedupReadsAligned("$outdir/dedup$deduptype", $type);
+		dedupReadsAligned("$outdir/dedup$deduptype", $type, "norm");
 	}elsif(grep( /^$outdir\/merge$type$/, @dirs )){
-		searchAligned("$outdir/merge$type", $type, "*.bam");
+		searchAligned("$outdir/merge$type", $type, "*.bam", "merge");
 	}elsif(grep( /^$outdir\/$type$/, @dirs )){
 		if ($type eq "tophat"){
-			alteredAligned("$outdir/$type", $type, "*/accepted_hits.bam");
+			alteredAligned("$outdir/$type", $type, "*/accepted_hits.bam", "norm");
 		}elsif ($type eq "rsem"){
 			my $genome_check = `ls $outdir/$type/*/*genome.bam`;
 			if ($genome_check !~ /No such file or directory/) {
-				alteredAligned("$outdir/$type", $type, "*/*genome.bam");
+				alteredAligned("$outdir/$type", $type, "*/*genome.bam", "norm");
 			}else{
-				alteredAligned("$outdir/$type", $type, "*/*transcript.bam");
+				alteredAligned("$outdir/$type", $type, "*/*transcript.bam", "norm");
 			}
 		}else{
-			searchAligned("$outdir/$type", $type, "*.bam");
+			searchAligned("$outdir/$type", $type, "*.bam", "norm");
 		}
 	}elsif($type eq "chip"){
-		searchAligned("$outdir/seqmapping/chip", $type, "*.bam");
+		searchAligned("$outdir/seqmapping/chip", $type, "*.bam", "norm");
 	}
 }
 
@@ -229,19 +227,33 @@ sub dedupReadsAligned
 {
 	my ($directory) = $_[0];
 	my ($type) = $_[1];
+	my ($merge) = $_[2];
 	chomp(my $contents = `ls $directory/*PCR_duplicates`);
-	print $contents;
 	my @files = split(/[\n]+/, $contents);
 	push(@headers, "Duplicated Reads $type");
 	push(@headers, "Multimapped Reads Aligned $type");
 	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
+		my $multimapped;
 		my @split_name = split(/[\/]+/, $file);
 		my @namelist = split(/[\.]+/, $split_name[-1]);
 		my $name = $namelist[0];
 		my @namelist2 = split(/_PCR_duplicates/, $name);
 		$name = $namelist2[0];
-		chomp(my $multimapped = `$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l`);
+		if ($type eq 'rsem') {
+			print "awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
+			chomp($multimapped = `awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`)
+		}elsif($type eq "tophat"){
+			print "cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}' \n";
+			chomp($multimapped = `cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}'`)
+		}elsif($type eq "chip"){
+			print "cat $outdir/seqmapping/chip/$name*.sum | awk '{sum+=\$7} END {print sum}' \n";
+			chomp($multimapped = `cat $outdir/seqmapping/chip/$name.sum | awk '{sum+=\$7} END {print sum}'`);
+		}else{
+			print "$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l \n";
+			chomp($multimapped = `$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l`);
+		}
+		print "cat $file | grep -A 1 \"LIB\" | grep -v \"LIB\"";
 		chomp(my $aligned = `cat $file | grep -A 1 \"LIB\" | grep -v \"LIB\"`);
 		my @values = split("\t", $aligned);
 		my $dedup = int($values[5]) + int($values[4]);
@@ -257,27 +269,90 @@ sub searchAligned
 	my ($directory) = $_[0];
 	my ($type) = $_[1];
 	my ($filetype) = $_[2];
+	my ($merge) = $_[3];
 	chomp(my $contents = `ls $directory/$filetype`);
-	print $contents;
 	my @files = split(/[\n]+/, $contents);
 	push(@headers, "Multimapped Reads Aligned $type");
 	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
+		my $multimapped;
+		my $aligned;
 		my @split_name = split(/[\/]+/, $file);
-		my @namelist = split(/[\.]+/, $split_name[-1]);
+		my @namelist = split(/\.bam/, $split_name[-1]);
 		my $name = $namelist[0];
-		chomp(my $aligned = `$samtools flagstat $file`);
-		my @aligned_split = split(/[\n]+/, $aligned);
-		my @paired = split(/[\s]+/, $aligned_split[9]);
-		my @singleton = split(/[\s]+/, $aligned_split[10]);
-		chomp(my $multimapped = `$samtools view -f 256 $file | awk '{print \$1}' | sort -u | wc -l`);
-		if (int($paired[0])/2 == 0) {
-			chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
+		if ($type eq 'rsem') {
+			print "awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
+			chomp($aligned = `awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`);
+			print "awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
+			chomp($multimapped = `awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`);
 			push($tsv{$name}, $multimapped);
 			push($tsv{$name}, (int($aligned) - int($multimapped))."");
-		}else{
+		}elsif($type eq "tophat"){
+			my $tophat_parse = "cat $outdir/tophat/pipe.tophat.$name/align_summary.txt";
+			if ($merge eq "merge") {
+				my $merged_command = "";
+				chomp(my $unmerged = `ls -d $outdir/tophat/pipe.tophat.$name*`);
+				my @unmerged_dirs = split(/[\n]+/, $unmerged);
+				foreach my $unmerge_dir (@unmerged_dirs){
+					chomp($unmerge_dir);
+					if ($unmerge_dir =~ /$name\_[\d][\d]$/) {
+						$merged_command .= "cat" if ($merged_command eq "");
+						$merged_command .= " $unmerge_dir/align_summary.txt";
+					}
+				}
+				$tophat_parse = $merged_command;
+			}
+			print "$tophat_parse | grep 'Aligned pairs:' | awk '{sum+=\$3} END {print sum}' \n";
+			chomp($aligned = `$tophat_parse | grep 'Aligned pairs:' | awk '{sum+=\$3} END {print sum}'`);
+			if ($aligned eq "") {
+				print "$tophat_parse | grep 'Mapped' | awk '{sum+=\$3} END {print sum}' \n";
+				chomp($aligned = `$tophat_parse | grep 'Mapped' | awk '{sum+=\$3} END {print sum}'`);
+				print "$tophat_parse | grep 'multiple alignments' | awk '{sum+=\$3} END {print sum}' \n";
+				chomp($multimapped = `$tophat_parse | grep 'multiple alignments' | awk '{sum+=\$3} END {print sum}'`);
+			}else{
+				print "$tophat_parse | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}' \n";
+				chomp($multimapped = `$tophat_parse | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}'`);
+			}
 			push($tsv{$name}, $multimapped);
-			push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
+			push($tsv{$name}, (int($aligned) - int($multimapped))."");
+		}elsif($type eq "chip"){
+			my $chip_parse = "cat $outdir/seqmapping/chip/$name.sum";
+			if ($merge eq "merge") {
+				my $merged_command = "";
+				chomp(my $unmerged = `ls -d $outdir/seqmapping/chip/$name*.sum`);
+				my @unmerged_dirs = split(/[\n]+/, $unmerged);
+				foreach my $unmerge_dir (@unmerged_dirs){
+					chomp($unmerge_dir);
+					if ($unmerge_dir =~ /$name\_[\d][\d].sum$/) {
+						$merged_command .= "cat" if ($merged_command eq "");
+						$merged_command .= " $unmerge_dir";
+					}
+				}
+				$chip_parse = $merged_command;
+			}
+			print "$chip_parse | awk '{sum+=\$5} END {print sum}' \n";
+			chomp($aligned = `$chip_parse | awk '{sum+=\$5} END {print sum}'`);
+			print "$chip_parse | awk '{sum+=\$7} END {print sum}' \n";
+			chomp($multimapped = `$chip_parse | awk '{sum+=\$7} END {print sum}'`);
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, $aligned);
+		}else{
+			print "$samtools flagstat $file \n";
+			chomp($aligned = `$samtools flagstat $file`);
+			my @aligned_split = split(/[\n]+/, $aligned);
+			my @paired = split(/[\s]+/, $aligned_split[9]);
+			my @singleton = split(/[\s]+/, $aligned_split[10]);
+			print "$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l \n";
+			chomp($multimapped = `$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l`);
+			if (int($paired[0])/2 == 0) {
+				print "$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l \n";
+				chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
+				push($tsv{$name}, $multimapped);
+				push($tsv{$name}, (int($aligned) - int($multimapped))."");
+			}else{
+				push($tsv{$name}, $multimapped);
+				push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
+			}
 		}
 	}
 }
@@ -287,27 +362,62 @@ sub alteredAligned
 	my ($directory) = $_[0];
 	my ($type) = $_[1];
 	my ($filetype) = $_[2];
+	my ($merge) = $_[3];
 	chomp(my $contents = `ls $directory/$filetype`);
-	print $contents;
 	my @files = split(/[\n]+/, $contents);
 	push(@headers, "Multimapped Reads Aligned $type");
 	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
+		my $multimapped;
+		my $aligned;
 		my @split_name = split(/[\/]+/, $file);
 		my @namelist = split(/[\.]+/, $split_name[-2]);
 		my $name = $namelist[2];
-		chomp(my $aligned = `$samtools flagstat $file`);
-		my @aligned_split = split(/[\n]+/, $aligned);
-		my @paired = split(/[\s]+/, $aligned_split[9]);
-		my @singleton = split(/[\s]+/, $aligned_split[10]);
-		chomp(my $multimapped = `$samtools view -f 256 $file | awk '{print \$1}' | sort -u | wc -l`);
-		if (int($paired[0])/2 == 0) {
-			chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
+		if ($type eq 'rsem') {
+			print "awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
+			chomp($aligned = `awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`);
+			print "awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
+			chomp($multimapped = `awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`);
 			push($tsv{$name}, $multimapped);
 			push($tsv{$name}, (int($aligned) - int($multimapped))."");
-		}else{
+		}elsif($type eq "tophat"){
+			print "cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'Aligned pairs:' | awk '{sum+=\$3} END {print sum}' \n";
+			chomp($aligned = `cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'Aligned pairs:' | awk '{sum+=\$3} END {print sum}'`);
+			if ($aligned eq "") {
+				print "cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'Mapped' | awk '{sum+=\$3} END {print sum}' \n";
+				chomp($aligned = `cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'Mapped' | awk '{sum+=\$3} END {print sum}'`);
+				print "cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'multiple alignments' | awk '{sum+=\$3} END {print sum}' \n";
+				chomp($multimapped = `cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep 'multiple alignments' | awk '{sum+=\$3} END {print sum}'`);
+			}else{
+				print "cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}' \n";
+				chomp($multimapped = `cat $outdir/tophat/pipe.tophat.$name*/align_summary.txt | grep -A 1 'Aligned pairs:' | awk 'NR % 3 == 2 {sum+=\$3} END {print sum}'`);
+			}
 			push($tsv{$name}, $multimapped);
-			push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
+			push($tsv{$name}, (int($aligned) - int($multimapped))."");
+		}elsif($type eq "chip"){
+			print "cat $outdir/seqmapping/chip/$name*.sum | awk '{sum+=\$5} END {print sum}' \n";
+			chomp($aligned = `cat $outdir/seqmapping/chip/$name*.sum | awk '{sum+=\$5} END {print sum}'`);
+			print "cat $outdir/seqmapping/chip/$name*.sum | awk '{sum+=\$7} END {print sum}' \n";
+			chomp($multimapped = `cat $outdir/seqmapping/chip/$name*.sum | awk '{sum+=\$7} END {print sum}'`);
+			push($tsv{$name}, $multimapped);
+			push($tsv{$name}, $aligned);
+		}else{
+			print "$samtools flagstat $file \n";
+			chomp($aligned = `$samtools flagstat $file`);
+			my @aligned_split = split(/[\n]+/, $aligned);
+			my @paired = split(/[\s]+/, $aligned_split[9]);
+			my @singleton = split(/[\s]+/, $aligned_split[10]);
+			print "$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l \n";
+			chomp($multimapped = `$samtools view -f 256 $directory/$name*.bam | awk '{print \$1}' | sort -u | wc -l`);
+			if (int($paired[0])/2 == 0) {
+				print "$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l \n";
+				chomp(my $aligned = `$samtools view -F 4 $file | awk '{print \$1}' | sort -u | wc -l`);
+				push($tsv{$name}, $multimapped);
+				push($tsv{$name}, (int($aligned) - int($multimapped))."");
+			}else{
+				push($tsv{$name}, $multimapped);
+				push($tsv{$name}, ((int($paired[0])/2 - int($singleton[0])) - int($multimapped))."");
+			}
 		}
 	}
 }
