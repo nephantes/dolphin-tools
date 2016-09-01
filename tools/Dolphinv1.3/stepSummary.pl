@@ -375,6 +375,9 @@ sub alteredAligned
 		$file=~/.*\/(.*)\..*/;
 		my $name = $1;
 		if ($type eq 'rsem') {
+                        $name=~s/rsem\.out\.//g;
+                        $name=~s/\.genome$//g;
+                           
 			print "awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
 			chomp($aligned = `awk 'NR == 1 {print \$2}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`);
 			print "awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
