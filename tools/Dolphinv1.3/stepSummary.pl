@@ -216,7 +216,7 @@ sub checkAlignmentType
 				alteredAligned("$outdir/$type", $type, "*/*transcript.bam", "norm");
 			}
 		}else{
-			searchAligned("$outdir/$type", $type, "*.bam", "norm");
+			alteredAligned("$outdir/$type", $type, "*/*.sorted.bam", "norm");
 		}
 	}elsif($type eq "chip"){
 		searchAligned("$outdir/seqmapping/chip", $type, "*.bam", "norm");
@@ -235,8 +235,10 @@ sub dedupReadsAligned
 	push(@headers, "Unique Reads Aligned $type");
 	foreach my $file (@files){
 		my $multimapped;
-		$file=~/.*\/(.*)\..*/;
-		my $name = $1;
+		$file=~/.*\/(.*).*/;
+		my $file_solo = $1;
+		my @nodup = split(/_PCR_duplicates/, $file_solo);
+		my $name = $nodup[0];
 		if ($type eq 'rsem') {
 			print "awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt \n";
 			chomp($multimapped = `awk 'NR == 2 {print \$3}' $outdir/rsem/pipe.rsem.$name/rsem.out.$name.stat/rsem.out.$name.cnt`)
