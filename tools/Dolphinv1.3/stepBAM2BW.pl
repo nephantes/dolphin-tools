@@ -113,14 +113,14 @@ else
 foreach my $d (@files){ 
   my $libname="";
   my $com="";
-  if ($type eq "RSEM")
+  if (lc($type) eq "rsem")
   {
      $libname=basename($d, ".genome$sorted.bam");
      if ($sorted=~/^$/)
      { 
-       $com=": \\\$( $samtools sort $d $outdir/$libname ) && ";
-       $com.=": \\\$( $samtools index $outdir/$libname.bam ) && ";
-       $d="$outdir/$libname.bam";
+       $com.=" $samtools sort $d $outdir/ucsc_$type/$libname && ";
+       $com.=" $samtools index $outdir/ucsc_$type/$libname.bam && ";
+       $d="$outdir/ucsc_$type/$libname.bam";
      }
   }
   else
