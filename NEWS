@@ -1,3 +1,6 @@
+VERSION:	0.9.3.1
+DETAILS:	-BAM2BW rsem sort bam files fix
+
 VERSION:	0.9.3
 DETAILS:	-Summary fix for deduplication
 
