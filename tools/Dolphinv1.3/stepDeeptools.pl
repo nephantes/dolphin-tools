@@ -110,10 +110,10 @@ if ($type =~/atac/ or $type =~/chip/) {
 	$com=`ls $bedinputdir/*_peaks.narrowPeak`;
 	die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 	my @files = split(/[\n\r\s\t,]+/, $com);
-	$com=`ls $bwdir/*.sorted.bw`;
+	$com=`ls $bwdir/*.bw`;
 	my @bwfiles = split(/[\n\r\s\t,]+/, $com);
 	my $jobcom = "";
-	my $strandflag = " -s";
+	my $strandflag = " ";
 	if ($strandspec!~/yes/) {
 		$strandflag = "";
 	}
