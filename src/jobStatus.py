@@ -41,6 +41,7 @@ class jobStatus:
     
     def insertJobOut(self, username, wkey, jobnum, outdir, edir, logging):
         file=str(outdir)+"/tmp/logs/"+str(jobnum)+".std"
+        print file
         if os.path.isfile(file) and os.access(file, os.R_OK):
             command="python " + edir  + "/readJOBout.py -f "+file
             child = os.popen(command)
