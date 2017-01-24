@@ -122,6 +122,7 @@ $outdir   = "$outdir/input";
 die "Error 15: Cannot create the directory:".$outdir if ($?);
 
 my %prefiles=();
+my %s3com=();
 foreach my $line (@pfiles)
 { 
   print $line."\n";
@@ -144,8 +145,18 @@ foreach my $line (@pfiles)
       print "[$file]\n";
       my $pairedstr="";
       $pairedstr=".".($i+$offset) if (scalar(@files)>($maxindex-1));
-      $prefiles{$libname.$pairedstr}.=$file." ";
-      die "Error 64: please check the file:".$file unless (checkFile($file, "$trackdir/".$servicename.$libname.$pairedstr.".success"));
+      if ($file =~/s3__\/\//){
+         $file =~s/s3__\/\//s3:\/\//;
+         my @fparts = split(/\//, $file);
+         my $outfile = "$outdir/s3tmp/".$fparts[-1];
+         my $coms3 = "$downloadS3 -i $file -o $outfile -u $username -c $config && ";
+         print $coms3."\n";
+         $s3com{$libname.$pairedstr}.=$coms3;
+         $prefiles{$libname.$pairedstr}.=$outfile." ";
+      }else{
+         $prefiles{$libname.$pairedstr}.=$file." ";
+         die "Error 64: please check the file:".$file unless (checkFile($file, "$trackdir/".$servicename.$libname.$pairedstr.".success"));
+      }
   }
 }
 my $i=1;
@@ -156,18 +167,12 @@ foreach my $libname (keys %prefiles)
   my $filestr=$prefiles{$libname};
   if($libname!~/^$/)
   {
-    if ($filestr =~/s3__\/\//){
-       $filestr =~s/s3__\/\//s3:\/\//;
-       my $outfile = "$outdir/$libname.fastq"; 
-       $outfile .= ".gz" if ($filestr=~/\.gz/);
-       $com = "$downloadS3 -i $filestr -o $outfile -u $username -c $config";
-       $com .= "&& zcat $outfile > $outdir/$libname.fastq && rm $outfile" if ($filestr=~/\.gz/);
-    }
-    else{
-       my $cat="cat";
-       $cat = "zcat" if ($filestr=~/\.gz/);
-       $com = "$cat $filestr > $outdir/$libname.fastq";
-    }
+    my $cat="cat";
+    $cat = "zcat" if ($filestr=~/\.gz/);
+    $com = "$cat $filestr > $outdir/$libname.fastq";
+    print "[[$filestr]]\n";
+    $com = "mkdir -p $outdir/s3tmp/ && ".$s3com{$libname}.$com if ($filestr=~/s3tmp/);
+ 
     print "COMMAND: [ $com ]\n\n";
     my $job=$jobsubmit." -n ".$servicename.$libname." -c \"$com\"";
     print $job."\n\n";
