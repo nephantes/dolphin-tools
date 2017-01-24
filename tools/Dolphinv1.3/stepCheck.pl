@@ -34,7 +34,7 @@
  my $barcode          = "";
  my $adapter          = ""; 
  my $trim             = "";
- my $dbcommcmd        = ""; 
+ my $downloadS3       = ""; 
  my $username         = "";
  my $config           = "";
  my $wkey             = "";
@@ -58,7 +58,7 @@ GetOptions(
     'trim=s'         => \$trim,
     'wkey=s'         => \$wkey,
     'config=s'       => \$config,
-    'dbcommcmd=s'    => \$dbcommcmd,
+    'downloadS3=s'   => \$downloadS3,
     'paramsid=s'     => \$runparamsid,
     'servicename=s'  => \$servicename,
     'jobsubmit=s'    => \$jobsubmit,
@@ -82,7 +82,7 @@ pod2usage( {'-verbose' => 0, '-exitval' => 1,} ) if ( ($input eq "") or ($outdir
 
 ################### MAIN PROGRAM ####################
 #    maps the reads to the ribosome and put the files under $outdir/after_ribosome directory
-if (lc($resume) eq "yes")
+if (lc($resume) eq "fresh")
 {
    `rm -rf $outdir/tmp/track/*`;
    `rm -rf $outdir/seqmapping`;
@@ -94,6 +94,7 @@ if (lc($resume) eq "yes")
    `rm -rf $outdir/macs`;
 }
 
+$input=~s/s3:\/\//s3__\/\//g;
 $input=~s/:+/:/g;
 $input=~s/\s//g;
 $input=~s/:$//g;
@@ -155,10 +156,18 @@ foreach my $libname (keys %prefiles)
   my $filestr=$prefiles{$libname};
   if($libname!~/^$/)
   {
-    my $cat="cat";
-    $cat="zcat" if ($filestr=~/\.gz/);
-    $com="$cat $filestr > $outdir/$libname.fastq";
-
+    if ($filestr =~/s3__\/\//){
+       $filestr =~s/s3__\/\//s3:\/\//;
+       my $outfile = "$outdir/$libname.fastq"; 
+       $outfile .= ".gz" if ($filestr=~/\.gz/);
+       $com = "$downloadS3 -i $filestr -o $outfile -u $username -c $config";
+       $com .= "&& zcat $outfile > $outdir/$libname.fastq && rm $outfile" if ($filestr=~/\.gz/);
+    }
+    else{
+       my $cat="cat";
+       $cat = "zcat" if ($filestr=~/\.gz/);
+       $com = "$cat $filestr > $outdir/$libname.fastq";
+    }
     print "COMMAND: [ $com ]\n\n";
     my $job=$jobsubmit." -n ".$servicename.$libname." -c \"$com\"";
     print $job."\n\n";
@@ -186,6 +195,7 @@ sub checkFile
 {
  my ($file, $success_file) = @_;
  print "$success_file\n";
+ return 1 if ($file =~/^s3__\/\//);
  return 1 if (-e $success_file);
  return 1 if (-e $file);
  return 0;
