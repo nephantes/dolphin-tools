@@ -22,6 +22,7 @@
 #STEPCHECK INPUT FILES
 @RUNCHECK         = @PERL @DOLPHIN/stepCheck.pl
 @DBCOMMCMD        = "@PYTHON @DOLPHIN/dbcomm.py"
+@DOWNLOADS3       = "@PYTHON @DOLPHIN/downloadS3.py"
 
 #RUN BACKUPS3
 @RUNBACKUPS3      = module load python/2.7.5_packages/simple-crypt/4.1 && module load python/2.7.5_packages/boto3/1.3.0 && @DOLPHIN/stepBackupS3.py

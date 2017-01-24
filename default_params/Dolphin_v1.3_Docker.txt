@@ -19,6 +19,7 @@
 #STEPCHECK INPUT FILES
 @RUNCHECK         = @PERL @DOLPHIN/stepCheck.pl
 @DBCOMMCMD        = "@PYTHON @DOLPHIN/dbcomm.py"
+@DOWNLOADS3       = "@PYTHON @DOLPHIN/downloadS3.py"
 
 #RUN BACKUPS3
 @RUNBACKUPS3      = @PYTHON @DOLPHIN/stepBackupS3.py

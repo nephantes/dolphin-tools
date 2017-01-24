@@ -6,7 +6,8 @@
 @BIN              = /usr/local/bin/dolphin-bin
 @SAMTOOLSFLAG     = "@BIN/samtools-1.2/samtools"
 @DOLPHIN          = @TOOLDIR/tools/Dolphinv1.3
-@GDB              = /export/genome_data/@GENOME/@VERSION
+@GDB              = /share/dolphin/genome_data/@GENOME/@VERSION
+
 @GCOMMONDB        = @GDB/commondb
 @GENOMESIZE       = @GDB/@VERSION.chrom.sizes
 @JOB              = "@PYTHON @TOOLDIR/src/submitSGEJobs.py -f @CONFIG -u @USERNAME -s @SERVICENAME -k @WKEY -o @OUTDIR"
@@ -19,6 +20,7 @@
 #STEPCHECK INPUT FILES
 @RUNCHECK         = @PERL @DOLPHIN/stepCheck.pl
 @DBCOMMCMD        = "@PYTHON @DOLPHIN/dbcomm.py"
+@DOWNLOADS3       = "@PYTHON @DOLPHIN/downloadS3.py"
 
 #RUN BACKUPS3
 @RUNBACKUPS3      = @PYTHON @DOLPHIN/stepBackupS3.py
