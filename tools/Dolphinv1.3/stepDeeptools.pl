@@ -110,7 +110,7 @@ if ($type =~/atac/ or $type =~/chip/) {
 	$com=`ls $bedinputdir/*_peaks.narrowPeak`;
 	die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 	my @files = split(/[\n\r\s\t,]+/, $com);
-	$com=`ls $bwdir/*.bw`;
+	$com=`ls $bwdir/*.bw|grep -vi input`;
 	my @bwfiles = split(/[\n\r\s\t,]+/, $com);
 	my $jobcom = "";
 	my $strandflag = " ";
@@ -120,7 +120,7 @@ if ($type =~/atac/ or $type =~/chip/) {
 	if ($mergeallsamps=~/yes/) {
 		my $mergebw = join(' ', @bwfiles);
 		my $mergebed = join (' -i ', @files);
-		$com="$bedtoolsint merge -i $mergebed | awk '{print \\\$1\\\"\\\\t\\\"(\\\$2-$before)\\\"\\\\t\\\"(\\\$3+$after)}' > $outdir/merged_quality.bed";
+		$com="$bedtoolsint merge -i $mergebed | awk '{a=\\\$2-$before; if((\\\$2-$before)<0){a=0;} print \\\$1\\\"\\\\t\\\"a\\\"\\\\t\\\"(\\\$3+$after)}' > $outdir/merged_quality.bed";
 		$com.=" && ";
 		$com.="sort -k1,1b -k2,2n $outdir/merged_quality.bed > $outdir/merged_quality.sorted.bed";
 		$com.=" && ";

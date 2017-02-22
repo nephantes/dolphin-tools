@@ -115,11 +115,17 @@ print $com;
 my @files = split(/[\n\r\s\t,]+/, $com);
 
 my $ucsc=$gtf;
-$ucsc=~s/\.gtf/\.fa/;
 my $ti="";
+if ($gtf !~/^$/ && lc($gtf) !~/none/){
+$gtf = " -G $gtf ";
+$ucsc=~s/\.gtf/\.fa/;
 if (-s $ucsc) {
   $ucsc=~s/\.fa//;
   $ti=" --transcriptome-index=$ucsc";
+}
+}
+else{
+   $gtf = "";
 }
 
 if (lc($params_tophat)=~/^no/ || $params_tophat=~/^$/)
@@ -143,7 +149,7 @@ foreach my $file (@files)
  }
  chomp($wkey);
  my $com="";
- $com="$tophatCmd -p 4 $params_tophat --keep-tmp -G $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
+ $com="$tophatCmd -p 4 $params_tophat --keep-tmp $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
  $com.=" && " if ($com!~/^$/);
  $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam"));
  $com.=" && " if ($com!~/^$/);
