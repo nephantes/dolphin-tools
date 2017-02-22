@@ -301,6 +301,8 @@ sub searchAligned
 	my ($filetype) = $_[2];
 	my ($merge) = $_[3];
 	chomp(my $contents = `ls $directory/$filetype`);
+	print "@@@@@@@@";
+	print $contents;
 	my @files = split(/[\n]+/, $contents);
 	push(@headers, "Multimapped Reads Aligned $type");
 	push(@headers, "Unique Reads Aligned $type");
@@ -417,6 +419,8 @@ sub alteredAligned
 	my ($filetype) = $_[2];
 	my ($merge) = $_[3];
 	chomp(my $contents = `ls $directory/$filetype`);
+	print "##########";
+        print $contents;
 	my @files = split(/[\n]+/, $contents);
 	push(@headers, "Multimapped Reads Aligned $type");
 	push(@headers, "Unique Reads Aligned $type");
