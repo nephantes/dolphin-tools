@@ -205,7 +205,7 @@ foreach my $file (@files)
 			if ($promoter eq "yes") {
 				intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motif_promoter_clincial_commonSNPs.bed", "motif_clinical_promoter", $outdir, $str_file, "");
 			}
-			if ($custombed ne "") {
+			if ($custombed ne "" && $custombed ne "none") {
 				intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motif_clinical_commonSNPs.bed", "motif_clinical", $outdir, $str_file, $custombed);
 			}
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motif_clinical_commonSNPs.bed", "motif_clinical", $outdir, $str_file, "");
@@ -217,7 +217,7 @@ foreach my $file (@files)
 		if ($promoter eq "yes") {
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motif_promoter_regions.bed", "motif_promoter", $outdir, $str_file, "");
 		}
-		if ($custombed ne "") {
+		if ($custombed ne "" && $custombed ne "none") {
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motifs_human_merged_atac_peaks.bed", "motif", $outdir, $str_file, $custombed);
 		}
 		intersectBed($peaks, $bedCmd, $input_file, $haplobed, "motifs_human_merged_atac_peaks.bed", "motif", $outdir, $str_file, "");
@@ -230,7 +230,7 @@ foreach my $file (@files)
 		if ($promoter eq "yes") {
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "promoter_commonSNPs.bed", "common_promoter", $outdir, $str_file, "");
 		}
-		if ($custombed ne "") {
+		if ($custombed ne "" && $custombed ne "none") {
                         intersectBed($peaks, $bedCmd, $input_file, $haplobed, "commonSNPs.bed", "common", $outdir, $str_file, $custombed);
 		}
 		intersectBed($peaks, $bedCmd, $input_file, $haplobed, "commonSNPs.bed", "common", $outdir, $str_file, "");
@@ -243,7 +243,7 @@ foreach my $file (@files)
 		if ($promoter eq "yes") {
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "promoter_clinical_commonSNPs.bed", "clinical_promoter", $outdir, $str_file, "");
 		}
-		if ($custombed ne "") {
+		if ($custombed ne "" && $custombed ne "none") {
 			intersectBed($peaks, $bedCmd, $input_file, $haplobed, "clinical_commonSNPs.bed", "clinical", $outdir, $str_file, $custombed);
 		}
 		intersectBed($peaks, $bedCmd, $input_file, $haplobed, "clinical_commonSNPs.bed", "clinical", $outdir, $str_file, "");
@@ -255,7 +255,7 @@ foreach my $file (@files)
 	if ($promoter eq "yes") {
 		intersectBed($peaks, $bedCmd, $input_file, $haplobed, "promoter_atac_peaks_human.bed", "promoter", $outdir, $str_file, "");
 	}
-	if ($custombed ne "") {
+	if ($custombed ne "" && $custombed ne "none") {
 		intersectBed($peaks, $bedCmd, $input_file, "", $custombed, "custombed", $outdir, $str_file, "");
 	}
  
@@ -273,23 +273,24 @@ foreach my $file (@files)
 		my $bname=$1;
 		my $com="";
 		##	Make sure bam isn't malformed
-		$com.= $vcf_input[$index];
-		$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
+		#$com.= $vcf_input[$index];
+		#$com.="$picardCmd AddOrReplaceReadGroups I=$input_file O=$outdir/hg_$str_file RGID=4 RGLB=lib1 RGPL=illumina RGPU=unit1 RGSM=20";
 		if ($index != 0) {
 			$com.=" && rm $input_file " if ($com!~/^$/);
 		}
-		$com.=" && " if ($com!~/^$/);
+		##$com.=" && " if ($com!~/^$/);
 		##	Make sure bam is ordered properly
-		$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
+		#$com.=" $picardCmd ReorderSam I=$outdir/hg_$str_file O=$outdir/reordered_$str_file R=$genome CREATE_INDEX=TRUE";
 		##	Remove hg_file
-		$com.=" && rm $outdir/hg_$str_file " if ($com!~/^$/);
-		$com.=" && " if ($com!~/^$/);
-                ##      Run recalibration
-                $com.="$haploCmd -R $genome -T BaseRecalibrator -I $outdir/reordered_$str_file -o $outdir/$str_file.recal_data.table && ";
+		#$com.=" && rm $outdir/hg_$str_file " if ($com!~/^$/);
+		#$com.=" && " if ($com!~/^$/);
+                ##      Run recaleibration
+                my $knownsites = "$haplobed/dbsnp.vcf";
+                $com.="$haploCmd -R $genome -T BaseRecalibrator -I $outdir/reordered_$str_file -knownSites $knownsites -o $outdir/$str_file.recal_data.table && ";
                 $com.="$haploCmd -R $genome -T PrintReads -I $outdir/reordered_$str_file -BQSR $outdir/$str_file.recal_data.table -o $outdir/calibrated_$str_file && ";
                 
 		##	Run HaplotypeCaller
-		$com.="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/calibrated_$str_file -o $outdir/$bname.vcf --filter_reads_with_N_cigar --fix_misencoded_quality_scores";
+		$com.="$haploCmd -R $genome -T HaplotypeCaller -I $outdir/calibrated_$str_file -o $outdir/$bname.vcf --filter_reads_with_N_cigar ";
 		$com.=" --standard_min_confidence_threshold_for_calling $smctfc --standard_min_confidence_threshold_for_emitting $smctfe --min_base_quality_score $mbqs";
 		$com.=" --minReadsPerAlignmentStart $mrpas --maxReadsInRegionPerSample $mrirps";
 		##	Remove reordered bam files
@@ -336,7 +337,7 @@ sub intersectBed
 {
 	my ($peaks, $bedCmd, $input_file, $haplobed, $bedfile, $bedprefix, $outdir, $str_file, $custombed) = @_;
 	my $cmd = "";
-        if ($custombed=~/^$/){
+        if ($custombed=~/^$/ && $custombed ne "none"){
    	  $cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/$bedfile > $outdir/$bedprefix"."_"."$str_file &&";
         }else{	
           $cmd.="$peaks $bedCmd intersect -abam $input_file -b $haplobed/$bedfile > $outdir/$bedprefix"."_tmp_"."$str_file &&";
