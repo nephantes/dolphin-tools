@@ -94,6 +94,12 @@ if ($plottype =~/reference-point/) {
 	$reftype = "";
 }
 
+my $len_body = "";
+if ($reftype =~"center" || $plottype =~/scale-regions/)
+{
+ $len_body = "-m $lengthbody"
+}
+
 if ($kmeans !~/none/) {
 	$kmeans = " --kmeans $kmeans";
 }else{
@@ -126,7 +132,7 @@ if ($type =~/atac/ or $type =~/chip/) {
 		$com.=" && ";
 		$com.="$bedtoolsint intersect$strandflag -u -a $genomebed -b $outdir/merged_quality.sorted.bed > $outdir/merged_quality.intersect.sorted.bed";
 		$com.=" && ";
-		$com.="$compdeeptools $plottype$reftype -S $mergebw -R $outdir/merged_quality.intersect.sorted.bed -p 4 -a $before -b $after -m $lengthbody --skipZeros -out $outdir/mergedsamps.mat.gz";
+		$com.="$compdeeptools $plottype$reftype -S $mergebw -R $outdir/merged_quality.intersect.sorted.bed -p 4 -a $before -b $after $len_body --skipZeros -out $outdir/mergedsamps.mat.gz";
 		$com.=" && ";
 		$com.="$deeptoolsheat$kmeans -m $outdir/mergedsamps.mat.gz --heatmapHeight 15 -out $outdir/mergedsamps.heatmap.png";
 		my $job=$jobsubmit." -n ".$servicename."_merged -c \"$com\"";
@@ -199,12 +205,12 @@ stepDeeptools.pl
 
 =head1 SYNOPSIS  
 
-stepMACS.pl -o outdir <output directory> 
+stepDeeptools.pl -o outdir <output directory> 
             -p previous
 
-stepMACS.pl -help
+stepDeeptools.pl -help
 
-stepMACS.pl -version
+stepDeeptools.pl -version
 
 For help, run this script with -help option.
 

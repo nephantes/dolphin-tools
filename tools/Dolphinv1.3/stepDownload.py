@@ -53,10 +53,12 @@ class stepDownload:
     if(len(searchfile) == 0):
       searchfile = glob.glob(geo_dir+'/Supp_'+geo_accession+'*/*/*.sra')
     print 'mkdir -p '+geo_sample_dir+' && mv '+searchfile[0]+' '+geo_sample_dir+' && '+FASTQDUMP+' --split-files '+geo_sample_dir+'/*.sra'
-    child2 = os.popen('mkdir -p '+geo_sample_dir+' && mv '+searchfile[0]+' '+geo_sample_dir+' && cd '+geo_sample_dir+' && '+FASTQDUMP+' --split-files '+geo_sample_dir+'/*.sra')
-    file_list = child2.read().rstrip()
-    print file_list
-    err = child2.close()
+    #self.submitJob(JOBSUBMIT, geo_accession, 'mkdir -p '+geo_sample_dir+' && mv '+searchfile[0]+' '+geo_sample_dir+' && cd '+geo_sample_dir+' && '+FASTQDUMP+' --split-files '+geo_sample_dir+'/*.sra')
+    return 'mkdir -p '+geo_sample_dir+' && mv '+searchfile[0]+' '+geo_sample_dir+' && cd '+geo_sample_dir+' && '+FASTQDUMP+' --split-files '+geo_sample_dir+'/*.sra'
+    #child2 = os.popen('mkdir -p '+geo_sample_dir+' && mv '+searchfile[0]+' '+geo_sample_dir+' && cd '+geo_sample_dir+' && '+FASTQDUMP+' --split-files '+geo_sample_dir+'/*.sra')
+    #file_list = child2.read().rstrip()
+    #print file_list
+    #err = child2.close()
     
   def cleanGEO(self, sample_id, sra_file, name, fastq_dir, outdir, run_id):
     geo_accession = sra_file.split(".")[0]
@@ -66,17 +68,20 @@ class stepDownload:
     file_list = child.read().rstrip()
     err = child.close()
     file_array = file_list.split("\n")
+    com = ""
     for fastq in file_array:
         paired = False
         print fastq
         if "_1.fastq" in fastq:
-            child2 = os.popen('mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq')
-            err = child2.close()
+            com = ' && mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq'
+            #child2 = os.popen('mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq')
+            #err = child2.close()
         if "_2.fastq" in fastq:
             paired = True
-            child2 = os.popen('mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq')
-            err = child2.close()
-    
+            com = com + ' && mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq'
+            #child2 = os.popen('mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq')
+            #err = child2.close()
+    return com 
   # error
   def stop_err(self, msg ):
         sys.stderr.write( "%s\n" % msg )
@@ -141,8 +146,9 @@ def main():
     print fastq_dir
     print backup_dir
     
-    download.parseGEO(libname, sra_file, OUTDIR, RUNPARAMSID, FASTQDUMP, JOBSUBMIT)
-    download.cleanGEO(sample_id, sra_file, libname, fastq_dir, OUTDIR, RUNPARAMSID)
+    com = download.parseGEO(libname, sra_file, OUTDIR, RUNPARAMSID, FASTQDUMP, JOBSUBMIT)
+    com = com + download.cleanGEO(sample_id, sra_file, libname, fastq_dir, OUTDIR, RUNPARAMSID)
+    download.submitJob(JOBSUBMIT,  sra_file.split(".")[0], com)
   sys.exit(0)
     
 if __name__ == "__main__":
