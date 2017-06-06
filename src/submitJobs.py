@@ -38,7 +38,7 @@ class submitJobs:
                cpu=4
                cputime_pred=cputime_pred*2
            if("picard" in servicename.lower() or "rseqc" in servicename.lower()):
-               cputime_pred = 2000
+               cputime_pred = 240
                memory = 64000
         
            # Set cputime and queue

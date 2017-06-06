@@ -74,13 +74,13 @@ class stepDownload:
         print fastq
         if "_1.fastq" in fastq:
             com = ' && mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq'
-            #child2 = os.popen('mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq')
-            #err = child2.close()
+            child2 = os.popen('mv '+geo_sample_dir+'/*_1.fastq '+fastq_dir+'/'+name+'_1.fastq')
+            err = child2.close()
         if "_2.fastq" in fastq:
             paired = True
             com = com + ' && mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq'
-            #child2 = os.popen('mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq')
-            #err = child2.close()
+            child2 = os.popen('mv '+geo_sample_dir+'/*_2.fastq '+fastq_dir+'/'+name+'_2.fastq')
+            err = child2.close()
     return com 
   # error
   def stop_err(self, msg ):
