@@ -95,10 +95,10 @@ if ($plottype =~/reference-point/) {
 }
 
 my $len_body = "";
-if ($reftype =~"center" || $plottype =~/scale-regions/)
-{
- $len_body = "-m $lengthbody"
-}
+#if ($reftype =~"center" || $plottype =~/scale-regions/)
+#{
+# $len_body = "-m $lengthbody"
+#}
 
 if ($kmeans !~/none/) {
 	$kmeans = " --kmeans $kmeans";
@@ -143,13 +143,13 @@ if ($type =~/atac/ or $type =~/chip/) {
 		foreach my $file (@files){
 			$file=~/(.*\/(.*))_peaks.narrowPeak/;
 			my $bname=$2;
-			$com="awk '{if(\\\$5>$quality)print \\\$1\\\"\\\\t\\\"(\\\$2-$before)\\\"\\\\t\\\"(\\\$3+$after)\\\"\\\\t\\\"\\\$4\\\"\\\\t\\\"\\\$5\\\"\\\\t\\\"\\\$6\\\"\\\\t\\\"\\\$7\\\"\\\\t\\\"\\\$8\\\"\\\\t\\\"\\\$9\\\"\\\\t\\\"\\\$10}' $bedinputdir/$bname\_peaks.narrowPeak > $outdir/$bname\_quality.bed";
+			$com="awk '{a=\\\$2-$before; if((\\\$2-$before)<0){a=0;} if(\\\$5>$quality)print \\\$1\\\"\\\\t\\\"a\\\"\\\\t\\\"(\\\$3+$after)\\\"\\\\t\\\"\\\$4\\\"\\\\t\\\"\\\$5\\\"\\\\t\\\"\\\$6\\\"\\\\t\\\"\\\$7\\\"\\\\t\\\"\\\$8\\\"\\\\t\\\"\\\$9\\\"\\\\t\\\"\\\$10}' $bedinputdir/$bname\_peaks.narrowPeak > $outdir/$bname\_quality.bed";
 			$com.=" && ";
 			$com.="sort -k1,1b -k2,2n $outdir/$bname\_quality.bed > $outdir/$bname\_quality.sorted.bed";
 			$com.=" && ";
 			$com.="$bedtoolsint intersect$strandflag -u -a $genomebed -b $outdir/$bname\_quality.sorted.bed > $outdir/$bname\_quality.inersect.sorted.bed";
 			$com.=" && ";
-			$com.="$compdeeptools $plottype$reftype -S $bwdir/$bname.sorted.bw -R $outdir/$bname\_quality.inersect.sorted.bed -p 4 -a $before -b $after -m $lengthbody --skipZeros -out $outdir/$bname.mat.gz";
+			$com.="$compdeeptools $plottype$reftype -S $bwdir/$bname.bw -R $outdir/$bname\_quality.inersect.sorted.bed -p 4 -a $before -b $after --skipZeros -out $outdir/$bname.mat.gz";
 			$com.=" && ";
 			$com.="$deeptoolsheat$kmeans -m $outdir/$bname.mat.gz --heatmapHeight 15 -out $outdir/$bname.heatmap.png";
 			my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
@@ -172,7 +172,7 @@ if ($type =~/atac/ or $type =~/chip/) {
 	my $jobcom = "";
 	if ($mergeallsamps=~/yes/) {
 		my $mergebw = join (' ', @files);
-		$com="$compdeeptools $plottype$reftype -S $mergebw -R $genomebed -p 4 -a $before -b $after -m $lengthbody --skipZeros -out $outdir/mergedsamps.mat.gz";
+		$com="$compdeeptools $plottype$reftype -S $mergebw -R $genomebed -p 4 -a $before -b $after --skipZeros -out $outdir/mergedsamps.mat.gz";
 		$com.=" && ";
 		$com.="$deeptoolsheat$kmeans -m $outdir/mergedsamps.mat.gz --heatmapHeight 15 -out $outdir/mergedsamps.heatmap.png";
 		my $job=$jobsubmit." -n ".$servicename."_merged -c \"$com\"";
@@ -183,7 +183,7 @@ if ($type =~/atac/ or $type =~/chip/) {
 		foreach my $file (@files){
 			$file=~/(.*\/(.*))$sorted.bw/;
 			my $bname=$2;
-			$com="$compdeeptools $plottype$reftype -S $file -R $genomebed -p 4 -a $before -b $after -m $lengthbody --skipZeros -out $outdir/$bname.mat.gz";
+			$com="$compdeeptools $plottype$reftype -S $file -R $genomebed -p 4 -a $before -b $after --skipZeros -out $outdir/$bname.mat.gz";
 			$com.=" && ";
 			$com.="$deeptoolsheat -m $outdir/$bname.mat.gz --heatmapHeight 15 -out $outdir/$bname.heatmap.png";
 			my $job=$jobsubmit." -n ".$servicename."_".$bname." -c \"$com\"";
