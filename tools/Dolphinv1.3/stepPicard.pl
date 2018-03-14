@@ -142,7 +142,7 @@ foreach my $d (@files){
     $com.=" OUTPUT=$outd/".$libname."_multiple.out ";
   }
 
-  $com.=" INPUT=$d > /dev/null ";
+  $com.=" VALIDATION_STRINGENCY=LENIENT INPUT=$d > /dev/null ";
   
   if ($cmdname eq "MarkDuplicates") {
     $com.= "&& $samtools index $outd/".$libname.".bam ";

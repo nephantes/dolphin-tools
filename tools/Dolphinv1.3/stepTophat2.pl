@@ -31,6 +31,7 @@
  my $spaired          = "";
  my $tophatCmd        = "";
  my $samtools         = "";
+ my $resume           = "";
  my $wkey             = "";
  my $pubdir           = "";
  my $jobsubmit        = "";
@@ -55,6 +56,7 @@ GetOptions(
 	'jobsubmit=s'    => \$jobsubmit,
 	'samtools=s'     => \$samtools,
 	'servicename=s'  => \$servicename,
+        'resume=s'       => \$resume,
 	'gtf=s'          => \$gtf,
 	'help'           => \$help, 
 	'version'        => \$print_version,
@@ -128,10 +130,12 @@ else{
    $gtf = "";
 }
 
+
 if (lc($params_tophat)=~/^no/ || $params_tophat=~/^$/)
 {
    $params_tophat="";
 }
+
 foreach my $file (@files)
 { 
  $file=~/.*\/(.*).fastq/;
@@ -147,9 +151,14 @@ foreach my $file (@files)
 
     $str_files ="$file $file2";
  }
+ my $res_str="";
+ if (lc($resume) =~/^yes$/)
+ {
+    $res_str = "--resume $outdir/pipe.tophat.$bname";
+ }
  chomp($wkey);
  my $com="";
- $com="$tophatCmd -p 4 $params_tophat --keep-tmp $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
+ $com="$tophatCmd -p 4 $params_tophat $res_str --keep-tmp $gtf $ti -o $outdir/pipe.tophat.$bname $bowtie2Ind $str_files " if (!(-s "$outdir/pipe.tophat.$bname/accepted_hits.bam"));
  $com.=" && " if ($com!~/^$/);
  $com.="$samtools sort $outdir/pipe.tophat.$bname/accepted_hits.bam $outdir/pipe.tophat.$bname/$bname.sorted " if (!(-s "$outdir/pipe.tophat.$bname/$bname.sorted.bam"));
  $com.=" && " if ($com!~/^$/);

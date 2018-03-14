@@ -81,9 +81,9 @@ my $outd  = "$outdir/tdf_$type";
 `mkdir -p $outd`;
 die "Error 15: Cannot create the directory:$outd" if ($?);
 
-my $puboutdir   = "$pubdir/$wkey/tdf_$type";
-`mkdir -p $puboutdir`;
-die "Error 15: Cannot create the directory:$puboutdir" if ($?);
+#my $puboutdir   = "$pubdir/$wkey/tdf_$type";
+#`mkdir -p $puboutdir`;
+#die "Error 15: Cannot create the directory:$puboutdir" if ($?);
 
 my @files=();
 print $type."\n";
@@ -105,7 +105,7 @@ elsif ($type eq "tophat")
 elsif ($type eq "chip")
 {
    my $indir   = "$outdir/seqmapping/chip";
-   @files = <$indir/pipe*/*.sorted.bam>;
+   @files = <$indir/*.sorted.bam>;
 }
 else
 {
@@ -126,7 +126,7 @@ if ($pair eq "paired")
 
 foreach my $d (@files){ 
   my ($com, $libname, $dirname)=();
-  print $d."\n";
+  print $d." HERE\n";
 
   if ($type eq "RSEM")
   {
@@ -154,8 +154,8 @@ foreach my $d (@files){
      $com.="cp $d.bai $outd/$libname.bam.bai && ";
   }
  
-  $com.="cd $outdir && $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome && "; 
-  $com.="cp -R $outd/$libname.* $puboutdir/.";
+  $com.="cd $outdir && $igvtools count -w 5 $param $outd/$libname.bam  $outd/$libname.tdf $genome "; 
+ # $com.="cp -R $outd/$libname.* $puboutdir/.";
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print $job."\n";   
   `$job`;

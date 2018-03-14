@@ -78,7 +78,7 @@ if ($type eq "tophat" || $type eq "rsem" || $type eq "star" || $type eq "hisat2"
 	my @dirs = split(/[\n\r\s\t,]+/, $com);
 	my $bamfile = "accepted_hits.bam";
 	$bamfile = "*genome.bam" if ($type eq "rsem");
-	$bamfile = "*sorted.bam" if ($type eq "star" || $type eq "hisat2");
+	$bamfile = "*sorted.bam" if ($type eq "tophat" || $type eq "star" || $type eq "hisat2");
 	if ($com !~ /No such file or directory/) {
 		foreach my $dir (@dirs)
 		{

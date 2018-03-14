@@ -144,8 +144,8 @@ foreach my $d (@files){
   $com.= "$GCB -split -bg -ibam $d -g $genomesize > $outputbg && ";
   $com.= "$W2BW -clip -itemsPerSlot=1 $outputbg $genomesize $outputbw && ";
   $com.="rm -rf $outputbg && ";
-  $com.="mkdir -p $puboutdir/ucsc_$type && ";
-  $com.="cp -R $outdir/ucsc_$type/*.bw $puboutdir/ucsc_$type/.";
+  $com.="mkdir -p $puboutdir/ucsc_$type ";
+  #$com.="cp -R $outdir/ucsc_$type/*.bw $puboutdir/ucsc_$type/.";
 
   my $job=$jobsubmit." -n ".$servicename."_".$libname." -c \"$com\"";
   print "\n".$job."\n";   

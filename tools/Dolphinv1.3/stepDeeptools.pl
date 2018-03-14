@@ -113,7 +113,7 @@ die "Error 15: Cannot create the directory:$outdir" if ($?);
 
 print $type;
 if ($type =~/atac/ or $type =~/chip/) {	
-	$com=`ls $bedinputdir/*_peaks.narrowPeak`;
+	$com=`ls -l $bedinputdir/*_peaks.narrowPeak|awk '{if (\$5 != 0) print \$9}'`;
 	die "Error 64: please check the if you defined the parameters right:" unless ($com !~/No such file or directory/);
 	my @files = split(/[\n\r\s\t,]+/, $com);
 	$com=`ls $bwdir/*.bw|grep -vi input`;
